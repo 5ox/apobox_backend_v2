@@ -1,0 +1,24 @@
+// navbar.scss
+
+.navbar {
+  font-size: 16px;
+
+  &.navbar-default {
+    @include box-shadow(none);
+    background-color: $body-bg;
+    background-image: none;
+    border: 0;
+  }
+
+  .navbar-brand {
+    img {
+      height: 24px;
+    }
+  }
+
+  .dropdown-form {
+    .dropdown-menu {
+      padding: 10px 30px 0;
+    }
+  }
+}

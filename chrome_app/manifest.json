@@ -1,0 +1,25 @@
+{
+  "name": "APO Box Warehouse App",
+  "description": "Enables scale reading and ZPL printing from the APO Box web app.",
+  "version": "0.2.4",
+  "manifest_version": 2,
+  "app": {
+    "background": {
+      "scripts": ["background.js", "scale.js"]
+    }
+  },
+  "icons": { "16": "scale-16.png", "128": "scale-128.png" },
+  "externally_connectable": {
+    "matches": ["https://account.apobox.com/*", "https://apobox.dev/*", "https://192.168.1.218:8443/*"]
+  },
+  "permissions": [
+    "serial",
+    "storage",
+	"usb",
+	{"usbDevices": [
+	  {"vendorId": 2655, "productId": 9},
+	  {"vendorId": 2655, "productId": 39},
+	  {"vendorId": 2655, "productId": 40}
+	]}
+  ]
+}

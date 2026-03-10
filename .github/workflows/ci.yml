@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - 'Taskfile.yaml'
+
+jobs:
+  testsuite:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: true
+      matrix:
+        php-version: ['5.6']
+    name: PHP ${{ matrix.php-version }} Automated Tests
+
+    env:
+      APP_ENV: ci
+      DB_DATABASE: ci_test
+      DB_USER: root
+      DB_PASSWORD: root
+      DATABASE_TEST_URL: mysql://root:root@127.0.0.1/ci_test
+
+    steps:
+    - name: Set up MySQL service
+      uses: shogo82148/actions-setup-mysql@v1
+      with:
+        mysql-version: "5.6"
+        root-password: "root"
+
+    - name: Create MySQL test database
+      run: |
+        mysql -e 'CREATE DATABASE ${{ env.DB_DATABASE }};' -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }}
+
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: mbstring, intl, pdo_sqlite, pdo_mysql
+        coverage: none
+        tools: composer:v1
+
+    - name: Composer install
+      run: |
+        composer install
+
+    - name: Run PHPUnit
+      run: |
+          bin/run-tests
+
+  coding-standard:
+    name: Coding Standard
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '5.6'
+        extensions: mbstring, intl
+        coverage: none
+        tools: composer:v1
+
+    - name: Composer install
+      run: composer install
+
+    - name: Run PHP CodeSniffer
+      run: composer run-script check
+
+  # static-analysis:
+  #   name: Static Analysis
+  #   runs-on: ubuntu-22.04
+
+  #   steps:
+  #   - uses: actions/checkout@v4
+
+  #   - name: Setup PHP
+  #     uses: shivammathur/setup-php@v2
+  #     with:
+  #       php-version: '5.6'
+  #       extensions: mbstring, intl
+  #       coverage: none
+
+  #   - name: Composer install
+  #     run: composer install
+
+  #   - name: Run phpstan
+  #     run: vendor/bin/phpstan.phar analyse

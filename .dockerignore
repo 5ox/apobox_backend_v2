@@ -1,0 +1,6 @@
+.git
+.gitignore
+.gitmodules
+Vendor
+Config/core-local.php
+Plugin/DebugKit

@@ -1,0 +1,179 @@
+<!DOCTYPE  html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    
+    <title>doc</title>
+    <style>
+      /*github.com style (c) Vasily Polovnyov <vast@whiteants.net>*/
+      pre code {
+        display: block; padding: 0.5em;
+        color: #333;
+        background: #f8f8ff
+      }
+      pre .comment,
+      pre .template_comment,
+      pre .diff .header,
+      pre .javadoc {
+        color: #998;
+        font-style: italic
+      }
+      pre .keyword,
+      pre .css .rule .keyword,
+      pre .winutils,
+      pre .javascript .title,
+      pre .nginx .title,
+      pre .subst,
+      pre .request,
+      pre .status {
+        color: #333;
+        font-weight: bold
+      }
+      pre .number,
+      pre .hexcolor,
+      pre .ruby .constant {
+        color: #099;
+      }
+      pre .string,
+      pre .tag .value,
+      pre .phpdoc,
+      pre .tex .formula {
+        color: #d14
+      }
+      pre .title,
+      pre .id {
+        color: #900;
+        font-weight: bold
+      }
+      pre .javascript .title,
+      pre .lisp .title,
+      pre .clojure .title,
+      pre .subst {
+        font-weight: normal
+      }
+      pre .class .title,
+      pre .haskell .type,
+      pre .vhdl .literal,
+      pre .tex .command {
+        color: #458;
+        font-weight: bold
+      }
+      pre .tag,
+      pre .tag .title,
+      pre .rules .property,
+      pre .django .tag .keyword {
+        color: #000080;
+        font-weight: normal
+      }
+      pre .attribute,
+      pre .variable,
+      pre .lisp .body {
+        color: #008080
+      }
+      pre .regexp {
+        color: #009926
+      }
+      pre .class {
+        color: #458;
+        font-weight: bold
+      }
+      pre .symbol,
+      pre .ruby .symbol .string,
+      pre .lisp .keyword,
+      pre .tex .special,
+      pre .prompt {
+        color: #990073
+      }
+      pre .built_in,
+      pre .lisp .title,
+      pre .clojure .built_in {
+        color: #0086b3
+      }
+      pre .preprocessor,
+      pre .pi,
+      pre .doctype,
+      pre .shebang,
+      pre .cdata {
+        color: #999;
+        font-weight: bold
+      }
+      pre .deletion {
+        background: #fdd
+      }
+      pre .addition {
+        background: #dfd
+      }
+      pre .diff .change {
+        background: #0086b3
+      }
+      pre .chunk {
+        color: #aaa
+      }
+    </style>
+  </head>
+  <body>  
+    <h1 id="signup-widget">Signup Widget</h1>
+<p>The APO Box Signup Widget allows third party developers to add the ability for their users with military addresses to sign up for APO Box and immediately use their new US address.</p>
+<h2 id="installation">Installation</h2>
+<p>Installation is easy. Just add a single script tag where you would like the &quot;Ship to APO/FPO&quot; button or link to display.</p>
+<pre><code>&lt;script src=&quot;https://api.apobox.com/widgets/signup.js&quot;&gt;&lt;/script&gt;
+</code></pre><h2 id="styling">Styling</h2>
+<p>The widget renders a pre-styled button by default. It can also render a link to allow custom styling.</p>
+<pre><code>&lt;span class=&quot;btn&quot;&gt;
+  &lt;script src=&quot;https://api.apobox.com/widgets/signup.js&quot; data-button=&quot;link&quot;&gt;&lt;/script&gt;
+&lt;/span&gt;
+</code></pre><h2 id="demos">Demos</h2>
+<ul>
+<li><a href="https://account.apobox.com/widgets/demos/signup-button-only.html">Simple button</a></li>
+<li><a href="https://account.apobox.com/widgets/demos/signup-with-form.html">Button with autofill enabled</a></li>
+<li><a href="https://account.apobox.com/widgets/demos/signup-link.html">Using a link instead of a button</a></li>
+<li><a href="https://account.apobox.com/widgets/demos/signup-with-redirect.html">Redirect after registration</a></li>
+<li><a href="https://account.apobox.com/widgets/demos/signup-static-link.html">Triggering the widget from another link</a></li>
+</ul>
+<h2 id="data-properties">Data Properties</h2>
+<h3 id="autofill">Autofill</h3>
+<p>The signup widget provides a way to get a user&#39;s data from APO Box so that you can provide autofill or other functionality on your site. After completing signup, whenever a user clicks on &quot;Autofill&quot; or logs in, the widget will call <code>postMessage()</code> on the parent frame. The data of the posted message will have an address object with the user&#39;s new APO Box shipping address information.</p>
+<ul>
+<li>Property: <code>data-autofill</code></li>
+<li>Default: <code>false</code></li>
+<li>Values: <code>true</code> or <code>false</code>.</li>
+<li>Demo: <a href="https://account.apobox.com/widgets/demos/signup-with-form.html">Button with autofill enabled</a></li>
+</ul>
+<h3 id="button">Button</h3>
+<p>By default the APO Box widget displays a button. You can optionally display a link or disable the button/link and trigger the widget to open using Javascript instead.</p>
+<ul>
+<li>Property: <code>data-button</code></li>
+<li>Default: <code>true</code></li>
+<li>Values: <code>true</code>, <code>false</code>, or <code>link</code>.</li>
+<li>Demo: <a href="https://account.apobox.com/widgets/demos/signup-link.html">Using a link instead of a button</a></li>
+<li>Demo: <a href="https://account.apobox.com/widgets/demos/signup-static-link.html">Triggering the widget from another link</a></li>
+</ul>
+<h3 id="redirect">Redirect</h3>
+<p>Instead of displaying the widget 3rd frame, it is possible to redirect the user to an external page after registration. <strong>NOTE</strong>: The external URL must be secured by SSL (prefixed with <code>https</code>) to avoid a browser mixed content error. Also note that the external URL response header&#39;s <code>X-Frame-Options</code> must not be set to either <code>DENY</code> or <code>SAMEORIGIN</code> for the redirect to occur.</p>
+<ul>
+<li>Property: <code>data-redirect</code></li>
+<li>Default: <code>null</code></li>
+<li>Values: The URL to redirect to.</li>
+<li>Demo: <a href="https://account.apobox.com/widgets/demos/signup-with-redirect.html">Redirect after registration</a></li>
+</ul>
+<h2 id="messages">Messages</h2>
+<p>The APO Box Signup Widget communicates with windows outside of itself, like your website, through JavaScript&#39;s <code>postMessage()</code> method. Your site can listen to these messages and act accordingly depending on the message content. Messages are typically sent as an object with a <code>method</code> property. The <code>method</code> property will be a string with one of the method names below.</p>
+<p>Here is a list of the method names the APO Box widget uses, followed by a short description of when then are sent by the widget.</p>
+<h3 id="autofill">autofill</h3>
+<p>The <code>autofill</code> method is called when the Autofill button is pressed on the widget or Autofill is enabled.</p>
+<p><em>See the Autofill section</em>.</p>
+<h3 id="ready">ready</h3>
+<p>The <code>ready</code> method is called when the widget&#39;s iframe has fired its ready event. It can be used to call a function after the iframe has initialized and the DOM content has been loaded. This ensures the iframe&#39;s <code>contentWindow</code> can be accessed.</p>
+<h3 id="authenticated">authenticated</h3>
+<p>Once a user has successfully signed in the <code>authenticated</code> method will be called. This method is only called once valid data has been submitted to the API and the user&#39;s email address and password are valid. This message method can be used when you want to redirect the user or advance a form for them after signing in. The <code>autofill</code> method will also be called with this method.</p>
+<h3 id="customer-created">customer.created</h3>
+<p>The <code>customer.created</code> method is called when a user has successfully submitted the first pane of the widget. The user will have an APO Box account but their information is not yet complete as APO Box still needs a military address to forward packages to. The user is presented with the widget&#39;s second pane to enter their APO/FPO address as this method is called. The <code>autofill</code> method is <strong>not</strong> called at this time.</p>
+<h3 id="signup-complete">signup.complete</h3>
+<p>The <code>signup.complete</code> method is called after the user successfully completes the signup widget. You can hook into this method to redirect the user or automatically submit a form once they have successfully signed up.</p>
+<h3 id="error-validation">error.validation</h3>
+<p>If you would like to be notified of validation errors, you can hook into the <code>error.validation</code> method.</p>
+<h3 id="error-fatal">error.fatal</h3>
+<p>If something unexpected happens with the widget, such as a lack of a status code from an XHR response, this method will be called. You may treat this like a HTTP &quot;500&quot; error.</p>
+
+  </body>
+</html>

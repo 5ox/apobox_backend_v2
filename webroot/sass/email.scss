@@ -1,0 +1,17 @@
+// Includes files with styles for elements needed on every page
+@import "compass/css3";
+@import "variables";
+@import "basic";
+@import "typography";
+@import "buttons";
+@import "tables";
+
+.signature {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.fine-print {
+  font-size: 10px;
+  line-height: 14px;
+}

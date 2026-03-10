@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>APO Box Weight Scale App</title>
+
+		<script src="window.js"></script>
+	</head>
+	<body>
+		<div id="container">
+			<div class="section">
+				<h3>Scale Settings</h3>
+				<table>
+					<tr>
+						<td>Port:</td>
+						<td>
+							<select id="port">
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Bitrate:</td>
+						<td>
+							<select id="bitrate">
+								<option value="9600">9600</option>
+								<option value="1200">1200</option>
+								<option value="2400">2400</option>
+								<option value="4800">4800</option>
+								<option value="19200">19200</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Data Bits:</td>
+						<td>
+							<select id="dataBits">
+								<option value="seven">7</option>
+								<option value="eight">8</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Parity Bit:</td>
+						<td>
+							<select id="parityBit">
+								<option value="even">Even</option>
+								<option value="odd">Odd</option>
+								<option value="none">None</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Stop Bits:</td>
+						<td>
+							<select id="stopBits">
+								<option value="one">1</option>
+								<option value="two">2</option>
+							</select>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</body>
+</html>

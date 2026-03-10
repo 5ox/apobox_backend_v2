@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" ></script>
+    <style>
+      input, select {
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <script
+      src="https://account.apobox.com/widgets/signup.js"
+      data-button="link"
+    ></script>
+    <script>
+      $(window).on("message", function (e) {
+        // A switch case works well here
+        switch (e.originalEvent.data.method) {
+          case 'autofill':
+            console.log('autofill');
+            break;
+          case 'ready':
+            console.log('ready');
+            break;
+          case 'authenticated':
+            console.log('authenticated');
+            // Do things here after the user logs in
+            break;
+          case 'customer.created':
+            console.log('customer created');
+            // If you need to do things after the user creates an account
+            // but before they complete their shipping address you can do that here
+            break;
+          case 'signup.complete':
+            console.log('signup complete');
+            // If you need to do any special logic after signup is complete that
+            // isn't related to autocomplete this is the place to do that.
+            //window.location.href='https://account.apobox.com/customers/almost-finished';
+            window.location.href='https://account.apobox.com/customers/almost-finished';
+            break;
+          case 'error.validation':
+            console.log('error validation');
+            // Fired when a form validation fails.
+            break;
+          case 'error.fatal':
+            console.log('error fatal');
+            // Considered a "500" error. Something went really wrong if this fires.
+            break;
+          default:
+            // A message was sent with a message that you don't have a switch case for
+            break;
+        }
+      });
+    </script>
+  </body>
+</html>

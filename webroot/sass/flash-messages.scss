@@ -1,0 +1,43 @@
+// flash-messages.scss
+@import "mixins/flash-messages";
+
+%alert {
+  @include border-radius(5px);
+  border: {
+    width: 1.5px;
+    style: solid;
+    color: $text-color;
+  }
+  margin-bottom: 20px;
+  padding: 5px 10px;
+  box-sizing: border-box;
+}
+
+.alert-success {
+  @extend %alert;
+  @include flash-varient($brand-success, $gray-darker);
+}
+
+.alert-info {
+  @extend %alert;
+  @include flash-varient($brand-info, $gray-darker);
+}
+
+.alert,
+.alert-default,
+.alert-warning {
+  @extend %alert;
+  @include flash-varient($brand-warning, $gray-darker);
+}
+
+.alert-danger {
+  @extend %alert;
+  @include flash-varient($brand-danger, $gray-darker);
+}
+
+.alert-dismissable .close {
+  position: inherit;
+  top: inherit;
+  right: inherit;
+  color: inherit;
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href="animate.css?__inline=true" rel="stylesheet">
+    <link href="styles.css?__inline=true" rel="stylesheet">
+  </head>
+  <body style="display: none;">
+    <div id="widget-container" class="widget-container">
+      <div id="widget" class="widget">
+
+        <div id="pane-1" class="widget-pane-1" style="display: block;">
+          <a class="widget-close">x</a>
+          <h3>Create an Account</h3>
+          <p>Already have an APO Box? <a id="sign-in-button" href="#">Sign In</a>?</p>
+          <p>What is <a href="http://www.apobox.com" target="_blank">APO Box</a>?</p>
+          <form id="pane-1-form" name="pane-1-form" action="#" method="POST">
+            <input id="customers_firstname" type="text" name="customers_firstname" placeholder="First Name">
+            <span id="customers_firstname-help" class="help-text"></span>
+            <input id="customers_lastname" type="text" name="customers_lastname" placeholder="Last Name">
+            <span id="customers_lastname-help" class="help-text"></span>
+            <input id="customers_email_address" type="text" name="customers_email_address" placeholder="Email Address">
+            <span id="customers_email_address-help" class="help-text"></span>
+            <input id="customers_password" type="password" name="customers_password" placeholder="Password">
+            <span id="customers_password-help" class="help-text"></span>
+            <input id="password_confirm" type="password" name="password_confirm" placeholder="Confirm Password">
+            <span id="password_confirm-help" class="help-text"></span>
+            <a id="pane-1-submit" href="#" class="btn">Next</a>
+          </form>
+        </div>
+
+        <div id="pane-2" class="widget-pane-2" style="display: none;">
+          <a class="widget-close">x</a>
+          <h3>Your Shipping Address</h3>
+          <p>This is the address that we will forward your packages to. This must be an APO or FPO address.</p>
+          <form id="pane-2-form" name="pane-2-form" action="#" method="POST">
+            <input id="entry_street_address" type="text" name="entry_street_address" placeholder="Address Line 1">
+            <span id="entry_street_address-help" class="help-text"></span>
+            <input id="entry_suburb" type="text" name="entry_suburb" placeholder="Address Line 2">
+            <span id="entry_suburb-help" class="help-text"></span>
+            <select name="entry_city">
+              <option value="APO">APO</option>
+              <option value="FPO">FPO</option>
+              <option value="DPO">DPO</option>
+            </select>
+            <select name="entry_zone_id">
+              <option value="7">AA</option>
+              <option value="9">AE</option>
+              <option value="11">AP</option>
+            </select>
+            <input id="entry_postcode" type="text" name="entry_postcode" placeholder="ZIP Code">
+            <span id="entry_postcode-help" class="help-text"></span>
+            <input id="entry_basename" type="text" name="entry_basename" placeholder="Base/Ship Name">
+            <div class="terms_of_service">
+              <input id="terms_of_service" type="checkbox" name="terms_of_service">
+              <label for="terms_of_service">I accept the <a href="#" id="tos">Terms of Service</a></label>
+            </div>
+            <div id="terms_of_service-help" class="help-text"></div>
+            <a id="pane-2-submit" href="#" class="btn">Submit</a>
+          </form>
+        </div>
+
+        <div id="pane-3" class="widget-pane-3" style="display: none;">
+          <a class="widget-close">x</a>
+          <h3 id="success-header">Congratulations!</h3>
+          <p id="success-text">You're new APO Box address to use is:</p>
+          <address>
+            <span id="addressFirstName"></span> <span id="addressLastName"></span><br>
+            Attn: <span id="addressApoId"></span><br>
+            1911 Western Ave<br>
+            Plymouth, IN 46563
+          </address>
+          <a id="pane-autofill" href="#" class="btn autofill">Autofill</a>
+          <a href="https://account.apobox.com/account" class="btn" target="_blank">Go to My Account</a>
+          <a id="pane-done" href="#" class="btn">Close</a>
+        </div>
+
+        <div id="sign-in-pane" class="widget-pane" style="display: none;">
+          <a class="widget-close">x</a>
+          <h3>Sign In</h3>
+          <p>Don't have an APO Box? <br> <a id="create-account-button" href="#">Create an Account</a>?</p>
+          <form id="sign-in-form" name="sign-in-form" action="#" method="">
+            <input id="sign-in-email" type="text" name="customers_email_address" placeholder="Email Address">
+            <span id="sign-in-email-help" class="help-text"></span>
+            <input id="sign-in-password" type="password" name="customers_password" placeholder="Password">
+            <span id="sign-in-password-help" class="help-text"></span>
+            <a id="sign-in-submit" href="#" class="btn">Login</a>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </body>
+  <script src="jquery-1.11.1.js?__inline=true" type="text/javascript"></script>
+  <script src="validate.js?__inline=true" type="text/javascript"></script>
+  <script src="script-bottom.js?__inline=true" type="text/javascript"></script>
+</html>

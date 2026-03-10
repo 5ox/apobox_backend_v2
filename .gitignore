@@ -1,0 +1,43 @@
+# App specific
+webroot/widgets/dev
+perl/local.pl
+webroot/js/jspm/packages
+chrome_app/apobox_scale.zip
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Loadsys
+/Lib/Cake
+/backups
+/Config/core-local.php
+
+# Composer
+/Vendor
+/bin
+/Plugin/DebugKit
+/Plugin/Migrations
+/Plugin/BoostCake
+/Plugin/Serializers
+/Plugin/SerializersErrors
+/Plugin/Queue
+!bin/composer.phar
+
+# Vagrant + puphpet
+/.vagrant
+/xhprof
+/phpmyadmin
+
+# npm + grunt
+/node_modules
+/webroot/assets
+
+# SASS
+/.sass-cache

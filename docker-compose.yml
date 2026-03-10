@@ -1,0 +1,20 @@
+# Docker Base Configuration
+#
+# Overrides are applied per action:
+# - local  - docker-compose.override.yml (applied automatically)
+# - build  - docker/build.yml
+# - deploy - docker/deploy.yml
+
+version: '3.7'
+services:
+
+  php:
+    image: ${dockerRepo:-apobox_php}:${buildEnv:-local}
+    build:
+      args:
+        buildEnv: ${buildEnv:-local}
+    environment:
+      APP_ENV: "${buildEnv:-local}"
+
+  memcached:
+    image: memcached:1.6-alpine

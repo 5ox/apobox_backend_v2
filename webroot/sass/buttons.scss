@@ -1,0 +1,71 @@
+// buttons.scss
+@import "mixins/buttons";
+
+.btn {
+  @include box-sizing();
+  @include transition(color, .25s);
+  background-color: transparent;
+  background-image: none;
+  border: 0;
+  box-shadow: 0 0 0 2px $gray-light inset;
+  color: $gray-light;
+  font-weight: $btn-font-weight;
+  overflow: hidden;
+  position: relative;
+  text-transform: $btn-text-transform;
+
+  &::before {
+    @include background-image(none);
+    @include border-radius();
+    @include transition(height, .25s);
+    height: 0;
+    background-color: $gray-light;
+    content: "";
+    display: block;
+    position: absolute;
+    right: 0;
+    left: 0;
+    top: 0;
+    z-index: -1;
+  }
+
+  &:hover,
+  &:focus {
+
+    &::before {
+      height: 100%;
+    }
+  }
+
+  &.btn-push {
+    margin-bottom: 15px;
+  }
+}
+
+.btn-default {
+  @include button-varient($btn-default);
+}
+
+.btn-inverse {
+  @include button-varient($btn-inverse);
+}
+
+.btn-primary {
+  @include button-varient($btn-primary);
+}
+
+.btn-success {
+  @include button-varient($btn-success);
+}
+
+.btn-info {
+  @include button-varient($btn-info);
+}
+
+.btn-warning {
+  @include button-varient($btn-warning);
+}
+
+.btn-danger {
+  @include button-varient($btn-danger);
+}
