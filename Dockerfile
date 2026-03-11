@@ -47,13 +47,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files first for better caching
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-
 # Copy application files
 COPY . .
-RUN composer dump-autoload --optimize
+
+# Install dependencies (generates lock file if missing)
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
@@ -70,4 +68,8 @@ memory_limit=256M" > /usr/local/etc/php/conf.d/custom.ini
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+# Copy startup script
+COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+CMD ["start.sh"]
