@@ -5,6 +5,13 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdatePaymentInfoRequest;
 use App\Http\Requests\UpdateContactInfoRequest;
+use App\Models\Address;
+use App\Models\Customer;
+use App\Models\CustomersInfo;
+use App\Models\Order;
+use App\Models\SearchIndex;
+use App\Models\ShippingAddress;
+use App\Services\CreditCardService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -13,12 +20,32 @@ use Illuminate\Http\RedirectResponse;
 class CustomerController extends Controller
 {
     /**
-     * Search and list customers.
+     * Search and list customers using fulltext search index.
      */
-    public function search(Request $request): View
+    public function search(Request $request): View|RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.search');
+        $search = $request->query('q');
+        $results = collect();
+
+        if ($search) {
+            $wrappedSearch = $this->autoWrapFullnameOrEmail($search);
+
+            $results = SearchIndex::where('model_type', Customer::class)
+                ->whereRaw('MATCH(content) AGAINST(? IN BOOLEAN MODE)', [$wrappedSearch])
+                ->orderByRaw('MATCH(content) AGAINST(? IN BOOLEAN MODE) DESC', [$wrappedSearch])
+                ->paginate(20)
+                ->appends($request->query());
+
+            // If exactly one result, redirect directly to customer view
+            if ($results->total() === 1) {
+                $first = $results->first();
+                return redirect()->route('manager.customers.view', ['id' => $first->model_id]);
+            }
+        }
+
+        $userIsManager = auth('admin')->user()->isManager();
+
+        return view('manager.customers.search', compact('search', 'results', 'userIsManager'));
     }
 
     /**
@@ -26,27 +53,97 @@ class CustomerController extends Controller
      */
     public function view(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.view', compact('id'));
+        $customer = Customer::with([
+            'addresses',
+            'defaultAddress.zone',
+            'shippingAddress.zone',
+            'emergencyAddress.zone',
+            'authorizedNames',
+        ])->findOrFail($id);
+
+        $customer->name = $customer->full_name;
+
+        $orders = Order::with(['status', 'customer', 'total'])
+            ->where('customers_id', $id)
+            ->orderByDesc('date_purchased')
+            ->paginate(20);
+
+        $closed = null;
+        if (!$customer->is_active) {
+            $info = CustomersInfo::find($id);
+            if ($info && $info->customers_info_date_account_created) {
+                $closedField = $info->getAttribute('customers_info_date_account_closed');
+                $closed = $closedField ? date('m/d/Y', strtotime($closedField)) : null;
+            }
+        }
+
+        $userIsManager = auth('admin')->user()->isManager();
+        $partialSignup = empty($customer->billing_id);
+        $customRequests = $customer->orders()
+            ->with('customPackageRequests')
+            ->get()
+            ->pluck('customPackageRequests')
+            ->flatten();
+
+        return view('manager.customers.view', compact(
+            'customer',
+            'orders',
+            'userIsManager',
+            'partialSignup',
+            'customRequests',
+            'closed'
+        ));
     }
 
     /**
      * View a customer's details by billing ID (e.g., AB1234).
+     * Redirects to the standard view route.
      */
-    public function viewByBillingId(string $billingId): View|RedirectResponse
+    public function viewByBillingId(string $billingId): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        // Look up customer by billing ID, redirect to view
-        return view('manager.customers.view', compact('billingId'));
+        $customer = Customer::where('billing_id', $billingId)->firstOrFail();
+
+        return redirect()->route('manager.customers.view', ['id' => $customer->customers_id]);
     }
 
     /**
      * Show recent orders for a customer.
      */
-    public function recentOrders(int $id): View|JsonResponse
+    public function recentOrders(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.recent-orders', compact('id'));
+        $customer = Customer::findOrFail($id);
+        $customerName = $customer->full_name;
+
+        $orders = Order::with(['status', 'customer'])
+            ->select([
+                'orders_id',
+                'customers_id',
+                'comments',
+                'last_modified',
+                'date_purchased',
+                'orders_date_finished',
+                'usps_track_num',
+                'usps_track_num_in',
+                'ups_track_num',
+                'dhl_track_num',
+                'fedex_track_num',
+                'width',
+                'length',
+                'depth',
+                'weight_oz',
+                'mail_class',
+                'orders_status',
+                'delivery_name',
+                'delivery_street_address',
+                'delivery_city',
+                'delivery_state',
+                'delivery_postcode',
+            ])
+            ->where('customers_id', $id)
+            ->orderByDesc('date_purchased')
+            ->paginate(20);
+
+        return view('manager.customers.recent-orders', compact('orders', 'customerName'));
     }
 
     /**
@@ -54,8 +151,15 @@ class CustomerController extends Controller
      */
     public function editPaymentInfo(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.edit-payment-info', compact('id'));
+        $customer = Customer::findOrFail($id);
+
+        // Do not show full card data -- mask sensitive fields
+        $customer->cc_number = '';
+        $customer->cc_expires_month = '';
+        $customer->cc_expires_year = '';
+        $customer->cc_cvv = '';
+
+        return view('manager.customers.edit-payment-info', compact('customer'));
     }
 
     /**
@@ -63,8 +167,44 @@ class CustomerController extends Controller
      */
     public function updatePaymentInfo(UpdatePaymentInfoRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $customer = Customer::findOrFail($id);
+
+        $fields = [
+            'cc_firstname',
+            'cc_lastname',
+            'cc_number',
+            'cc_expires_month',
+            'cc_expires_year',
+            'cc_cvv',
+        ];
+
+        $data = $request->only($fields);
+
+        // Encrypt the credit card number
+        if (!empty($data['cc_number'])) {
+            $ccService = app(CreditCardService::class);
+            $data['cc_number_encrypted'] = $ccService->encrypt($data['cc_number']);
+            $data['cc_number'] = $ccService->maskNumber($data['cc_number']);
+
+            // Generate a payment token if available
+            $cardToken = app(\App\Services\PaymentService::class)->storeCard([
+                'number' => $request->input('cc_number'),
+                'expire_month' => $data['cc_expires_month'],
+                'expire_year' => $data['cc_expires_year'],
+                'cvv' => $data['cc_cvv'],
+                'first_name' => $data['cc_firstname'],
+                'last_name' => $data['cc_lastname'],
+            ]);
+            if ($cardToken) {
+                $data['card_token'] = $cardToken;
+            }
+        }
+
+        $customer->update($data);
+
+        session()->flash('message', "The customer's credit card has been updated.");
+
+        return redirect()->route('manager.customers.view', ['id' => $id]);
     }
 
     /**
@@ -72,8 +212,9 @@ class CustomerController extends Controller
      */
     public function editContactInfo(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.edit-contact-info', compact('id'));
+        $customer = Customer::findOrFail($id);
+
+        return view('manager.customers.edit-contact-info', compact('customer'));
     }
 
     /**
@@ -81,17 +222,38 @@ class CustomerController extends Controller
      */
     public function updateContactInfo(UpdateContactInfoRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $customer = Customer::findOrFail($id);
+
+        $fields = [
+            'customers_firstname',
+            'customers_lastname',
+            'customers_email_address',
+            'customers_telephone',
+            'customers_fax',
+            'backup_email_address',
+            'invoicing_authorized',
+            'billing_type',
+        ];
+
+        $customer->update($request->only($fields));
+
+        session()->flash('message', "The customer's information has been updated.");
+
+        return redirect()->route('manager.customers.view', ['id' => $id]);
     }
 
     /**
-     * Show all addresses for a customer.
+     * Show all addresses for a customer (JSON response for AJAX).
      */
-    public function addresses(int $id): View|JsonResponse
+    public function addresses(int $id): JsonResponse
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.addresses', compact('id'));
+        $customer = Customer::findOrFail($id);
+
+        $addresses = Address::where('customers_id', $id)
+            ->get()
+            ->pluck('full', 'address_book_id');
+
+        return response()->json(['addresses' => $addresses]);
     }
 
     /**
@@ -99,8 +261,13 @@ class CustomerController extends Controller
      */
     public function shippingAddresses(int $id): JsonResponse
     {
-        // TODO: Port from CakePHP
-        return response()->json([]);
+        $customer = Customer::findOrFail($id);
+
+        $shippingAddresses = ShippingAddress::where('customers_id', $id)
+            ->get()
+            ->pluck('full', 'address_book_id');
+
+        return response()->json(['shippingAddresses' => $shippingAddresses]);
     }
 
     /**
@@ -108,8 +275,22 @@ class CustomerController extends Controller
      */
     public function editDefaultAddresses(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.edit-default-addresses', compact('id'));
+        $customer = Customer::findOrFail($id);
+
+        $addresses = Address::where('customers_id', $id)
+            ->get()
+            ->pluck('full', 'address_book_id');
+
+        $customersDefaultAddresses = $addresses;
+        $customersShippingAddresses = $addresses;
+        $customersEmergencyAddresses = $addresses;
+
+        return view('manager.customers.edit-default-addresses', compact(
+            'customer',
+            'customersDefaultAddresses',
+            'customersShippingAddresses',
+            'customersEmergencyAddresses'
+        ));
     }
 
     /**
@@ -117,26 +298,57 @@ class CustomerController extends Controller
      */
     public function updateDefaultAddresses(Request $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
+        $customer = Customer::findOrFail($id);
+
+        $request->validate([
+            'customers_default_address_id' => ['nullable', 'integer', 'exists:address_book,address_book_id'],
+            'customers_shipping_address_id' => ['nullable', 'integer', 'exists:address_book,address_book_id'],
+            'customers_emergency_address_id' => ['nullable', 'integer', 'exists:address_book,address_book_id'],
+        ]);
+
+        $fields = [
+            'customers_default_address_id',
+            'customers_shipping_address_id',
+            'customers_emergency_address_id',
+        ];
+
+        if ($customer->update($request->only($fields))) {
+            session()->flash('message', "The customer's default addresses have been updated.");
+            return redirect()->route('manager.customers.view', ['id' => $id]);
+        }
+
+        session()->flash('message', "The customer's default addresses were unable to be updated.");
         return redirect()->back();
     }
 
     /**
-     * Show the quick order form.
+     * Process a quick order lookup by billing ID.
+     * Redirects to order creation for the matched customer.
      */
-    public function quickOrder(Request $request): View
+    public function quickOrder(Request $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.quick-order');
+        return $this->processQuickOrder($request);
     }
 
     /**
      * Process a quick order submission.
+     * Looks up a customer by billing ID and redirects to order add.
      */
     public function processQuickOrder(Request $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $search = $request->query('q', $request->input('q'));
+
+        $customer = Customer::where('billing_id', $search)
+            ->where('is_active', true)
+            ->first();
+
+        if ($customer) {
+            return redirect()->route('manager.orders.add', ['customerId' => $customer->customers_id]);
+        }
+
+        session()->flash('message', 'An active customer with Billing ID: "' . $search . '" was not found.');
+
+        return redirect()->route('manager.dashboard');
     }
 
     /**
@@ -144,16 +356,76 @@ class CustomerController extends Controller
      */
     public function closeAccount(int $customerId): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $customer = Customer::findOrFail($customerId);
+
+        if ($customer->closeAccount()) {
+            session()->flash('message', "The customer's APO Box account has been closed.");
+        } else {
+            session()->flash('message', "There was a problem closing this customer's account.");
+        }
+
+        return redirect()->route('manager.customers.view', ['id' => $customerId]);
     }
 
     /**
      * Show the demographics report.
      */
-    public function demographicsReport(): View
+    public function demographicsReport(Request $request): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.customers.demographics');
+        $defaults = [
+            'field' => 'entry_postcode',
+            'limit' => 5,
+            'from_date' => '2006-11-29',
+            'to_date' => now()->format('Y-m-d'),
+        ];
+
+        $reportFields = [
+            'entry_postcode' => 'Zip Code',
+            'entry_state' => 'State',
+            'entry_city' => 'City',
+            'entry_country_id' => 'Country',
+        ];
+
+        $options = array_merge($defaults, $request->all());
+
+        $data = collect();
+        if ($request->isMethod('post') || $request->has('field')) {
+            $field = $options['field'];
+            $limit = (int) $options['limit'];
+            $fromDate = $options['from_date'];
+            $toDate = $options['to_date'];
+
+            $data = Address::join('customers', 'address_book.customers_id', '=', 'customers.customers_id')
+                ->join('customers_info', 'customers.customers_id', '=', 'customers_info.customers_info_id')
+                ->where('customers.customers_shipping_address_id', '=', \DB::raw('address_book.address_book_id'))
+                ->where('customers.is_active', true)
+                ->when($fromDate, fn($q) => $q->where('customers_info.customers_info_date_account_created', '>=', $fromDate))
+                ->when($toDate, fn($q) => $q->where('customers_info.customers_info_date_account_created', '<=', $toDate . ' 23:59:59'))
+                ->select(\DB::raw("address_book.{$field} as label, COUNT(*) as total"))
+                ->groupBy("address_book.{$field}")
+                ->orderByDesc('total')
+                ->limit($limit)
+                ->get();
+        }
+
+        return view('manager.customers.demographics', compact('options', 'data', 'reportFields'));
+    }
+
+    /**
+     * If a search is multiple words, wrap in quotes for exact fulltext matching.
+     * Also wraps email address patterns.
+     */
+    protected function autoWrapFullnameOrEmail(string $search): string
+    {
+        // Multi-word name pattern
+        if (preg_match('/^[A-Za-z0-9_\']+ [A-Za-z0-9_\']+( [A-Za-z0-9_\']+)*$/', $search)) {
+            return '"' . $search . '"';
+        }
+        // Email pattern
+        if (preg_match('/^[\w.%+-]+@[\w.-]+\.[A-Z]{2,}$/i', $search)) {
+            return '"' . $search . '"';
+        }
+
+        return $search;
     }
 }

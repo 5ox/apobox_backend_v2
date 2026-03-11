@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAuthorizedNameRequest;
-use Illuminate\Http\Request;
+use App\Models\AuthorizedName;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -15,8 +16,20 @@ class AuthorizedNameController extends Controller
      */
     public function store(StoreAuthorizedNameRequest $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->route('customer.account');
+        $customer = Auth::guard('customer')->user();
+
+        $data = $request->validated();
+        $data['customers_id'] = $customer->customers_id;
+
+        $name = AuthorizedName::create($data);
+
+        if ($name) {
+            session()->flash('message', 'The authorized name has been saved.');
+        } else {
+            session()->flash('message', 'The authorized name could not be saved. Please, try again.');
+        }
+
+        return redirect(route('customer.account') . '#authorized-names');
     }
 
     /**
@@ -24,8 +37,11 @@ class AuthorizedNameController extends Controller
      */
     public function edit(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('customer.authorized-names.edit', compact('id'));
+        $authorizedName = AuthorizedName::findOrFail($id);
+
+        $this->authorize('update', $authorizedName);
+
+        return view('customer.authorized-names.edit', compact('authorizedName'));
     }
 
     /**
@@ -33,8 +49,21 @@ class AuthorizedNameController extends Controller
      */
     public function update(StoreAuthorizedNameRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->route('customer.account');
+        $authorizedName = AuthorizedName::findOrFail($id);
+
+        $this->authorize('update', $authorizedName);
+
+        $customer = Auth::guard('customer')->user();
+        $data = $request->validated();
+        $data['customers_id'] = $customer->customers_id;
+
+        if ($authorizedName->update($data)) {
+            session()->flash('message', 'The authorized name has been saved.');
+        } else {
+            session()->flash('message', 'The authorized name could not be saved. Please, try again.');
+        }
+
+        return redirect(route('customer.account') . '#authorized-names');
     }
 
     /**
@@ -42,7 +71,16 @@ class AuthorizedNameController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->route('customer.account');
+        $authorizedName = AuthorizedName::findOrFail($id);
+
+        $this->authorize('delete', $authorizedName);
+
+        if ($authorizedName->delete()) {
+            session()->flash('message', 'The authorized name has been deleted.');
+        } else {
+            session()->flash('message', 'The authorized name could not be deleted. Please, try again.');
+        }
+
+        return redirect(route('customer.account') . '#authorized-names');
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCustomPackageRequest;
+use App\Models\CustomPackageRequest as PackageRequest;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -11,12 +13,56 @@ use Illuminate\Http\RedirectResponse;
 class CustomPackageRequestController extends Controller
 {
     /**
-     * List all custom package requests.
+     * Package statuses used for filtering.
+     */
+    protected array $packageStatuses = [
+        1 => 'New',
+        2 => 'Processing',
+        3 => 'Completed',
+        4 => 'Cancelled',
+    ];
+
+    /**
+     * List all custom package requests with search and filtering.
      */
     public function index(Request $request): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.requests.index');
+        $search = $request->input('q');
+        $fromThePast = $request->input('from_the_past', config('apobox.search.date.default'));
+        $showStatus = $request->input('showStatus');
+
+        $query = PackageRequest::with(['customer', 'order.status'])
+            ->orderBy('order_add_date', 'desc');
+
+        if (!empty($search)) {
+            $terms = explode(' ', $search);
+            foreach ($terms as $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('billing_id', 'LIKE', '%' . $term . '%')
+                      ->orWhere('orders_id', 'LIKE', '%' . $term . '%')
+                      ->orWhere('tracking_id', 'LIKE', '%' . $term . '%');
+                });
+            }
+        }
+
+        if (!empty($fromThePast)) {
+            $query->where('order_add_date', '>=', $fromThePast);
+        }
+
+        if (!empty($showStatus)) {
+            $query->where('package_status', $showStatus);
+        }
+
+        $requests = $query->paginate(25);
+        $statusFilterOptions = $this->packageStatuses;
+
+        return view('manager.requests.index', compact(
+            'requests',
+            'search',
+            'fromThePast',
+            'statusFilterOptions',
+            'showStatus'
+        ));
     }
 
     /**
@@ -24,8 +70,10 @@ class CustomPackageRequestController extends Controller
      */
     public function create(int $customerId): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.requests.create', compact('customerId'));
+        $customer = Customer::where('customers_id', $customerId)->firstOrFail();
+        $packageStatuses = $this->packageStatuses;
+
+        return view('manager.requests.create', compact('customer', 'packageStatuses'));
     }
 
     /**
@@ -33,8 +81,16 @@ class CustomPackageRequestController extends Controller
      */
     public function store(StoreCustomPackageRequest $request, int $customerId): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $customer = Customer::where('customers_id', $customerId)->firstOrFail();
+
+        PackageRequest::create(array_merge(
+            $request->validated(),
+            ['customers_id' => $customer->customers_id]
+        ));
+
+        session()->flash('message', 'The custom package request has been created.');
+
+        return redirect()->route('manager.requests.index');
     }
 
     /**
@@ -42,8 +98,13 @@ class CustomPackageRequestController extends Controller
      */
     public function edit(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.requests.edit', compact('id'));
+        $packageRequest = PackageRequest::with('customer')
+            ->where('custom_orders_id', $id)
+            ->firstOrFail();
+
+        $packageStatuses = $this->packageStatuses;
+
+        return view('manager.requests.edit', compact('packageRequest', 'packageStatuses'));
     }
 
     /**
@@ -51,8 +112,13 @@ class CustomPackageRequestController extends Controller
      */
     public function update(StoreCustomPackageRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $packageRequest = PackageRequest::where('custom_orders_id', $id)->firstOrFail();
+
+        $packageRequest->update($request->validated());
+
+        session()->flash('message', 'Custom package request was successfully updated!');
+
+        return redirect()->route('manager.requests.index');
     }
 
     /**
@@ -60,7 +126,18 @@ class CustomPackageRequestController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $packageRequest = PackageRequest::where('custom_orders_id', $id)->firstOrFail();
+
+        // Cannot delete if associated with an order
+        if (!empty($packageRequest->orders_id)) {
+            session()->flash('message', "The custom package request could not be deleted because it's associated with an order.");
+            return redirect()->route('manager.requests.index');
+        }
+
+        $packageRequest->delete();
+
+        session()->flash('message', 'The custom package request was successfully deleted!');
+
+        return redirect()->route('manager.requests.index');
     }
 }

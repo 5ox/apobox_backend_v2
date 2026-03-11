@@ -34,6 +34,7 @@ class CustomersInfo extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customers_info_id', 'customers_id');
+        return $this->belongsTo(Customer::class, 'customers_info_id', 'customers_id')
+            ->withDefault();
     }
 }

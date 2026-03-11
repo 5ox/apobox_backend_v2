@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAuthorizedNameRequest;
+use App\Models\AuthorizedName;
+use App\Models\Customer;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -14,8 +16,16 @@ class AuthorizedNameController extends Controller
      */
     public function store(StoreAuthorizedNameRequest $request, int $customerId): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $customer = Customer::where('customers_id', $customerId)->firstOrFail();
+
+        AuthorizedName::create(array_merge(
+            $request->validated(),
+            ['customers_id' => $customer->customers_id]
+        ));
+
+        session()->flash('message', 'The authorized name has been saved.');
+
+        return redirect()->route('manager.customers.view', $customer->customers_id);
     }
 
     /**
@@ -23,8 +33,9 @@ class AuthorizedNameController extends Controller
      */
     public function edit(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.authorized-names.edit', compact('id'));
+        $authorizedName = AuthorizedName::where('authorized_names_id', $id)->firstOrFail();
+
+        return view('manager.authorized-names.edit', compact('authorizedName'));
     }
 
     /**
@@ -32,8 +43,13 @@ class AuthorizedNameController extends Controller
      */
     public function update(StoreAuthorizedNameRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $authorizedName = AuthorizedName::where('authorized_names_id', $id)->firstOrFail();
+
+        $authorizedName->update($request->validated());
+
+        session()->flash('message', 'The authorized name has been saved.');
+
+        return redirect()->route('manager.customers.view', $authorizedName->customers_id);
     }
 
     /**
@@ -41,7 +57,13 @@ class AuthorizedNameController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $authorizedName = AuthorizedName::where('authorized_names_id', $id)->firstOrFail();
+        $customerId = $authorizedName->customers_id;
+
+        $authorizedName->delete();
+
+        session()->flash('message', 'The authorized name has been deleted.');
+
+        return redirect()->route('manager.customers.view', $customerId);
     }
 }

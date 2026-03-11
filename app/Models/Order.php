@@ -16,7 +16,7 @@ use App\Models\OrderLineItems\OrderMisaddressed;
 use App\Models\OrderLineItems\OrderShipToUS;
 use App\Models\OrderLineItems\OrderSubtotal;
 use App\Models\OrderLineItems\OrderTotal;
-use App\Models\OrderLineItems\OrderData;
+use App\Models\OrderData;
 
 class Order extends Model
 {

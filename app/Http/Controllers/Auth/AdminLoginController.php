@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -14,18 +15,41 @@ class AdminLoginController extends Controller
      */
     public function showLoginForm(): View
     {
-        // TODO: Port from CakePHP
         return view('auth.admin.login');
     }
 
     /**
      * Handle an admin login request.
+     *
+     * Legacy password-based login, only enabled when google_oauth.legacy_login
+     * is true in config/apobox.php.
      */
     public function login(Request $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        // Validate credentials, authenticate admin, redirect to dashboard
-        return redirect('/manager');
+        if (! config('apobox.google_oauth.legacy_login')) {
+            session()->flash('message', 'Password login is disabled. Please use Google login.');
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $credentials = $request->only('email', 'password');
+        $credentials['is_active'] = true;
+
+        if (Auth::guard('admin')->attempt($credentials)) {
+            $request->session()->regenerate();
+            $admin = Auth::guard('admin')->user();
+            session()->flash('message', 'You have been logged in.');
+
+            return redirect('/' . $admin->role);
+        }
+
+        session()->flash('message', 'Your email address or password was incorrect.');
+
+        return redirect()->back()->withInput($request->only('email'));
     }
 
     /**
@@ -33,7 +57,11 @@ class AdminLoginController extends Controller
      */
     public function logout(): RedirectResponse
     {
-        // TODO: Port from CakePHP
+        Auth::guard('admin')->logout();
+        session()->invalidate();
+        session()->regenerateToken();
+        session()->flash('message', 'You have been logged out.');
+
         return redirect()->route('admin.login');
     }
 }

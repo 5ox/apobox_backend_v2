@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAdminRequest;
 use App\Http\Requests\UpdateAdminRequest;
+use App\Models\Admin;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -15,8 +16,9 @@ class AdminController extends Controller
      */
     public function index(): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.admins.index');
+        $admins = Admin::orderBy('email')->paginate(25);
+
+        return view('manager.admins.index', compact('admins'));
     }
 
     /**
@@ -24,7 +26,6 @@ class AdminController extends Controller
      */
     public function create(): View
     {
-        // TODO: Port from CakePHP
         return view('manager.admins.create');
     }
 
@@ -33,8 +34,16 @@ class AdminController extends Controller
      */
     public function store(StoreAdminRequest $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        Admin::create([
+            'email' => $request->input('email'),
+            'password' => bcrypt($request->input('password')),
+            'role' => $request->input('role', 'employee'),
+            'token' => $request->input('token'),
+        ]);
+
+        session()->flash('message', 'The admin has been saved.');
+
+        return redirect()->route('manager.admins.index');
     }
 
     /**
@@ -42,8 +51,9 @@ class AdminController extends Controller
      */
     public function edit(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.admins.edit', compact('id'));
+        $admin = Admin::findOrFail($id);
+
+        return view('manager.admins.edit', compact('admin'));
     }
 
     /**
@@ -51,8 +61,23 @@ class AdminController extends Controller
      */
     public function update(UpdateAdminRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $admin = Admin::findOrFail($id);
+
+        $data = [
+            'email' => $request->input('email'),
+            'role' => $request->input('role'),
+            'token' => $request->input('token'),
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = bcrypt($request->input('password'));
+        }
+
+        $admin->update($data);
+
+        session()->flash('message', 'The admin has been saved.');
+
+        return redirect()->route('manager.admins.index');
     }
 
     /**
@@ -60,7 +85,11 @@ class AdminController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $admin = Admin::findOrFail($id);
+        $admin->delete();
+
+        session()->flash('message', 'The admin has been deleted.');
+
+        return redirect()->route('manager.admins.index');
     }
 }

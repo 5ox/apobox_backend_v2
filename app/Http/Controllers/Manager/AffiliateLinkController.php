@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreAffiliateLinkRequest;
+use App\Http\Requests\UpdateAffiliateLinkRequest;
+use App\Models\AffiliateLink;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -14,8 +16,9 @@ class AffiliateLinkController extends Controller
      */
     public function index(): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.affiliate-links.index');
+        $affiliateLinks = AffiliateLink::orderBy('created', 'desc')->paginate(25);
+
+        return view('manager.affiliate-links.index', compact('affiliateLinks'));
     }
 
     /**
@@ -23,17 +26,19 @@ class AffiliateLinkController extends Controller
      */
     public function create(): View
     {
-        // TODO: Port from CakePHP
         return view('manager.affiliate-links.create');
     }
 
     /**
      * Store a new affiliate link.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreAffiliateLinkRequest $request): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        AffiliateLink::create($request->validated());
+
+        session()->flash('message', 'The affiliate link has been saved.');
+
+        return redirect()->route('manager.affiliate-links.index');
     }
 
     /**
@@ -41,17 +46,22 @@ class AffiliateLinkController extends Controller
      */
     public function edit(int $id): View
     {
-        // TODO: Port from CakePHP
-        return view('manager.affiliate-links.edit', compact('id'));
+        $affiliateLink = AffiliateLink::findOrFail($id);
+
+        return view('manager.affiliate-links.edit', compact('affiliateLink'));
     }
 
     /**
      * Update an existing affiliate link.
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(UpdateAffiliateLinkRequest $request, int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $affiliateLink = AffiliateLink::findOrFail($id);
+        $affiliateLink->update($request->validated());
+
+        session()->flash('message', 'The affiliate link has been saved.');
+
+        return redirect()->route('manager.affiliate-links.index');
     }
 
     /**
@@ -59,7 +69,11 @@ class AffiliateLinkController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        // TODO: Port from CakePHP
-        return redirect()->back();
+        $affiliateLink = AffiliateLink::findOrFail($id);
+        $affiliateLink->delete();
+
+        session()->flash('message', 'The affiliate link has been deleted.');
+
+        return redirect()->route('manager.affiliate-links.index');
     }
 }
