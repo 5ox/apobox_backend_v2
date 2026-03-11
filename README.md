@@ -87,7 +87,7 @@ Account management application for APO Box customers. Allows users to create and
 
 ## Key Integrations
 
-* **Shipping:** USPS (XML API), FedEx (SOAP/WSDL), Endicia (DAZzle XML labels)
+* **Shipping:** USPS (Domestic Prices v3 REST API, OAuth 2.0), FedEx (SOAP/WSDL), Endicia (DAZzle XML labels)
 * **Payment:** PayPal REST API (vault storage, authorize, charge)
 * **Hardware:** Zebra label printers (ZPL, network printing), shipping scale (Chrome extension)
 * **Email:** Blade email templates with HTML layout
@@ -245,6 +245,48 @@ docker-compose up horizon
 | **Phase 2** | Frontend modernization (Vite, BS5, vanilla JS, Chart.js) - DONE |
 | **Phase 4** | CakePHP 2.9.5 to Laravel 11 migration - DONE |
 | **Phase 5** | Redis, queue workers (Horizon), monitoring (Sentry), structured logging - DONE |
+| **USPS API** | Migrated from retired RateV4 XML API to Domestic Prices v3 REST API (OAuth 2.0) |
+
+---
+
+## USPS API Migration (March 2026)
+
+The USPS Web Tools API (`secure.shippingapis.com/ShippingAPI.dll`, RateV4) was **retired on January 25, 2026**. The integration has been migrated to the new **Domestic Prices v3 REST API**.
+
+| Old (Retired) | New |
+|---------------|-----|
+| `secure.shippingapis.com/ShippingAPI.dll` | `apis.usps.com/prices/v3/base-rates/search` |
+| XML via GET query string | JSON via POST |
+| USPS User ID in XML payload | OAuth 2.0 Bearer token |
+| `RateV4` | Domestic Prices v3 |
+
+### Setup
+
+1. Sign up at [developers.usps.com](https://developers.usps.com)
+2. Create an App to get your **Client ID** and **Client Secret**
+3. Get your **EPS Account Number** from the USPS Business Customer Gateway
+4. Add to `.env`:
+
+```env
+USPS_CLIENT_ID=your_client_id
+USPS_CLIENT_SECRET=your_client_secret
+USPS_ACCOUNT_NUMBER=your_eps_account_number
+```
+
+### How It Works
+
+- OAuth tokens are cached for 7 hours (tokens valid for 8h) via Laravel Cache
+- Each configured rate class is queried individually against the v3 endpoint
+- Results are returned in the same `['class_id', 'service', 'rate']` format used throughout the app
+- Failed token requests throw `RuntimeException`; failed rate queries log warnings and continue
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `app/Services/Shipping/UspsService.php` | Service class (OAuth + rate queries) |
+| `config/shipping.php` | USPS credentials and rate class config |
+| `.env` / `.env.example` | `USPS_CLIENT_ID`, `USPS_CLIENT_SECRET`, `USPS_ACCOUNT_NUMBER` |
 
 ---
 
