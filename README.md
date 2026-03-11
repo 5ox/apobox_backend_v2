@@ -205,12 +205,46 @@ Legacy passwords (MD5+salt) are transparently upgraded to bcrypt on login.
 
 ---
 
+## Queue & Background Jobs
+
+| Queue | Purpose | Jobs |
+|-------|---------|------|
+| `payments` | Payment processing | `ProcessOrderCharge` |
+| `emails` | Email notifications | `SendEmailNotification` |
+| `default` | General background tasks | `RebuildCustomerSearchIndex` |
+
+Queue workers are managed by **Laravel Horizon** (dashboard at `/horizon`, admin-only access).
+
+```bash
+# Local development
+php artisan horizon
+
+# Docker (runs automatically via docker-compose)
+docker-compose up horizon
+```
+
+---
+
+## Monitoring
+
+- **Health check:** `GET /health` — Returns JSON with database, Redis, cache, and storage status
+- **Error tracking:** Sentry integration (configure `SENTRY_LARAVEL_DSN` in `.env`)
+- **Queue monitoring:** Horizon dashboard at `/horizon`
+- **Structured logs:** Domain-specific log channels in `storage/logs/`:
+  - `payment.log` (90 days retention)
+  - `shipping.log` (30 days)
+  - `auth.log` (30 days)
+  - `email.log` (14 days)
+
+---
+
 ## Modernization History
 
 | Phase | Status |
 |-------|--------|
 | **Phase 2** | Frontend modernization (Vite, BS5, vanilla JS, Chart.js) - DONE |
 | **Phase 4** | CakePHP 2.9.5 to Laravel 11 migration - DONE |
+| **Phase 5** | Redis, queue workers (Horizon), monitoring (Sentry), structured logging - DONE |
 
 ---
 

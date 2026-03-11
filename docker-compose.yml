@@ -21,13 +21,13 @@ services:
     networks:
       - apobox
 
-  queue:
+  horizon:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: apobox-queue
+    container_name: apobox-horizon
     restart: unless-stopped
-    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    command: php artisan horizon
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor
