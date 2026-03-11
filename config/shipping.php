@@ -13,7 +13,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'usps' => [
-        'user_id' => env('USPS_USER_ID', ''),
+        'client_id' => env('USPS_CLIENT_ID', ''),
+        'client_secret' => env('USPS_CLIENT_SECRET', ''),
+        'account_number' => env('USPS_ACCOUNT_NUMBER', ''),
         'rate_classes' => [
             'Priority Mail Express 2-Day' => '3',
             'Priority Mail Express 2-Day Hold For Pickup' => '2',
