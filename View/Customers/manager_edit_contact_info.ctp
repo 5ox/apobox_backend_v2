@@ -11,42 +11,42 @@ echo $this->Form->hidden('customers_id', array('value' => $customer['Customer'][
 echo $this->Form->input('customers_firstname', array(
 	'label' => array(
 		'text' => 'First Name',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_lastname', array(
 	'label' => array(
 		'text' => 'Last Name',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_email_address', array(
 	'label' => array(
 		'text' => 'Email Address',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('backup_email_address', array(
 	'label' => array(
 		'text' => 'Backup Email Address',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_telephone', array(
 	'label' => array(
 		'text' => 'Phone Number',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_fax', array(
 	'label' => array(
 		'text' => 'Cell Phone Number',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 ?>
 <div class="row">
-	<div class="col-sm-3 col-sm-offset-3">
+	<div class="col-sm-3 offset-sm-3">
 		<?php echo $this->Form->input('invoicing_authorized', array(
 			'type' => 'checkbox',
 			'label' => 'Invoicing Authorized',

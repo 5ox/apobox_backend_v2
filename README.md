@@ -19,8 +19,9 @@ Account management application for APO Box customers. Allows users to create and
 | **Backend** | CakePHP 2.9.5 | CakePHP 5.x or Laravel 11 |
 | **PHP** | 5.6 | 8.1+ |
 | **Database** | MySQL 5.5 | MySQL 8.0 |
-| **Frontend** | jQuery 2.1 + Bootstrap 3 | Alpine.js/Vanilla JS + Bootstrap 5 |
-| **Build Tools** | Grunt + JSPM + Compass | Vite |
+| **Frontend** | Vanilla JS + Bootstrap 5.3 | - |
+| **Build Tools** | Vite + Dart Sass | - |
+| **Charts** | Chart.js 4 | - |
 | **Caching** | Memcached | Redis |
 | **Containerization** | Docker + Docker Compose | Docker + Docker Compose |
 | **CI/CD** | GitHub Actions | GitHub Actions |
@@ -59,9 +60,10 @@ Account management application for APO Box customers. Allows users to create and
 ├── docker/              # Docker configuration files
 ├── Dockerfile           # Container build definition
 ├── docker-compose.yml   # Local development orchestration
+├── scripts/             # Build scripts (email, widget)
 ├── composer.json        # PHP dependencies
 ├── package.json         # Node.js dependencies
-└── Gruntfile.js         # Asset build tasks
+└── vite.config.js       # Vite build configuration
 ```
 
 ---
@@ -71,7 +73,7 @@ Account management application for APO Box customers. Allows users to create and
 * **Shipping:** USPS, FedEx, Endicia (label generation and tracking)
 * **Payment:** PayPal REST API, credit card validation (PayPal vault storage)
 * **Hardware:** Zebra label printers, shipping scale (via Chrome extension)
-* **Email:** HTML templates with CSS inlining (Premailer)
+* **Email:** HTML templates with CSS inlining (juice)
 * **Background Jobs:** CakePHP Queue plugin (cron-based, every 14 minutes)
 
 ---
@@ -83,8 +85,7 @@ Account management application for APO Box customers. Allows users to create and
 * PHP 5.6+ (with intl, pdo_mysql, mbstring, openssl, memcached extensions)
 * MySQL 5.5+
 * Memcached (production)
-* Node.js + npm (for frontend asset building)
-* Ruby + Bundler (for Compass/SCSS compilation)
+* Node.js 18+ + npm (for frontend asset building)
 * Docker + Docker Compose (recommended for local development)
 
 ### Development Setup (Docker)
@@ -101,12 +102,9 @@ docker-compose exec web composer install
 
 # Install frontend dependencies (on host)
 npm install
-jspm install
-bundle install
 
 # Build frontend assets
-grunt css
-grunt js
+npm run build
 ```
 
 ### Development Setup (Legacy Vagrant)
@@ -150,17 +148,16 @@ Changes are applied manually in production and automatically during initial prov
 
 ---
 
-## Build Commands (Grunt)
+## Build Commands
 
 | Command | Description |
 |---------|-------------|
-| `grunt css` | Lint and compile SCSS source files |
-| `grunt js` | Bundle JavaScript via JSPM |
-| `grunt email` | Build email templates with CSS inlining |
-| `grunt widget` | Build the embeddable signup widget |
-| `grunt app` | Package the Chrome extension |
-| `grunt dev` | Run dev server with file watching |
-| `grunt test` | Run browser-based JavaScript tests |
+| `npm run build` | Build JS bundle and compile SCSS via Vite |
+| `npm run dev` | Watch mode — rebuild on file changes |
+| `npm run build:email` | Build email templates with CSS inlining |
+| `npm run build:widget` | Build the embeddable signup widget |
+| `npm run build:app` | Package the Chrome extension |
+| `npm run build:all` | Run all build tasks |
 
 ---
 
@@ -198,7 +195,7 @@ This repository is the starting point for a phased modernization effort. See `AP
 | Phase | Goal | Timeline |
 |-------|------|----------|
 | **Phase 1** | Upgrade PHP 5.6 to 8.1+, MySQL to 8.0 | 2-3 months |
-| **Phase 2** | Replace Grunt/JSPM/Compass with Vite, upgrade Bootstrap 5 | 1-2 months |
+| **Phase 2** | ~~Replace Grunt/JSPM/Compass with Vite, upgrade Bootstrap 5~~ **DONE** | - |
 | **Phase 3** | Extract service layer, standardize API | 3-4 months |
 | **Phase 4** | Migrate to CakePHP 5 or Laravel 11 | 4-6 months |
 | **Phase 5** | Redis, queue workers, monitoring | Ongoing |

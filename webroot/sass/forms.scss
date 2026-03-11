@@ -6,8 +6,8 @@
 }
 
 .form-error {
-  @include box-shadow(inset 0 1px 1px $shadow);
-  @include transition(border-color ease-in-out .15s, box-shadow ease-in-out .15s);
+  box-shadow: inset 0 1px 1px $shadow;
+  transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
   display: block;
   width: 100%;
   height: 34px;

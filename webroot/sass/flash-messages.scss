@@ -2,7 +2,7 @@
 @import "mixins/flash-messages";
 
 %alert {
-  @include border-radius(5px);
+  border-radius: 5px;
   border: {
     width: 1.5px;
     style: solid;
@@ -35,9 +35,8 @@
   @include flash-varient($brand-danger, $gray-darker);
 }
 
-.alert-dismissable .close {
+.alert-dismissible .btn-close {
   position: inherit;
   top: inherit;
   right: inherit;
-  color: inherit;
 }

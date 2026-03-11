@@ -1,15 +1,26 @@
-import $ from 'jquery';
+document.addEventListener('DOMContentLoaded', function() {
+	var addressSelect = document.querySelector('#PayManuallyAddress #CustomerCustomersDefaultAddressId');
+	if (!addressSelect) return;
 
-$('#CustomerCustomersDefaultAddressId', '#PayManuallyAddress').change(function() {
-	if ($(this).val() === 'custom') {
-		$('.not-required', '#AddressFormFieldset').prop('required', true).removeClass('not-required');
-		$('#AddressFormFieldset').show(750);
-	} else {
-		$('#AddressFormFieldset').hide(750);
-		$('[required]', '#AddressFormFieldset').addClass('not-required').prop('required', false);
+	function handleAddressChange() {
+		var fieldset = document.querySelector('#AddressFormFieldset');
+		if (!fieldset) return;
+
+		if (addressSelect.value === 'custom') {
+			fieldset.querySelectorAll('.not-required').forEach(function(el) {
+				el.required = true;
+				el.classList.remove('not-required');
+			});
+			fieldset.style.display = '';
+		} else {
+			fieldset.style.display = 'none';
+			fieldset.querySelectorAll('[required]').forEach(function(el) {
+				el.classList.add('not-required');
+				el.required = false;
+			});
+		}
 	}
-});
 
-$(document).ready(function() {
-	$('#CustomerCustomersDefaultAddressId', '#PayManuallyAddress').change();
+	addressSelect.addEventListener('change', handleAddressChange);
+	handleAddressChange();
 });

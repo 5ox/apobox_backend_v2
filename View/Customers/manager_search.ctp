@@ -4,12 +4,12 @@
 		'type' => 'get',
 		'inputDefaults' =>  array(
 			'between' => '<div>',
-			'label' => array('class' => 'sr-only'),
+			'label' => array('class' => 'visually-hidden'),
 		),
 	)); ?>
 	<?php echo $this->Form->input('q', array('Placeholder' => 'Search', 'value' => $search, 'autofocus')); ?>
 </div>
-<div class="col-md-2 col-md-offset-4">
+<div class="col-md-2 offset-md-4">
 	<?php echo $this->Form->button('Search', array('class' => 'btn btn-primary btn-block', 'type' => 'submit')); ?>
 	<?php echo $this->Form->end(); ?>
 </div>

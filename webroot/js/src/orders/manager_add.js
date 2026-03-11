@@ -1,52 +1,62 @@
-import $ from 'jquery';
 import Scale from '../scale';
 
-/**
- * checkTrackingRequirement
- *
- * @return void
- */
+function getVal(id) {
+	var el = document.querySelector(id);
+	return el ? el.value : '';
+}
+
+function setVal(id, value) {
+	var el = document.querySelector(id);
+	if (el) el.value = value;
+	return el;
+}
+
+function markAutoChanged(el) {
+	if (!el) return;
+	var parent = el.closest('.mb-3') || el.parentElement;
+	if (parent) parent.classList.add('auto-changed');
+}
+
 function checkTrackingRequirement() {
-	if ($('#OrderCarrier').val() === 'none') {
-		$("#OrderInboundTrackingNumber").removeAttr('required');
+	var trackInput = document.querySelector('#OrderInboundTrackingNumber');
+	if (!trackInput) return;
+	if (getVal('#OrderCarrier') === 'none') {
+		trackInput.removeAttribute('required');
 	} else {
-		$("#OrderInboundTrackingNumber").attr('required', 'required');
+		trackInput.setAttribute('required', 'required');
 	}
 }
 
-/**
- * Checks for a US address in the selected delivery address.
- *
- * @return bool true if the the selected address is an AA, AE, or AP
- */
 function checkForApo() {
 	var apos = ['AA', 'AE', 'AP'];
-	var state = $.trim($('#OrderDeliveryAddressId option:selected').text().split(',').pop());
-	return ($.inArray(state, apos) !== -1);
+	var select = document.querySelector('#OrderDeliveryAddressId');
+	if (!select || !select.selectedOptions[0]) return false;
+	var state = select.selectedOptions[0].textContent.split(',').pop().trim();
+	return apos.includes(state);
 }
 
-/**
- * Clears any delivery address errors and enables the submit button
- *
- * @return void
- */
 function clearAddressError() {
-		$('#add-order').prop('disabled', false).removeClass('disabled');
-		$('#OrderDeliveryAddressId').closest('.form-group').removeClass('error');
-		$('#AddressError').remove();
+	var btn = document.querySelector('#add-order');
+	if (btn) {
+		btn.disabled = false;
+		btn.classList.remove('disabled');
+	}
+	var select = document.querySelector('#OrderDeliveryAddressId');
+	if (select) {
+		var group = select.closest('.mb-3') || select.closest('.form-group');
+		if (group) group.classList.remove('error');
+	}
+	var err = document.querySelector('#AddressError');
+	if (err) err.remove();
 }
 
-/**
- * If the total weight is over 70 lbs, set the mail class to `fedex`
- *
- * @return bool true if fedex only
- */
 function checkWeight() {
 	var limit = 1120;
-	var pounds = $('#OrderWeightLb').val().length > 0 ? $('#OrderWeightLb').val() : 0;
-	var ounces = $('#OrderWeightOz').val().length > 0 ? $('#OrderWeightOz').val() : 0;
+	var poundsVal = getVal('#OrderWeightLb');
+	var ouncesVal = getVal('#OrderWeightOz');
+	var pounds = poundsVal.length > 0 ? poundsVal : 0;
+	var ounces = ouncesVal.length > 0 ? ouncesVal : 0;
 	var total = parseInt(pounds * 16, 10) + parseInt(ounces, 10);
-	var elMc = $('#OrderMailClass');
 	if (total >= limit) {
 		toggleFedexOnly('on', true);
 		return true;
@@ -56,39 +66,35 @@ function checkWeight() {
 	}
 }
 
-/**
- * Sets mail class to `parcel` if package Length + (Width x 2) + (Height x 2)
- * is 108" or greater but under 130". Set it to `fedex` if over 130" using
- * Length + (Width x 2) + (Height x 2).
- *
- * @return bool true if fedex only
- */
-function checkSize() {
+function checkSize(changedEl) {
 	var lower = 108;
 	var upper = 130;
 	var fedexLower = 130;
 	var fedexUpper = 165;
-	var length = $('#OrderLength').val().length > 0 ? $('#OrderLength').val() : 0;
-	var width = $('#OrderWidth').val().length > 0 ? $('#OrderWidth').val() : 0;
-	var depth = $('#OrderDepth').val().length > 0 ? $('#OrderDepth').val() : 0;
-	var elMc = $('#OrderMailClass');
-	var mc = elMc.val();
-	var id = $(this).attr('id');
-	switch (id) {
-		case 'OrderLength':
-					length = $(this).val();
-					break;
-		case 'OrderWidth':
-					width = $(this).val();
-					break;
-		case 'OrderDepth':
-					depth = $(this).val();
-					break;
+	var lengthVal = getVal('#OrderLength');
+	var widthVal = getVal('#OrderWidth');
+	var depthVal = getVal('#OrderDepth');
+	var length = lengthVal.length > 0 ? lengthVal : 0;
+	var width = widthVal.length > 0 ? widthVal : 0;
+	var depth = depthVal.length > 0 ? depthVal : 0;
+
+	if (changedEl) {
+		var id = changedEl.id;
+		switch (id) {
+			case 'OrderLength': length = changedEl.value; break;
+			case 'OrderWidth': width = changedEl.value; break;
+			case 'OrderDepth': depth = changedEl.value; break;
+		}
 	}
+
+	var elMc = document.querySelector('#OrderMailClass');
+	var mc = elMc ? elMc.value : '';
 	var total = parseInt(length, 10) + parseInt(width * 2, 10) + parseInt(depth * 2, 10);
+
 	if (total > lower && total < upper) {
-		if (mc === 'priority') {
-			$('#OrderMailClass').val('parcel').parents('div:eq(1)').addClass('auto-changed');
+		if (mc === 'priority' && elMc) {
+			elMc.value = 'parcel';
+			markAutoChanged(elMc);
 		}
 	} else if (total > fedexLower && total < fedexUpper) {
 		toggleFedexOnly('on', true);
@@ -99,222 +105,275 @@ function checkSize() {
 	}
 }
 
-/**
- * Toggles the mail class between FedEx only and the USPS mail classes, and
- * checks for a valid US address if switching to FedEx.
- *
- * @param string $action either `on` or `off`
- * @param bool $auto True to fire an auto-change notification
- * @return void
- */
 function toggleFedexOnly(action, auto) {
-	var elMc = $('#OrderMailClass');
-	if (auto) {
-		elMc.parents('div:eq(1)').addClass('auto-changed');
-	}
+	var elMc = document.querySelector('#OrderMailClass');
+	if (!elMc) return;
+
+	if (auto) markAutoChanged(elMc);
+
 	if (action === 'on') {
-		elMc.find('option[value!="fedex"]').attr('disabled', true);
-		elMc.val(elMc.find('option[value="fedex"]').val());
+		Array.from(elMc.options).forEach(function(opt) {
+			opt.disabled = (opt.value !== 'fedex');
+		});
+		elMc.value = 'fedex';
 		if (checkForApo() === true) {
 			clearAddressError();
 			setAddressError();
 		}
 	} else {
 		clearAddressError();
-		elMc.find('option').removeAttr('disabled');
-		if (elMc.find('option[value="fedex"]:selected').length) {
-			elMc.val(elMc.find('option.customerDefault').val());
+		Array.from(elMc.options).forEach(function(opt) { opt.disabled = false; });
+		if (elMc.value === 'fedex') {
+			var defaultOpt = elMc.querySelector('option.customerDefault');
+			if (defaultOpt) elMc.value = defaultOpt.value;
 		}
 	}
 }
 
-/**
- * Sets a delivery address error and disables the submit button
- *
- * @return void
- */
 function setAddressError() {
-		$('#add-order').prop('disabled', true).addClass('disabled');
-		$('#OrderDeliveryAddressId').closest('.form-group').addClass('error');
-		var customerId = $('#OrderManagerAddForm', '#ManagerAddForm').attr('action').split('/').pop();
-		$('<span class="help-block" id="AddressError">A US address is required for FedEx shipments. Please select one or add an address for this customer <a href="/manager/customers/' + customerId + '/address/add">here.</a></span>').insertAfter('#OrderDeliveryAddressId');
+	var btn = document.querySelector('#add-order');
+	if (btn) {
+		btn.disabled = true;
+		btn.classList.add('disabled');
+	}
+	var select = document.querySelector('#OrderDeliveryAddressId');
+	if (select) {
+		var group = select.closest('.mb-3') || select.closest('.form-group');
+		if (group) group.classList.add('error');
+	}
+	var form = document.querySelector('#OrderManagerAddForm') || document.querySelector('#ManagerAddForm');
+	var customerId = '';
+	if (form) {
+		var action = form.getAttribute('action') || '';
+		customerId = action.split('/').pop();
+	}
+	var span = document.createElement('span');
+	span.className = 'form-text';
+	span.id = 'AddressError';
+	span.innerHTML = 'A US address is required for FedEx shipments. Please select one or add an address for this customer <a href="/manager/customers/' + customerId + '/address/add">here.</a>';
+	if (select) select.parentNode.insertBefore(span, select.nextSibling);
 }
 
-$(document).ready(function() {
-	var managerAddForm = $('#ManagerAddForm');
-	var insuranceDefault = $('#OrderInsuranceCoverage').val();
-	$('#OrderMailClass').find('option:selected').addClass('customerDefault');
+function applyInsurance(insuranceText, elIns, insuranceDefault) {
+	if (insuranceText.charAt(0) === '$') {
+		var amount = parseFloat(insuranceText.substring(1).replace(',', '')).toFixed(2);
+		if (elIns) {
+			elIns.value = amount;
+			markAutoChanged(elIns);
+		}
+	} else if (elIns) {
+		elIns.value = insuranceDefault;
+		markAutoChanged(elIns);
+	}
+}
 
-	$('#OrderCustomersId', managerAddForm).change(function() {
-		var id = $(this).val();
-		$.ajax({
-			dataType: "json",
-			url: '/manager/customers/:id/addresses'.replace(':id', id),
-			aysnc: false,
-			success: function( data ) {
-				var options = [];
-				$.each(data.addresses, function(key, val) {
-					options.push( "<option value='" + key + "'>" + val + "</option>" );
-				});
-				$("#OrderDefaultAddressId, #OrderBillingAddressId").html(options.join( "" ));
-			},
-			error: function(jqXHR, textStatus, error) {
-				alert('Unable to load Addresses from server.');
-			},
-		});
-		$.ajax({
-			dataType: "json",
-			url: '/manager/customers/:id/shippingAddresses'.replace(':id', id),
-			aysnc: false,
-			success: function( data ) {
-				var options = [];
-				$.each(data.shippingAddresses, function(key, val) {
-					options.push( "<option value='" + key + "'>" + val + "</option>" );
-				});
-				$("#OrderShippingAddressId").html(options.join( "" ));
-			},
-			error: function(jqXHR, textStatus, error) {
-				alert('Unable to load Shipping Addresses from server.');
-			},
-		});
-	});
+document.addEventListener('DOMContentLoaded', function() {
+	var managerAddForm = document.querySelector('#ManagerAddForm');
+	if (!managerAddForm) return;
 
-	$('#OrderCarrier', managerAddForm).change(function() {checkTrackingRequirement();});
+	var elIns = document.querySelector('#OrderInsuranceCoverage');
+	var insuranceDefault = elIns ? elIns.value : '';
+	var elMc = document.querySelector('#OrderMailClass');
+	var customRequestId = document.querySelector('#CustomPackageRequestCustomOrdersId');
+
+	// Mark current selected mail class as customer default
+	if (elMc && elMc.selectedOptions[0]) {
+		elMc.selectedOptions[0].classList.add('customerDefault');
+	}
+
+	// Customer selection → load addresses
+	var customerSelect = managerAddForm.querySelector('#OrderCustomersId');
+	if (customerSelect) {
+		customerSelect.addEventListener('change', function() {
+			var id = this.value;
+			fetch('/manager/customers/' + id + '/addresses', { headers: { 'Accept': 'application/json' } })
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					var html = '';
+					for (var key in data.addresses) {
+						html += "<option value='" + key + "'>" + data.addresses[key] + "</option>";
+					}
+					['#OrderDefaultAddressId', '#OrderBillingAddressId'].forEach(function(sel) {
+						var el = document.querySelector(sel);
+						if (el) el.innerHTML = html;
+					});
+				})
+				.catch(function() { alert('Unable to load Addresses from server.'); });
+
+			fetch('/manager/customers/' + id + '/shippingAddresses', { headers: { 'Accept': 'application/json' } })
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					var html = '';
+					for (var key in data.shippingAddresses) {
+						html += "<option value='" + key + "'>" + data.shippingAddresses[key] + "</option>";
+					}
+					var el = document.querySelector('#OrderShippingAddressId');
+					if (el) el.innerHTML = html;
+				})
+				.catch(function() { alert('Unable to load Shipping Addresses from server.'); });
+		});
+	}
+
+	// Carrier change → toggle tracking requirement
+	var carrierSelect = managerAddForm.querySelector('#OrderCarrier');
+	if (carrierSelect) carrierSelect.addEventListener('change', checkTrackingRequirement);
 	checkTrackingRequirement();
 
-	var elMc = $('#OrderMailClass');
-	var elIns = $('#OrderInsuranceCoverage');
-	var customRequestId = $('#CustomPackageRequestCustomOrdersId');
+	// Inbound tracking number → auto-fill from custom requests table
+	var trackInput = managerAddForm.querySelector('#OrderInboundTrackingNumber');
+	if (trackInput) {
+		trackInput.addEventListener('change', function() {
+			var trackingId = this.value;
+			document.querySelectorAll('.custom-requests tr').forEach(function(row) {
+				var inboundLink = row.querySelector('.inbound a');
+				if (!inboundLink) return;
+				var requestId = inboundLink.textContent.trim();
+				if (trackingId === requestId) {
+					var mailclassCell = row.querySelector('.mailclass');
+					var mailclass = mailclassCell ? mailclassCell.textContent.trim().toLowerCase() : '';
+					if (elMc && elMc.value !== mailclass) {
+						elMc.value = mailclass;
+						markAutoChanged(elMc);
+					}
+					var insuranceCell = row.querySelector('.insurance');
+					var insurance = insuranceCell ? insuranceCell.textContent.trim() : '';
+					applyInsurance(insurance, elIns, insuranceDefault);
+					if (customRequestId) customRequestId.value = row.id.substring(2);
+				}
+			});
+		});
+	}
 
-	$('#OrderInboundTrackingNumber', managerAddForm).change(function() {
-		var trackingId = $(this).val();
-		$('.custom-requests tr').each(function() {
-			var requestId = $(this).find('.inbound a').text().trim();
-			if (trackingId === requestId) {
-				var mailclass = $(this).children('.mailclass').text().trim().toLowerCase();
-				if (elMc.find(':selected').val() !== mailclass) {
-					elMc.val(mailclass).parents('div:eq(1)').addClass('auto-changed');
-				}
-				var insurance = $(this).children('.insurance').text().trim();
-				if (insurance.charAt(0) === '$') {
-					var amount = insurance.substring(1);
-					amount = parseFloat(amount.replace(',','')).toFixed(2);
-					elIns.val(amount).parents('div:eq(1)').addClass('auto-changed');
-				} else {
-					elIns.val(insuranceDefault).parents('div:eq(1)').addClass('auto-changed');
-				}
-				var customId = $(this).attr('id').substring(2);
-				customRequestId.val(customId);
+	// Click mailclass link → set mail class
+	managerAddForm.querySelectorAll('.mailclass a').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			var mailclass = this.textContent.trim().toLowerCase();
+			if (elMc) {
+				elMc.value = mailclass;
+				markAutoChanged(elMc);
 			}
 		});
 	});
 
-	$('.mailclass a', managerAddForm).on('click', function(e) {
-		e.preventDefault();
-		var mailclass = $(this).text().trim().toLowerCase();
-		elMc.val(mailclass).parents('div:eq(1)').addClass('auto-changed');
+	// Click insurance link → set insurance
+	managerAddForm.querySelectorAll('.insurance a').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			applyInsurance(this.textContent.trim(), elIns, insuranceDefault);
+		});
 	});
 
-	$('.insurance a', managerAddForm).on('click', function(e) {
-		e.preventDefault();
-		var insurance = $(this).text().trim();
-		if (insurance.charAt(0) === '$') {
-			var amount = insurance.substring(1);
-			amount = parseFloat(amount.replace(',','')).toFixed(2);
-			elIns.val(amount).parents('div:eq(1)').addClass('auto-changed');
-		} else {
-			elIns.val(insuranceDefault).parents('div:eq(1)').addClass('auto-changed');
+	// Click inbound link → fill tracking + mailclass + insurance
+	managerAddForm.querySelectorAll('.inbound a').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			var inbound = this.textContent.trim();
+			var trackEl = setVal('#OrderInboundTrackingNumber', inbound);
+			markAutoChanged(trackEl);
+
+			var row = this.closest('tr');
+			if (!row) return;
+
+			var mailclassCell = row.querySelector('.mailclass');
+			if (mailclassCell && elMc) {
+				elMc.value = mailclassCell.textContent.trim().toLowerCase();
+				markAutoChanged(elMc);
+			}
+
+			var insuranceCell = row.querySelector('.insurance');
+			if (insuranceCell) applyInsurance(insuranceCell.textContent.trim(), elIns, insuranceDefault);
+		});
+	});
+
+	// Click "Use" button → fill tracking + mailclass + insurance + custom request ID
+	managerAddForm.querySelectorAll('.btn-use').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var row = this.closest('tr');
+			if (!row) return;
+
+			var inboundCell = row.querySelector('.inbound');
+			var inbound = inboundCell ? inboundCell.textContent.trim() : '';
+			var trackEl = setVal('#OrderInboundTrackingNumber', inbound);
+			markAutoChanged(trackEl);
+
+			var mailclassCell = row.querySelector('.mailclass');
+			if (mailclassCell && elMc) {
+				elMc.value = mailclassCell.textContent.trim().toLowerCase();
+				markAutoChanged(elMc);
+			}
+
+			var insuranceCell = row.querySelector('.insurance');
+			if (insuranceCell) applyInsurance(insuranceCell.textContent.trim(), elIns, insuranceDefault);
+
+			if (customRequestId) customRequestId.value = row.id.substring(2);
+		});
+	});
+
+	// Dimension changes → check size/weight
+	['#OrderLength', '#OrderWidth', '#OrderDepth'].forEach(function(sel) {
+		var el = managerAddForm.querySelector(sel);
+		if (el) {
+			el.addEventListener('change', function() {
+				if (checkSize(this) === false) checkWeight();
+			});
 		}
 	});
 
-	$('.inbound a', managerAddForm).on('click', function(e) {
-		e.preventDefault();
-		var el = $(this);
-		var inbound = $(this).text().trim();
-		$('#OrderInboundTrackingNumber').val(inbound).parents('div:eq(1)').addClass('auto-changed');
-		var mailclass = el.parent().nextAll('.mailclass').text().trim().toLowerCase();
-		elMc.val(mailclass).parents('div:eq(1)').addClass('auto-changed');
-
-		var insurance = el.parent().nextAll('.insurance').text().trim();
-		if (insurance.charAt(0) === '$') {
-			var amount = insurance.substring(1);
-			amount = parseFloat(amount.replace(',','')).toFixed(2);
-			elIns.val(amount).parents('div:eq(1)').addClass('auto-changed');
-		} else {
-			elIns.val(insuranceDefault).parents('div:eq(1)').addClass('auto-changed');
+	// Weight changes → check weight/size
+	['#OrderWeightLb', '#OrderWeightOz'].forEach(function(sel) {
+		var el = managerAddForm.querySelector(sel);
+		if (el) {
+			el.addEventListener('change', function() {
+				if (checkWeight() === false) checkSize();
+			});
 		}
 	});
 
-	$('.btn-use', managerAddForm).on('click', function(e) {
-		e.preventDefault();
-		var el = $(this);
-		var inbound = el.parent().prevAll('.inbound').text().trim();
-		$('#OrderInboundTrackingNumber').val(inbound).parents('div:eq(1)').addClass('auto-changed');
-		var mailclass = el.parent().prevAll('.mailclass').text().trim().toLowerCase();
-		elMc.val(mailclass).parents('div:eq(1)').addClass('auto-changed');
-
-		var insurance = el.parent().prevAll('.insurance').text().trim();
-		if (insurance.charAt(0) === '$') {
-			var amount = insurance.substring(1);
-			amount = parseFloat(amount.replace(',','')).toFixed(2);
-			elIns.val(amount).parents('div:eq(1)').addClass('auto-changed');
-		} else {
-			elIns.val(insuranceDefault).parents('div:eq(1)').addClass('auto-changed');
-		}
-
-		var customId = el.parent().parent().attr('id').substring(2);
-		customRequestId.val(customId);
-	});
-
-	$('#OrderLength, #OrderWidth, #OrderDepth', managerAddForm).change(function() {
-		if (checkSize() === false) {
-			checkWeight();
-		}
-	});
-
-	$('#OrderWeightLb, #OrderWeightOz', managerAddForm).change(function() {
-		if (checkWeight() === false) {
-			checkSize();
-		}
-	});
-
-	// if the delivery address is millitary (AA, AE, or AP) and the selected mail
-	// class is `fedex` display an error.
-	$('#OrderDeliveryAddressId, #OrderMailClass', managerAddForm).change(function() {
-		clearAddressError();
-		if ($('#OrderMailClass').val() === 'fedex' && checkForApo() === true) {
-			setAddressError();
+	// Delivery address / mail class change → APO validation
+	['#OrderDeliveryAddressId', '#OrderMailClass'].forEach(function(sel) {
+		var el = managerAddForm.querySelector(sel);
+		if (el) {
+			el.addEventListener('change', function() {
+				clearAddressError();
+				if (getVal('#OrderMailClass') === 'fedex' && checkForApo() === true) {
+					setAddressError();
+				}
+			});
 		}
 	});
 });
 
-if ($('#ManagerAddForm').length > 0) {
+// Scale integration
+if (document.querySelector('#ManagerAddForm')) {
 	var scaleReadTimerId;
 	var getScaleWeight;
 	var scaleId = localStorage.getItem('Settings.local.scale_id');
-	var webCallback = function(response, error) {
-		if (error) {
-			return console.error(error);
-		}
 
-		$('#OrderWeightLb').val(response.pounds);
-		$('#OrderWeightOz').val(response.ounces);
-		$('#ReadScale').addClass('auto-changed-link');
+	var webCallback = function(response, error) {
+		if (error) return console.error(error);
+		var lbInput = document.querySelector('#OrderWeightLb');
+		var ozInput = document.querySelector('#OrderWeightOz');
+		if (lbInput) lbInput.value = response.pounds;
+		if (ozInput) ozInput.value = response.ounces;
+		var readScale = document.querySelector('#ReadScale');
+		if (readScale) readScale.classList.add('auto-changed-link');
 	};
 
 	if (scaleId == 'legacy') {
-		getScaleWeight = function(poundsInput, ouncesInput) {
+		getScaleWeight = function() {
 			var scale = new Scale();
 			scale.read(webCallback);
-		}
+		};
 	} else {
 		var webRequest = new XMLHttpRequest();
 		var webUrl = 'https://' + scaleId + '.aposcales.autoploy.com:1880/scale/read';
-		webRequest.onreadystatechange=function() {
+		webRequest.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
 				webCallback(JSON.parse(this.responseText), false);
 			}
-		}
+		};
 		getScaleWeight = function() {
 			webRequest.open('GET', webUrl);
 			webRequest.send();
@@ -328,14 +387,21 @@ if ($('#ManagerAddForm').length > 0) {
 		clearInterval(scaleReadTimerId);
 	}
 
-	$(document).ready(function() {
-		var scaleSwitch = $('#ScaleToggle');
-		function scaleToggle(state = 'Off') {
+	document.addEventListener('DOMContentLoaded', function() {
+		var scaleSwitch = document.querySelector('#ScaleToggle');
+		if (!scaleSwitch) return;
+
+		function scaleToggle(state) {
+			state = state || 'Off';
 			if (state === 'On') {
-				scaleSwitch.html('On').removeClass('btn-danger').addClass('btn-success');
+				scaleSwitch.textContent = 'On';
+				scaleSwitch.classList.remove('btn-danger');
+				scaleSwitch.classList.add('btn-success');
 				startScaleReading();
 			} else {
-				scaleSwitch.html('Off').removeClass('btn-success').addClass('btn-danger');
+				scaleSwitch.textContent = 'Off';
+				scaleSwitch.classList.remove('btn-success');
+				scaleSwitch.classList.add('btn-danger');
 				stopScaleReading();
 			}
 		}
@@ -343,14 +409,17 @@ if ($('#ManagerAddForm').length > 0) {
 		var globalScaleStatus = localStorage.getItem('Settings.local.scale_status');
 		scaleToggle(globalScaleStatus);
 
-		$('#ReadScale').on('click', function(e) {
-			e.preventDefault();
-			getScaleWeight();
-		});
+		var readScaleBtn = document.querySelector('#ReadScale');
+		if (readScaleBtn) {
+			readScaleBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				getScaleWeight();
+			});
+		}
 
-		scaleSwitch.on('click', function(e) {
+		scaleSwitch.addEventListener('click', function(e) {
 			e.preventDefault();
-			var newStatus = (scaleSwitch.html() === 'On' ? 'Off' : 'On');
+			var newStatus = (scaleSwitch.textContent === 'On' ? 'Off' : 'On');
 			scaleToggle(newStatus);
 		});
 	});

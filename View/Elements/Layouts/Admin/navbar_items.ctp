@@ -32,7 +32,7 @@
 		<?php endif; ?>
 	<?php $this->end(); ?>
 <?php endif; ?>
-<?php $this->append('navbar-pull-right-list-items'); ?>
+<?php $this->append('navbar-float-end-list-items'); ?>
 		<?php if (!empty($u)): ?>
 			<li class="dropdown dropdown-form settings-dropdown">
 				<?= $this->Html->link(
@@ -45,12 +45,12 @@
 						'data-toggle' => 'dropdown',
 				]); ?>
 				<div class="dropdown-menu">
-					<div class="form-horizontal">
-						<div class="form-group">
+					<div class="">
+						<div class="mb-3">
 							<label>Printer IP Address:</label>
 							<input id="Settings.local.printer_ip" />
 						</div>
-						<div class="form-group" id="Settings.local.scale_id">
+						<div class="mb-3" id="Settings.local.scale_id">
 							Scale ID:
 							<div class="radio">
 								<label class="radio-inline">
@@ -77,7 +77,7 @@
 								</label>
 							</div>
 						</div>
-						<div class="form-group" id="Settings.local.scale_status">
+						<div class="mb-3" id="Settings.local.scale_status">
 							Scale Status:
 							<div class="radio">
 								<label class="radio-inline">

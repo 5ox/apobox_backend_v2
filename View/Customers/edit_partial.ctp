@@ -11,10 +11,10 @@ switch($partial) {
 
 if ($partial == 'payment_info') {
 	echo $this->Form->create('Customer', array(
-		'class' => 'col-md-offset-3 col-md-6',
+		'class' => 'offset-md-3 col-md-6',
 		'inputDefaults' => array(
-			'div' => array('class' => 'form-group'),
-			'label' => array('class' => 'sr-only'),
+			'div' => array('class' => 'mb-3'),
+			'label' => array('class' => 'visually-hidden'),
 			'class' => 'form-control',
 				'between' => false,
 				'before' => false,
@@ -27,7 +27,7 @@ if ($partial == 'payment_info') {
 	echo $this->Form->create('Customer');
 	$defaults = array(
 		'label' => array(
-			'class' => 'col-sm-3 control-label',
+			'class' => 'col-sm-3 form-label',
 		));
 	foreach ($inputs as $fieldName => $options) {
 		$options = Hash::merge($defaults, (array) $options);

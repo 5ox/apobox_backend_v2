@@ -1,0 +1,11 @@
+// Custom replacement for Compass contrast-color() function.
+// Returns $dark or $light based on the lightness of $color.
+@use "sass:color";
+
+@function contrast-color($color, $dark: #000, $light: #fff) {
+  @if (color.lightness($color) > 50%) {
+    @return $dark;
+  } @else {
+    @return $light;
+  }
+}

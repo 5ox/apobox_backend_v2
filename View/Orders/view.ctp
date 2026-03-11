@@ -5,7 +5,7 @@
 <?php $this->end(); ?>
 <?php $this->append('action-area'); ?>
 	<div class="row">
-		<div class="col-sm-8 col-sm-offset-4">
+		<div class="col-sm-8 offset-sm-4">
 		<?php if($order['Order']['orders_status'] == 2) {
 			echo $this->Html->link(
 				'Pay for Order',

@@ -1,40 +1,53 @@
-import $ from 'jquery';
-import 'bootstrap';
+import * as bootstrap from 'bootstrap';
 
-$(document).ready(function() {
-	$(function () {
-		$('[data-toggle="tooltip"]').tooltip()
+document.addEventListener('DOMContentLoaded', function() {
+	// Initialize tooltips
+	document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+		new bootstrap.Tooltip(el);
 	});
 
-	$(function(){
-		var hash = window.location.hash;
-		hash && $('ul.nav a[href="' + hash + '"]').tab('show');
+	// Tab navigation with hash routing
+	var hash = window.location.hash;
+	if (hash) {
+		var tabEl = document.querySelector('ul.nav a[href="' + hash + '"]');
+		if (tabEl) new bootstrap.Tab(tabEl).show();
+	}
 
-		$('.nav-tabs a').click(function (e) {
-			$(this).tab('show');
-			var scrollmem = $('body').scrollTop();
+	document.querySelectorAll('.nav-tabs a').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			new bootstrap.Tab(this).show();
+			var scrollmem = document.documentElement.scrollTop || document.body.scrollTop;
 			window.location.hash = this.hash;
-			$('html,body').scrollTop(scrollmem);
+			document.documentElement.scrollTop = scrollmem;
+			document.body.scrollTop = scrollmem;
 		});
+	});
 
-		$('.btn-close').on('click', function(e) {
+	// Account closure
+	document.querySelectorAll('.btn-close-account').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
 			e.preventDefault();
-			var url = $(this).attr('href');
-			$.ajax({
-				url: url
-			})
-				.done(function(msg) {
+			var url = this.getAttribute('href');
+			fetch(url)
+				.then(function(response) { return response.text(); })
+				.then(function(msg) {
 					if (msg === 'success') {
-						$('.close-account.success').fadeIn();
+						var successEl = document.querySelector('.close-account.success');
+						if (successEl) successEl.style.display = '';
 					} else {
-						$('.close-account.error').fadeIn();
+						var errorEl = document.querySelector('.close-account.error');
+						if (errorEl) errorEl.style.display = '';
 					}
 				});
 		});
+	});
 
-		$('.btn-cancel').on('click', function(e) {
+	document.querySelectorAll('.btn-cancel').forEach(function(btn) {
+		btn.addEventListener('click', function(e) {
 			e.preventDefault();
-			$('.close-account').fadeOut();
+			document.querySelectorAll('.close-account').forEach(function(el) {
+				el.style.display = 'none';
+			});
 		});
 	});
 });

@@ -1,25 +1,22 @@
 <!-- Static navbar -->
-<div class="navbar navbar-default" role="navigation">
+<nav class="navbar navbar-expand-md navbar-light" role="navigation">
 	<div class="container">
-		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-				<span class="sr-only">Toggle navigation</span>
-				<span class="fa fa-bars"></span>
-			</button>
-			<a class="navbar-brand" href="/">
-				<?php echo $this->Html->image('apobox-logo.png', array('alt' => Configure::read('Defaults.short_name'))); ?>
-			</a>
-		</div>
-		<div class="navbar-collapse collapse">
-			<ul class="nav navbar-nav">
+		<a class="navbar-brand" href="/">
+			<?php echo $this->Html->image('apobox-logo.png', array('alt' => Configure::read('Defaults.short_name'))); ?>
+		</a>
+		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarMain">
+			<ul class="navbar-nav me-auto">
 				<?php echo $this->fetch('navbar-collapsing-list-items'); ?>
 			</ul>
-			<ul class="nav navbar-nav navbar-right">
-				<?php echo $this->fetch('navbar-pull-right-list-items'); ?>
+			<ul class="navbar-nav ms-auto">
+				<?php echo $this->fetch('navbar-float-end-list-items'); ?>
 			</ul>
-		</div><!--/.nav-collapse -->
-	</div><!--/.container-fluid -->
-</div>
+		</div>
+	</div>
+</nav>
 
 <?php /*
 	<?php echo $this->element('Layouts/social_networks'); ?>

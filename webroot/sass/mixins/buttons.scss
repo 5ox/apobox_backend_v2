@@ -1,9 +1,9 @@
 // mixins/buttons.scss
-@import "compass/utilities/color/contrast";
+@import "mixins/contrast";
 
 @mixin button-varient($color) {
   color: $color;
-  @include box-shadow(0 0 0 2px  $color inset);
+  box-shadow: 0 0 0 2px $color inset;
   background-color: transparent;
 
   &:before {
@@ -20,6 +20,6 @@
   &.active {
     background-color: $color;
     border-color: $color;
-    @include box-shadow(none);
+    box-shadow: none;
   }
 }

@@ -1,7 +1,7 @@
 <?php echo $this->Form->create(false, ['type' => 'GET']); ?>
-<div class="well">
+<div class="bg-light p-3 rounded">
 	<div class="row">
-		<div class="col-md-4 col-md-offset-1">
+		<div class="col-md-4 offset-md-1">
 			<h4 class="radio-fg-title">Field:</h4>
 			<?php echo $this->Form->input('field', [
 				'type' => 'radio',
@@ -51,7 +51,7 @@
 		<div class="col-md-1"></div>
 	</div>
 	<div class="row">
-		<div class="col-md-10 col-md-offset-1"><br>
+		<div class="col-md-10 offset-md-1"><br>
 			<?php echo $this->Form->button('View Report', [
 				'class' => 'btn btn-primary btn-block col-sm-2',
 				'type' => 'submit'

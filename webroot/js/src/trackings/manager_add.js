@@ -1,9 +1,15 @@
-import $ from 'jquery';
-import 'bootstrap';
+document.addEventListener('DOMContentLoaded', function() {
+	var checkbox = document.querySelector('#TrackingAddException');
+	if (!checkbox) return;
 
-$(document).ready(function() {
-	$('#TrackingAddException').change(function() {
-		$('#TrackingCommentsContainer').toggle(200);
-		$('#TrackingComments').focus();
+	checkbox.addEventListener('change', function() {
+		var container = document.querySelector('#TrackingCommentsContainer');
+		if (container) {
+			container.style.display = checkbox.checked ? '' : 'none';
+			if (checkbox.checked) {
+				var comments = document.querySelector('#TrackingComments');
+				if (comments) comments.focus();
+			}
+		}
 	});
 });

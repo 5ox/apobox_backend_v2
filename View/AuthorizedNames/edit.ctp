@@ -2,8 +2,8 @@
 	<?php echo $this->Form->create('AuthorizedName', array(
 		'class' => '',
 		'inputDefaults' => array(
-			'div' => array('class' => 'form-group'),
-			'label' => array('class' => 'sr-only'),
+			'div' => array('class' => 'mb-3'),
+			'label' => array('class' => 'visually-hidden'),
 			'class' => 'form-control',
 			'between' => false,
 			'before' => false,
@@ -13,7 +13,7 @@
 	<?php echo $this->Form->input('authorized_names_id'); ?>
 	<h3 class="page-header"><?php echo __('Edit Authorized Name'); ?></h3>
 	<div class="row">
-		<div class="col-md-offset-2 col-md-8">
+		<div class="offset-md-2 col-md-8">
 			<fieldset id="AuthorizedNameFormFieldset">
 				<div class="row">
 					<div class="col-md-12">
@@ -34,14 +34,14 @@
 	</div>
 
 	<div class="row">
-		<div class="col-md-4 pull-right">
+		<div class="col-md-4 float-end">
 			<?php echo $this->Form->button('Update', array(
 				'class' => 'btn btn-primary',
 				'type' => 'submit'
 			)); ?>
 			<?php echo $this->Form->end(); ?>
 		</div>
-		<div class="col-md-offset-2 col-md-4">
+		<div class="offset-md-2 col-md-4">
 			<?php echo $this->Html->link(
 				__('Delete'),
 				array(

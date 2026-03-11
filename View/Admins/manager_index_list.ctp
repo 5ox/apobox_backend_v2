@@ -1,5 +1,5 @@
 <div class="admins index">
-	<div class="actions pull-right">
+	<div class="actions float-end">
 		<?php echo $this->Html->link(__('Add New Admin'),
 			array(
 				'action' => 'add'

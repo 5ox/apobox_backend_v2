@@ -4,7 +4,7 @@
 		'type' => 'get',
 		'inputDefaults' =>  [
 			'between' => '<div>',
-			'label' => ['class' => 'sr-only'],
+			'label' => ['class' => 'visually-hidden'],
 		],
 	]); ?>
 	<?= $this->Form->input('q', ['Placeholder' => 'Search', 'value' => $search, 'autofocus']); ?>

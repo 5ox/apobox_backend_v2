@@ -3,7 +3,7 @@ echo $this->Form->input('email');
 echo $this->Form->input('password', array(
 	'required' => false,
 	'label' => array(
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 		'text' => 'New Password',
 	),
 ));
@@ -21,7 +21,7 @@ echo $this->Form->input('role', array(
 ));
 echo $this->Form->input('token', array(
 	'label' => array(
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 		'text' => 'Token (API only)',
 	),
 	'required' => false

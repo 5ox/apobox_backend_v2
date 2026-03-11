@@ -7,18 +7,18 @@
 	),
 	'inputDefaults' =>  array(
 		'between' => '<div>',
-		'label' => array('class' => 'sr-only'),
+		'label' => array('class' => 'visually-hidden'),
 	),
 )); ?>
 <div class="smart-search smart-search-hero">
 	<div class="col-md-9">
 		<?php echo $this->Form->input('q', array(
 			'placeholder' => 'Quick Order Entry by Customer ID',
-			'between' => '<div class="col-md-9 col-md-offset-3">',
+			'between' => '<div class="col-md-9 offset-md-3">',
 			'id' => 'quick-order-q',
 			'autofocus',
 		)); ?>
-		<div class="col-md-9 col-md-offset-3">
+		<div class="col-md-9 offset-md-3">
 		</div>
 	</div>
 	<div class="col-md-3">

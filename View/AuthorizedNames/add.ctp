@@ -2,8 +2,8 @@
 	<?php echo $this->Form->create('AuthorizedName', array(
 		'class' => '',
 		'inputDefaults' => array(
-			'div' => array('class' => 'form-group'),
-			'label' => array('class' => 'sr-only'),
+			'div' => array('class' => 'mb-3'),
+			'label' => array('class' => 'visually-hidden'),
 			'class' => 'form-control',
 			'between' => false,
 			'before' => false,
@@ -12,7 +12,7 @@
 	)); ?>
 	<h3 class="page-header"><?php echo __('Add Authorized Name'); ?></h3>
 	<div class="row">
-		<div class="col-md-offset-2 col-md-8">
+		<div class="offset-md-2 col-md-8">
 			<fieldset id="AuthorizedNameFormFieldset">
 				<div class="row">
 					<div class="col-md-12">
@@ -32,13 +32,13 @@
 		</div>
 	</div>
 	<div class="row">
-		<div class="col-xs-7 col-xs-push-5 col-md-6">
+		<div class="col-7 order-5 col-md-6">
 			<?php echo $this->Form->button('Add Authorized Name', array(
-				'class' => 'btn btn-primary pull-right',
+				'class' => 'btn btn-primary float-end',
 				'type' => 'submit'
 			)); ?>
 		</div>
-		<div class="col-xs-5 col-xs-pull-7 col-md-offset-6 col-md-2 col-md-pull-6">
+		<div class="col-5 order-7 offset-md-6 col-md-2 order-md-6">
 			<?php echo $this->Html->link(
 				'Cancel',
 				array(

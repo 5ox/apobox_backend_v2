@@ -35,9 +35,7 @@ Thumbs.db
 /xhprof
 /phpmyadmin
 
-# npm + grunt
+# npm + Vite
 /node_modules
+/webroot/build
 /webroot/assets
-
-# SASS
-/.sass-cache

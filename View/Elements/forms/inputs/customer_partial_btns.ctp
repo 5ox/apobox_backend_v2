@@ -1,5 +1,5 @@
 <?php $hash = ($partial == 'payment_info' ? 'payment' : str_replace('_', '-', $partial)); ?>
-<?php $class = ($partial == 'payment_info' ? 'col-sm-10 col-sm-offset-1' : 'col-sm-6 col-sm-offset-3'); ?>
+<?php $class = ($partial == 'payment_info' ? 'col-sm-10 offset-sm-1' : 'col-sm-6 offset-sm-3'); ?>
 
 <div class="row">
 	<div class="<?php echo $class; ?>">
@@ -7,7 +7,7 @@
 			if (isset($manager) && $manager):
 				echo $this->Html->link('Cancel', '#',
 					array(
-						'class' => 'pull-left btn btn-warning',
+						'class' => 'float-start btn btn-warning',
 						'onclick' => 'history.go(-1);'
 					)
 				);
@@ -18,14 +18,14 @@
 						'#' => $hash,
 					),
 					array(
-						'class' => 'pull-left btn btn-warning',
+						'class' => 'float-start btn btn-warning',
 					)
 				);
 			endif;
 			echo $this->Form->button('Update',
 				array(
 					'type' => 'submit',
-					'class' => 'pull-right btn btn-primary'
+					'class' => 'float-end btn btn-primary'
 				)
 			);
 		?>

@@ -1,5 +1,5 @@
 <div class="table-responsive">
-	<table class="table table-bordered table-striped table-condensed">
+	<table class="table table-bordered table-striped table-sm">
 		<thead>
 			<tr>
 				<th class="active"><?php echo ucfirst($interval); ?></th>

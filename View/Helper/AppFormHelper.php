@@ -18,16 +18,16 @@ class AppFormHelper extends FormHelper {
 	 */
 	public function create($model = null, $options = array()) {
 		$defaults = array(
-			'class' => 'form-horizontal',
+			'class' => '',
 			'inputDefaults' => array(
 				'format' => array('before', 'label', 'between', 'input', 'error', 'after'),
-				'div' => array('class' => 'form-group'),
+				'div' => array('class' => 'mb-3'),
 				'class' => 'form-control',
-				'label' => array('class' => 'col-sm-3 control-label'),
+				'label' => array('class' => 'form-label'),
 				'between' => '<div class="col-sm-6">',
 				'after' => '</div><div class="col-sm-3"></div>',
 				'error' => array(
-					'attributes' => array('wrap' => 'span', 'class' => 'help-block'),
+					'attributes' => array('wrap' => 'span', 'class' => 'form-text text-danger'),
 				),
 			)
 		);

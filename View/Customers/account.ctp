@@ -20,7 +20,7 @@
 					</div>
 				</div>
 				<div class="table-responsive">
-					<table class="table table-condensed">
+					<table class="table table-sm">
 						<thead>
 							<tr>
 								<th></th>
@@ -87,7 +87,7 @@
 			<p>You have no orders at this time.</p>
 			<?php else: ?>
 			<div class="table-responsive">
-				<table class="table table-condensed table-striped">
+				<table class="table table-sm table-striped">
 					<thead>
 						<tr>
 							<th>Order Number</th>
@@ -134,25 +134,23 @@
 		<div class="col-sm-12">
 			<div role="tabpanel">
 				<ul class="nav nav-tabs" role="tablist">
-					<li role="presentation" class="active">
-						<a href="#account" aria-controls="account" role="tab" data-toggle="tab">My Account</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link active" data-bs-toggle="tab" data-bs-target="#account" type="button" role="tab" aria-controls="account" aria-selected="true">My Account</button>
 					</li>
-					<li role="presentation">
-						<a href="#my-info" aria-controls="home" role="tab" data-toggle="tab">My Info</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#my-info" type="button" role="tab" aria-controls="my-info">My Info</button>
 					</li>
-					<li role="presentation">
-						<a href="#authorized_names" aria-controls="authorized_names" role="tab" data-toggle="tab">Authorized Names</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#authorized_names" type="button" role="tab" aria-controls="authorized_names">Authorized Names</button>
 					</li>
-					<li role="presentation">
-						<a href="#addresses" aria-controls="addresses" role="tab" data-toggle="tab">
-							Addresses
-						</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#addresses" type="button" role="tab" aria-controls="addresses">Addresses</button>
 					</li>
-					<li role="presentation">
-						<a href="#payment" aria-controls="home" role="tab" data-toggle="tab">Payment</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#payment" type="button" role="tab" aria-controls="payment">Payment</button>
 					</li>
-					<li role="presentation">
-						<a href="#shipping" aria-controls="home" role="tab" data-toggle="tab">Shipping</a>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping" type="button" role="tab" aria-controls="shipping">Shipping</button>
 					</li>
 				</ul>
 			</div>
@@ -163,7 +161,7 @@
 			<div class="row">
 				<div class="col-sm-4">
 					<h3>You Ship Packages Here:</h3>
-					<div class="well well-small well-address">
+					<div class="bg-light p-3 rounded well-address">
 						<address class="lead">
 							<?php echo $this->Tracking->apoBoxAddress($customer); ?><br>
 						</address>
@@ -171,7 +169,7 @@
 				</div>
 				<div class="col-sm-4">
 					<h3>We Forward Them Here:</h3>
-					<div class="well well-small well-address">
+					<div class="bg-light p-3 rounded well-address">
 						<?php echo $this->element('Addresses/address', [
 							'address' => $customer['ShippingAddress'],
 							'hideBase' => true,
@@ -194,7 +192,7 @@
 							)); ?>
 						</small>
 					</h3>
-					<dl class="dl-horizontal">
+					<dl class="row">
 						<dt><?php echo __('Billing ID'); ?></dt>
 						<dd>
 							<?php echo h($customer['Customer']['billing_id']); ?>
@@ -278,7 +276,7 @@
 					</h3>
 					<?php if (!empty($customer['AuthorizedName'])): ?>
 						<div class="table-responsive">
-							<table class="table table-condensed table-striped">
+							<table class="table table-sm table-striped">
 								<thead>
 									<tr>
 										<th><?php echo __('Name'); ?></th>
@@ -397,7 +395,7 @@
 						)); ?>
 					</small>
 				</h3>
-				<dl class="dl-horizontal">
+				<dl class="row">
 					<dt><?php echo __('Name on Card'); ?></dt>
 					<dd>
 						<?php echo h($customer['Customer']['cc_firstname']); ?>
@@ -429,7 +427,7 @@
 						)); ?>
 					</small>
 				</h3>
-				<dl class="dl-horizontal">
+				<dl class="row">
 					<dt><?php echo __('Insurance Amount'); ?></dt>
 					<dd>
 						<?php echo h($this->Number->currency($customer['Customer']['insurance_amount'])); ?>

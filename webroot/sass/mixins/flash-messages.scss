@@ -1,5 +1,5 @@
 // mixins/flash-messages.scss
-@import "compass/utilities/color/contrast";
+@import "mixins/contrast";
 
 @mixin flash-varient($background, $border) {
   background-color: $background;

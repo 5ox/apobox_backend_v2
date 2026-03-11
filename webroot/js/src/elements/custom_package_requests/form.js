@@ -1,26 +1,37 @@
-import $ from 'jquery';
-
 var toggleInsurance = function() {
-	var coverage = $('#CustomPackageRequestInsuranceCoverage').val();
-	if ($('#CustomPackageRequestInsurance').val() == '1') {
-		$('#insurance-coverage').removeClass('hidden');
+	var insuranceSelect = document.querySelector('#CustomPackageRequestInsurance');
+	var coverageContainer = document.querySelector('#insurance-coverage');
+	var coverageInput = document.querySelector('#CustomPackageRequestInsuranceCoverage');
+	if (!insuranceSelect || !coverageContainer || !coverageInput) return;
+
+	if (insuranceSelect.value == '1') {
+		coverageContainer.classList.remove('hidden');
 	} else {
-		$('#insurance-coverage').addClass('hidden');
-		$('#CustomPackageRequestInsuranceCoverage').val('').removeAttr('value');
+		coverageContainer.classList.add('hidden');
+		coverageInput.value = '';
+		coverageInput.removeAttribute('value');
 	}
 };
+
 var removeSpaces = function() {
-	var el = $('#CustomPackageRequestTrackingId');
-	$(el).val($(el).val().replace(/\s+/g, ''));
+	var el = document.querySelector('#CustomPackageRequestTrackingId');
+	if (el) el.value = el.value.replace(/\s+/g, '');
 };
+
 var showCoverageIfPopulated = function() {
-	if ($('#CustomPackageRequestInsuranceCoverage').val() !== '') {
-		$('#insurance-coverage').removeClass('hidden');
-		$('#CustomPackageRequestInsurance').val(1);
+	var coverageInput = document.querySelector('#CustomPackageRequestInsuranceCoverage');
+	var insuranceSelect = document.querySelector('#CustomPackageRequestInsurance');
+	if (coverageInput && coverageInput.value !== '') {
+		var container = document.querySelector('#insurance-coverage');
+		if (container) container.classList.remove('hidden');
+		if (insuranceSelect) insuranceSelect.value = '1';
 	}
 };
-$(document).ready(function() {
+
+document.addEventListener('DOMContentLoaded', function() {
 	showCoverageIfPopulated();
-	$('#CustomPackageRequestInsurance').on('change', function() {toggleInsurance()});
-	$('#CustomPackageRequestTrackingId').on('change', function() {removeSpaces()});
+	var insuranceSelect = document.querySelector('#CustomPackageRequestInsurance');
+	if (insuranceSelect) insuranceSelect.addEventListener('change', toggleInsurance);
+	var trackingInput = document.querySelector('#CustomPackageRequestTrackingId');
+	if (trackingInput) trackingInput.addEventListener('change', removeSpaces);
 });

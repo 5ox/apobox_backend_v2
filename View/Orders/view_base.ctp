@@ -68,13 +68,13 @@
 <div class="row">
 	<div class="col-md-4">
 		<h3>From:</h3>
-		<div class="well well-small lead">
+		<div class="bg-light p-3 rounded lead">
 			<?php echo $this->Tracking->apoBoxAddress($order); ?><br>
 		</div>
 	</div>
 	<div class="col-md-4">
 		<h3>To:</h3>
-		<div class="well well-small lead">
+		<div class="bg-light p-3 rounded lead">
 			<?php echo $this->Tracking->deliveryAddress($order); ?>
 		</div>
 	</div>

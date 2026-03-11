@@ -1,7 +1,7 @@
 <h3><?php echo $label; ?>
 	<small>
 		<span
-			data-toggle="tooltip"
+			data-bs-toggle="tooltip"
 			data-placement="bottom"
 			title="<?php echo Configure::read('Tooltip.' . $tooltip); ?>"
 		>
@@ -17,7 +17,7 @@
 		]); ?>
 	</small>
 </h3>
-<div class="well well-small well-address plus">
+<div class="bg-light p-3 rounded well-address plus">
 	<?php echo $this->element('Addresses/address', [
 		'address' => $address
 	]); ?>

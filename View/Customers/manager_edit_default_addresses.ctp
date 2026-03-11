@@ -19,21 +19,21 @@ echo $this->Form->hidden('customers_id', array('value' => $customer['Customer'][
 echo $this->Form->input('customers_default_address_id', array(
 	'label' => array(
 		'text' => 'Billing Address',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_shipping_address_id', array(
 	'label' => array(
 		'text' => 'Shipping Address',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
 echo $this->Form->input('customers_emergency_address_id', array(
 	'label' => array(
 		'text' => 'Backup Shipping Address',
-		'class' => 'col-sm-3 control-label',
+		'class' => 'col-sm-3 form-label',
 	),
 ));
-echo $this->Form->button('Update', array('type' => 'submit', 'class' => 'col-sm-offset-3 btn btn-primary'));
+echo $this->Form->button('Update', array('type' => 'submit', 'class' => 'offset-sm-3 btn btn-primary'));
 echo $this->Form->end();
 ?>

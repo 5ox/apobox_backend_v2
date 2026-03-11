@@ -6,10 +6,10 @@
 
 <?php
 	echo $this->Form->create('Customer', array(
-		'class' => 'col-md-offset-3 col-md-6 with-checkbox',
+		'class' => 'offset-md-3 col-md-6 with-checkbox',
 		'inputDefaults' => array(
-			'div' => array('class' => 'form-group'),
-			'label' => array('class' => 'sr-only'),
+			'div' => array('class' => 'mb-3'),
+			'label' => array('class' => 'visually-hidden'),
 			'class' => 'form-control',
 				'between' => false,
 				'before' => false,

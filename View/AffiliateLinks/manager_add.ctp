@@ -1,5 +1,5 @@
 <div class="affiliateLinks form">
-	<div class="actions pull-right">
+	<div class="actions float-end">
 		<?php echo $this->Html->link(__('List Affliate Links'),
 			array(
 				'action' => 'index'

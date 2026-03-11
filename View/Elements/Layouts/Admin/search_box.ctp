@@ -2,16 +2,16 @@
 	'type' => 'get',
 	'inputDefaults' =>  [
 		'between' => '<div>',
-		'label' => ['class' => 'sr-only'],
+		'label' => ['class' => 'visually-hidden'],
 	],
 ]); ?>
 
 <div class="col-md-9">
 	<p>
 		<a tabindex="0"
-			class="btn btn-xs btn-primary pull-right"
+			class="btn btn-sm btn-primary float-end"
 			role="button"
-			data-toggle="popover"
+			data-bs-toggle="popover"
 			data-placement="left"
 			data-html="true"
 			title="Search Help"
@@ -26,7 +26,7 @@
 	<div class="col-md-9">
 		<?= $this->Form->input('q', [
 			'placeholder' => 'Search for Orders or Customers or Scan',
-			'between' => '<div class="col-md-9 col-md-offset-3">',
+			'between' => '<div class="col-md-9 offset-md-3">',
 		]); ?>
 	</div>
 	<div class="col-md-3">

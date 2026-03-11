@@ -1,19 +1,24 @@
-import $ from 'jquery';
-
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	hideAllZonesExceptOne('United States');
 
-	$('#AddressEntryCountryId').change(function() {
-		filterByCountry();
-	});
+	var countrySelect = document.querySelector('#AddressEntryCountryId');
+	if (countrySelect) {
+		countrySelect.addEventListener('change', filterByCountry);
+	}
 });
 
 function filterByCountry() {
-	var country = $('#AddressEntryCountryId option:selected').text();
+	var countrySelect = document.querySelector('#AddressEntryCountryId');
+	var country = countrySelect.selectedOptions[0].textContent;
 	hideAllZonesExceptOne(country);
 }
 
 function hideAllZonesExceptOne(country) {
-	$('#AddressEntryZoneId optgroup').hide();
-	$('#AddressEntryZoneId optgroup[label="' + country + '"]').show();
+	var zoneSelect = document.querySelector('#AddressEntryZoneId');
+	if (!zoneSelect) return;
+	zoneSelect.querySelectorAll('optgroup').forEach(function(group) {
+		group.style.display = 'none';
+	});
+	var match = zoneSelect.querySelector('optgroup[label="' + country + '"]');
+	if (match) match.style.display = '';
 }

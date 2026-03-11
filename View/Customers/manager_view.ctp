@@ -1,13 +1,13 @@
 <h1 class="page-header">
 	<?php echo $customer['Customer']['name']?>'s Account
 	<?php if (!$customer['Customer']['is_active']): ?>
-		<span class="label label-danger">CLOSED:</span>
+		<span class="badge bg-danger">CLOSED:</span>
 		<small><?php echo $closed; ?></small>
 	<?php endif; ?>
 	<?php if ($partialSignup): ?>
-		<span class="label label-warning">INCOMPLETE</span>
+		<span class="badge text-bg-warning">INCOMPLETE</span>
 	<?php endif; ?>
-	<code class="pull-right">
+	<code class="float-end">
 		<?php echo $customer['Customer']['billing_id'] ?>
 	</code>
 </h1>
@@ -21,7 +21,7 @@
 				'action' => 'edit_contact_info',
 			]); ?>
 		</h2>
-		<dl class="dl-horizontal">
+		<dl class="row">
 			<dt>First Name</dt><dd><?php echo $customer['Customer']['customers_firstname'] ?></dd>
 			<dt>Last Name</dt><dd><?php echo $customer['Customer']['customers_lastname'] ?></dd>
 			<dt>Email</dt><dd><?php echo $customer['Customer']['customers_email_address'] ?></dd>
@@ -40,7 +40,7 @@
 				'action' => 'edit_payment_info',
 			]); ?>
 		</h2>
-		<dl class="dl-horizontal">
+		<dl class="row">
 			<dt>First Name on Card</dt><dd><?php echo $customer['Customer']['cc_firstname'] ?></dd>
 			<dt>Last Name on Card</dt><dd><?php echo $customer['Customer']['cc_lastname'] ?></dd>
 			<dt>Card #</dt><dd><?php echo $customer['Customer']['cc_number'] ?></dd>
@@ -161,7 +161,7 @@
 			<div class="col-md-6">
 				<h2>Recent Orders</h2>
 			</div>
-			<div class="col-md-6 text-right">
+			<div class="col-md-6 text-end">
 					<?php echo $this->element('pagination'); ?>
 			</div>
 		</div>

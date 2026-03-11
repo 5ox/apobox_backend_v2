@@ -1,33 +1,48 @@
-import $ from 'jquery';
-
-var updateTotal = function() {
+function updateTotal() {
 	var sum = 0;
-	$('input[name*="][value]"]', '#ChargeForm').each(function() {
-		sum += Number($(this).val()) || 0;
+	var form = document.querySelector('#ChargeForm');
+	if (!form) return;
+	form.querySelectorAll('input[name*="][value]"]').forEach(function(input) {
+		sum += Number(input.value) || 0;
 	});
-	$('.total-value').text(sum.toFixed(2));
-};
-$(document).ready(function() {
-	$('input[name*="][value]"]', '#ChargeForm').on('change keyup', function() {updateTotal()});
-	updateTotal();
-	$('input[type=checkbox][name*="data[checkbox][Order"]', '#ChargeForm').on('change', function() {
-		let input = $(this).parent().find('input[name*="][value]"]');
-		if ($(this).is(':checked')) {
-			input.val(input.data('value-checked'));
-		} else {
-			input.val(input.data('value-unchecked'));
-		}
-		updateTotal();
+	var totalEl = document.querySelector('.total-value');
+	if (totalEl) totalEl.textContent = sum.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	var form = document.querySelector('#ChargeForm');
+	if (!form) return;
+
+	form.querySelectorAll('input[name*="][value]"]').forEach(function(input) {
+		input.addEventListener('change', updateTotal);
+		input.addEventListener('keyup', updateTotal);
 	});
 	updateTotal();
 
-	$('.rates-btn', '#ChargeForm').on('click', function() {
-		$(this).text('Please wait...');
+	form.querySelectorAll('input[type=checkbox][name*="data[checkbox][Order"]').forEach(function(checkbox) {
+		checkbox.addEventListener('change', function() {
+			var input = this.parentElement.querySelector('input[name*="][value]"]');
+			if (input) {
+				input.value = this.checked ? input.dataset.valueChecked : input.dataset.valueUnchecked;
+			}
+			updateTotal();
+		});
 	});
-	$('.postage-rate', '#ChargeForm').on('click', function(e) {
-		e.preventDefault();
-		var rate = $(this).text().substring(1);
-		$('#OrderShippingValue').val(rate);
-		updateTotal();
+	updateTotal();
+
+	form.querySelectorAll('.rates-btn').forEach(function(btn) {
+		btn.addEventListener('click', function() {
+			this.textContent = 'Please wait...';
+		});
+	});
+
+	form.querySelectorAll('.postage-rate').forEach(function(link) {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			var rate = this.textContent.substring(1);
+			var shippingInput = document.querySelector('#OrderShippingValue');
+			if (shippingInput) shippingInput.value = rate;
+			updateTotal();
+		});
 	});
 });

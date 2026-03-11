@@ -1,8 +1,8 @@
 <?php echo $this->Form->create('Address', array(
 	'class' => '',
 	'inputDefaults' => array(
-		'div' => array('class' => 'form-group'),
-		'label' => array('class' => 'sr-only'),
+		'div' => array('class' => 'mb-3'),
+		'label' => array('class' => 'visually-hidden'),
 		'class' => 'form-control',
 			'between' => false,
 			'before' => false,
@@ -17,13 +17,13 @@ packages are delivered to you as quickly as possible.
 </p>
 
 <div class="row" id="AlmostFinishedAddress">
-	<div class="col-md-offset-2 col-md-8">
+	<div class="offset-md-2 col-md-8">
 		<h3 class="page-header">Billing Address</h3>
 		<div class="row">
 			<div class="col-md-12">
 				<div class="row">
 					<?php echo $this->Form->input('Customer.customers_default_address_id', array(
-						'div' => array('class' => 'form-group col-sm-6'),
+						'div' => array('class' => 'mb-3 col-sm-6'),
 						'placeholder' => 'First Name',
 						'options' => $addresses,
 						'empty' => array('new' => 'Create a new address'),
@@ -37,11 +37,11 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('entry_firstname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'First Name',
 						)); ?>
 						<?php echo $this->Form->input('entry_lastname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Last Name',
 						)); ?>
 					</div>
@@ -65,11 +65,11 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('entry_city', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'City',
 						)); ?>
 						<?php echo $this->Form->input('entry_zone_id', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'type' => 'select',
 							'empty' => 'State/Zone',
 							'options' => $zones
@@ -81,11 +81,11 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('entry_postcode', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Zip Code',
 						)); ?>
 						<?php echo $this->Form->input('entry_country_id', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Country',
 							'options' => array(
 								'223' => 'USA'
@@ -112,11 +112,11 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('Customer.cc_firstname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'First Name'
 						)); ?>
 						<?php echo $this->Form->input('Customer.cc_lastname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Last Name'
 						)); ?>
 					</div>
@@ -126,23 +126,23 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('Customer.cc_number', array(
-							'div' => array('class' => 'form-group col-sm-4'),
+							'div' => array('class' => 'mb-3 col-sm-4'),
 							'placeholder' => 'Credit Card Number',
 						)); ?>
 						<?php echo $this->Form->input('Customer.cc_expires_month', array(
-							'div' => array('class' => 'form-group col-sm-3'),
+							'div' => array('class' => 'mb-3 col-sm-3'),
 							'placeholder' => 'Month',
 							'type' => 'select',
 							'options' => Configure::read('Form.months')
 						)); ?>
 						<?php echo $this->Form->input('Customer.cc_expires_year', array(
-							'div' => array('class' => 'form-group col-sm-2'),
+							'div' => array('class' => 'mb-3 col-sm-2'),
 							'placeholder' => 'Year',
 							'type' => 'select',
 							'options' => Configure::read('Form.years')
 						)); ?>
 						<?php echo $this->Form->input('Customer.cc_cvv', array(
-							'div' => array('class' => 'form-group col-sm-3'),
+							'div' => array('class' => 'mb-3 col-sm-3'),
 							'placeholder' => 'Verification Code',
 							'type' => 'text'
 						)); ?>
@@ -153,7 +153,7 @@ packages are delivered to you as quickly as possible.
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('CustomersInfo.source_id', array(
-							'div' => array('class' => 'form-group col-sm-5'),
+							'div' => array('class' => 'mb-3 col-sm-5'),
 							'type' => 'select',
 							'label' => false,
 							'options' => Configure::read('Customers.sources')
@@ -165,7 +165,7 @@ packages are delivered to you as quickly as possible.
 </div>
 
 <div class="row">
-	<div class="col-sm-offset-2 col-sm-10">
+	<div class="offset-sm-2 col-sm-10">
 		<?php echo $this->Form->button('Add Billing Info', array(
 			'class' => 'btn btn-primary',
 			'type' => 'submit'

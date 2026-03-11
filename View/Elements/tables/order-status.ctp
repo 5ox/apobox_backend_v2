@@ -47,7 +47,7 @@ if (empty($comments)) {
 		</td>
 		<td
 			data-container="body"
-			data-toggle="popover"
+			data-bs-toggle="popover"
 			data-placement="bottom"
 			data-html="true"
 			data-content="<?php echo h($this->Tracking->deliveryAddress($result)); ?>"
@@ -63,7 +63,7 @@ if (empty($comments)) {
 		<td><?php echo h($result['Order']['mail_class']); ?></td>
 		<td
 			data-container="body"
-			data-toggle="popover"
+			data-bs-toggle="popover"
 			data-placement="bottom"
 			data-html="true"
 			data-content="<?php echo h($result['Order']['inbound_tracking']); ?>"
@@ -75,7 +75,7 @@ if (empty($comments)) {
 		</td>
 		<td
 			data-container="body"
-			data-toggle="popover"
+			data-bs-toggle="popover"
 			data-placement="bottom"
 			data-html="true"
 			data-content="<?php echo h($result['Order']['usps_track_num']); ?>"
@@ -91,7 +91,7 @@ if (empty($comments)) {
 			<i
 				class="fa fa-comment"
 				data-container="body"
-				data-toggle="popover"
+				data-bs-toggle="popover"
 				data-placement="bottom"
 				data-html="true"
 				data-content="<?php echo h($result['Order']['comments']) ?>"

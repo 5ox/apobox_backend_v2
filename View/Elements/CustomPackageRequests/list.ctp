@@ -32,12 +32,12 @@ if ($showName) {
 ?>
 
 <?php if ($customerId): ?>
-	<div class="row well well-sm">
+	<div class="row bg-light p-2 rounded">
 	<h4>Custom Package Requests</h4>
 <?php endif; ?>
 
 <div class="table-responsive">
-	<table class="table table-condensed custom-requests">
+	<table class="table table-sm custom-requests">
 		<thead>
 			<tr>
 				<?= $this->element('table-header', array(
@@ -93,7 +93,7 @@ if ($showName) {
 					<td>
 						<?php if ($customerId): ?>
 							<?php echo $this->Html->link('Use', '#', array(
-								'class' => 'btn btn-xs btn-success btn-use'
+								'class' => 'btn btn-sm btn-success btn-use'
 							)); ?>
 						<?php endif; ?>
 						<?php if (!empty($isManager) || !empty($isEmployee) || $u['customers_id'] == $request['CustomPackageRequest']['customers_id']): ?>
@@ -106,7 +106,7 @@ if ($showName) {
 					<tr>
 						<td colspan="7">
 							<small>
-								<span class="label label-warning">Note:</span>
+								<span class="badge text-bg-warning">Note:</span>
 								<?php echo !empty($request['CustomPackageRequest']['instructions']) ? h($request['CustomPackageRequest']['instructions']) : 'None'; ?>
 							</small>
 						</td>

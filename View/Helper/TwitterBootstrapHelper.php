@@ -74,8 +74,8 @@ class TwitterBootstrapHelper extends HtmlHelper {
 	 * @access protected
 	 */
 	protected function _buttonOptions($options) {
-		$validStyles = array('default', 'primary', 'success', 'info', 'warning', 'danger', 'link');
-		$validSizes = array('xs', 'sm', 'lg', 'block');
+		$validStyles = array('secondary', 'primary', 'success', 'info', 'warning', 'danger', 'link');
+		$validSizes = array('sm', 'lg');
 		if (is_string($options)) {
 			$options = array('style' => $options);
 		}

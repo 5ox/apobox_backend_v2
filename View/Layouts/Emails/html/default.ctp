@@ -201,16 +201,16 @@ height: 100%;
 .btn:focus::before {
 height: 100%;
 }
-.btn-default:before {
+.btn-secondary:before {
 background-color: #fff;
 }
-.btn-default:hover {
+.btn-secondary:hover {
 color: #333; background-color: transparent;
 }
-.btn-default:focus {
+.btn-secondary:focus {
 color: #333; background-color: transparent;
 }
-.btn-default:active {
+.btn-secondary:active {
 background-color: #fff; border-color: #fff; -moz-box-shadow: none; -webkit-box-shadow: none; box-shadow: none;
 }
 .btn-inverse:before {

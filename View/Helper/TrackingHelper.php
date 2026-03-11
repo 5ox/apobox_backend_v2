@@ -564,7 +564,7 @@ class TrackingHelper extends AppHelper {
 			4 => 'success',
 			5 => 'danger',
 		);
-		$class = 'label label-' . $labelClass[$id];
+		$class = 'badge bg-' . $labelClass[$id];
 
 		return $this->Html->tag('span', $order['OrderStatus']['orders_status_name'], array('class' => $class));
 	}
@@ -581,7 +581,7 @@ class TrackingHelper extends AppHelper {
 		$packageStatus = $request['CustomPackageRequest']['package_status'];
 
 		$text = $packageStatus == 3 ? 'Shipped' : 'Awaiting Package';
-		$class = 'label label-' . ($packageStatus == 3 ? 'success' : 'info');
+		$class = 'badge bg-' . ($packageStatus == 3 ? 'success' : 'info');
 		$packageLabel = $this->Html->tag('span', $text, array('class' => $class));
 
 		if ($this->_requestOrderExists($request)) {
@@ -612,7 +612,7 @@ class TrackingHelper extends AppHelper {
 			return '';
 		}
 
-		return $this->Html->tag('span', 'NonMachinable', array('class' => 'label label-warning'));
+		return $this->Html->tag('span', 'NonMachinable', array('class' => 'badge text-bg-warning'));
 	}
 
 	/**
@@ -626,7 +626,7 @@ class TrackingHelper extends AppHelper {
 			return '';
 		}
 
-		return $this->Html->tag('span', 'Oversize', array('class' => 'label label-warning'));
+		return $this->Html->tag('span', 'Oversize', array('class' => 'badge text-bg-warning'));
 	}
 
 	/**
@@ -640,7 +640,7 @@ class TrackingHelper extends AppHelper {
 			return '';
 		}
 
-		return $this->Html->tag('span', 'Balloon Rate', array('class' => 'label label-warning'));
+		return $this->Html->tag('span', 'Balloon Rate', array('class' => 'badge text-bg-warning'));
 	}
 
 	/**
@@ -653,7 +653,7 @@ class TrackingHelper extends AppHelper {
 		if (empty($order['CustomPackageRequest']) || $order['CustomPackageRequest']['package_repack'] !== 'yes') {
 			return '';
 		}
-		return $this->Html->tag('span', 'Repackage', ['class' => 'label label-warning']);
+		return $this->Html->tag('span', 'Repackage', ['class' => 'badge text-bg-warning']);
 	}
 
 	/**
@@ -664,7 +664,7 @@ class TrackingHelper extends AppHelper {
 	 * @return string empty or an html span with label
 	 */
 	public function customRequestLabel($order, $customRequests = []) {
-		$label = ' ' . $this->Html->tag('span', 'Custom', ['class' => 'label label-info']);
+		$label = ' ' . $this->Html->tag('span', 'Custom', ['class' => 'badge bg-info']);
 		if (empty($customRequests)) {
 			if (empty($order['CustomPackageRequest']['custom_orders_id'])) {
 				return '';
@@ -830,7 +830,7 @@ class TrackingHelper extends AppHelper {
 				$request['CustomPackageRequest']['custom_orders_id'],
 				$customerId,
 			),
-			array('class' => 'btn btn-xs btn-primary')
+			array('class' => 'btn btn-sm btn-primary')
 		);
 	}
 
@@ -908,7 +908,7 @@ class TrackingHelper extends AppHelper {
 		$class = (($boolean) ? 'fa-check' : 'fa-times');
 		$color = (($boolean) ? 'success' : 'danger');
 		$mark = $this->Html->tag('i', null, ['class' => "fa $class"]);
-		return $this->Html->tag('span', $mark, ['class' => "label label-$color"]);
+		return $this->Html->tag('span', $mark, ['class' => "badge bg-$color"]);
 	}
 
 	/**

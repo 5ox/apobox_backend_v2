@@ -2,7 +2,7 @@
 	<?php echo $this->element('search/no_results', array('type' => 'scans')); ?>
 <?php else: ?>
 
-<table class="table table-condensed table-striped">
+<table class="table table-sm table-striped">
 	<thead>
 		<tr>
 			<th><?php echo $this->Paginator->sort('tracking_id'); ?></th>

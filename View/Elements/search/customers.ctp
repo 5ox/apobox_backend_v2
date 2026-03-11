@@ -23,10 +23,10 @@
 					'id' => $result['Customer']['customers_id'],
 				)) ?>
 				<?php if (!$result['Customer']['is_active']): ?>
-					<span class="label label-danger">CLOSED</span>
+					<span class="badge bg-danger">CLOSED</span>
 				<?php endif; ?>
 				<?php if ($result['Customer']['customers_default_address_id'] == null): ?>
-					<span class="label label-warning">INCOMPLETE</span>
+					<span class="badge text-bg-warning">INCOMPLETE</span>
 				<?php endif; ?>
 			</td>
 			<td><?php echo h($result['Customer']['customers_firstname']) ?></td>

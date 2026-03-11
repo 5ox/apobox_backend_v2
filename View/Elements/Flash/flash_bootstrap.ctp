@@ -1,6 +1,4 @@
-<div id="flashMessage" class="alert alert-dismissable <?php echo $params['class']; ?> fade in">
-	<button type="button" class="close" data-dismiss="alert" aria-label="Close">
-		<span aria-hidden="true">&times;</span>
-	</button>
+<div id="flashMessage" class="alert alert-dismissible <?php echo $params['class']; ?> fade show">
+	<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 	<?php echo h($message); ?>
 </div>

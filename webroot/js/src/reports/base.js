@@ -1,146 +1,102 @@
-import $ from 'jquery';
-import Highcharts from 'highcharts';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
-Highcharts.setOptions({
-    lang: {
-        thousandsSep: ','
-    }
-});
-$(document).ready(function() {
-	var options = {
-		chart: {
-			renderTo: 'sales-volume',
-			type: 'area'
-		},
-		title: {
-			text: 'Order Volume'
-		},
-		legend: {
-			align: 'right',
-			x: -60,
-			verticalAlign: 'top',
-			y: 25,
-			floating: true,
-			backgroundColor: (Highcharts.theme && Highcharts.theme.background2) || 'white',
-			borderColor: '#CCC',
-			borderWidth: 1,
-			shadow: false
-		},
-		exporting: {
-			chartOptions: { // specific options for the exported image
-				plotOptions: {
-					series: {
-						dataLabels: {
-							enabled: true
-						}
-					}
-				}
-			},
-			scale: 3,
-			fallbackToExportServer: false
-		},
-		plotOptions: {
-			column: {
-				stacking: 'normal',
-			},
-			area: {
-				// pointStart: 1940,
-				marker: {
-					enabled: false,
-					symbol: 'circle',
-					radius: 2,
-					states: {
-						hover: {
-							enabled: true
-						}
-					}
-				}
-			}
-		},
-		xAxis: {
-			categories: []
-		},
-		yAxis: [{
-			title: {
-				text: 'Dollars ($)'
-			},
-		}, {
-			title: {
-				text: 'Orders'
-			},
-			opposite: true,
-		}],
-		series: []
-	};
+document.addEventListener('DOMContentLoaded', function() {
+	// Sales Volume chart (area → bar + line with dual y-axis)
+	var salesEl = document.querySelector('#sales-volume');
+	if (salesEl) {
+		var dates = JSON.parse(salesEl.dataset.dates || '[]');
+		var volumes = JSON.parse(salesEl.dataset.volumes || '[]');
 
-	if ($('#sales-volume').length) {
-		options.xAxis.categories = $('#sales-volume').data('dates');
-		options.series = $('#sales-volume').data('volumes');
-		var chart = new Highcharts.Chart(options);
+		var canvas = document.createElement('canvas');
+		salesEl.appendChild(canvas);
+
+		var datasets = volumes.map(function(series) {
+			return {
+				label: series.name,
+				data: series.data,
+				type: series.type === 'column' ? 'bar' : 'line',
+				yAxisID: series.yAxis === 1 ? 'y1' : 'y',
+				fill: series.type !== 'column',
+				tension: 0.3,
+				pointRadius: 0,
+				pointHoverRadius: 4,
+			};
+		});
+
+		new Chart(canvas, {
+			type: 'bar',
+			data: { labels: dates, datasets: datasets },
+			options: {
+				responsive: true,
+				plugins: {
+					legend: { position: 'top' },
+					title: { display: true, text: 'Order Volume' },
+				},
+				scales: {
+					y: { title: { display: true, text: 'Dollars ($)' }, position: 'left' },
+					y1: { title: { display: true, text: 'Orders' }, position: 'right', grid: { drawOnChartArea: false } },
+				},
+			},
+		});
 	}
 
-	var signupOptions = {
-		chart: {
-			renderTo: 'signups-volume',
-			type: 'areaspline'
-		},
-		title: {
-			text: 'Signups'
-		},
-		legend: {
-			enabled: false,
-		},
-		plotOptions: {
-			area: {
-				marker: {
-					enabled: false,
-					symbol: 'circle',
-					radius: 2,
-					states: {
-						hover: {
-							enabled: true
-						}
-					}
-				}
-			}
-		},
-		xAxis: {
-			categories: []
-		},
-		yAxis: [{
-			title: {
-				text: null
-			},
-		}],
-		series: []
-	};
+	// Signups chart (areaspline → line with fill)
+	var signupsEl = document.querySelector('#signups-volume');
+	if (signupsEl) {
+		var dates = JSON.parse(signupsEl.dataset.dates || '[]');
+		var volumes = JSON.parse(signupsEl.dataset.volumes || '[]');
 
-	if ($('#signups-volume').length) {
-		signupOptions.xAxis.categories = $('#signups-volume').data('dates');
-		signupOptions.series = $('#signups-volume').data('volumes');
-		var chart2 = new Highcharts.Chart(signupOptions);
+		var canvas = document.createElement('canvas');
+		signupsEl.appendChild(canvas);
+
+		var datasets = volumes.map(function(series) {
+			return {
+				label: series.name,
+				data: series.data,
+				fill: true,
+				tension: 0.4,
+				pointRadius: 0,
+				pointHoverRadius: 4,
+			};
+		});
+
+		new Chart(canvas, {
+			type: 'line',
+			data: { labels: dates, datasets: datasets },
+			options: {
+				responsive: true,
+				plugins: {
+					legend: { display: false },
+					title: { display: true, text: 'Signups' },
+				},
+			},
+		});
 	}
 
-	var demoOptions = {
-		chart: {
-			renderTo: 'demo-volume',
-			type: 'pie'
-		},
-		title: {
-			text: 'Customers'
-		},
-		series: [
-			{
-				name: 'Customers',
-				colorByPoint: true,
-				data: []
-			}
-		]
-	};
+	// Demographics chart (pie)
+	var demoEl = document.querySelector('#demo-volume');
+	if (demoEl) {
+		var title = demoEl.dataset.title || 'Customers';
+		var values = JSON.parse(demoEl.dataset.values || '[]');
 
-	if ($('#demo-volume').length) {
-		demoOptions.title.text = $('#demo-volume').data('title');
-		demoOptions.series[0].data = $('#demo-volume').data('values');
-		var chart3 = new Highcharts.Chart(demoOptions);
+		var canvas = document.createElement('canvas');
+		demoEl.appendChild(canvas);
+
+		new Chart(canvas, {
+			type: 'pie',
+			data: {
+				labels: values.map(function(v) { return v.name; }),
+				datasets: [{
+					data: values.map(function(v) { return v.y; }),
+				}],
+			},
+			options: {
+				responsive: true,
+				plugins: {
+					title: { display: true, text: title },
+				},
+			},
+		});
 	}
 });

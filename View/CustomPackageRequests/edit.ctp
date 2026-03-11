@@ -7,14 +7,14 @@
 	<?= $this->element('CustomPackageRequests/form'); ?>
 
 	<div class="row">
-		<div class="col-md-3 pull-right">
+		<div class="col-md-3 float-end">
 			<?= $this->Form->button('Save', [
 				'class' => 'btn btn-primary',
 				'type' => 'submit'
 			]); ?>
 			<?= $this->Form->end(); ?>
 		</div>
-		<div class="col-md-offset-2 col-md-7">
+		<div class="offset-md-2 col-md-7">
 			<?php if (!empty($isManager)): ?>
 				<?= $this->Form->postLink(
 					'Delete',

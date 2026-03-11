@@ -16,7 +16,7 @@
 				'type' => 'select',
 				'label' => [
 					'text' => 'Package Status',
-					'class' => 'col-sm-4 control-label',
+					'class' => 'col-sm-4 form-label',
 				],
 			]); ?>
 			<?= $this->Form->input('orders_id', [
@@ -24,7 +24,7 @@
 				'default' => 0,
 				'label' => [
 					'text' => 'Order ID',
-					'class' => 'col-sm-4 control-label',
+					'class' => 'col-sm-4 form-label',
 				],
 			]); ?>
 		</div>

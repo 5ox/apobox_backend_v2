@@ -18,7 +18,7 @@
 			)
 		),
 		array(
-			'class' => 'label label-default'
+			'class' => 'badge bg-secondary'
 		)
 	); ?>
 <?php endforeach; ?>

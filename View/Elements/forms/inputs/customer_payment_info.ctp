@@ -1,19 +1,19 @@
 <?php
-$labelClass = 'control-label sr-only';
+$labelClass = 'form-label visually-hidden';
 ?>
 <div class="row">
 	<div class="col-md-12">
 		<div class="row">
 		<?php
 		echo $this->Form->input('cc_firstname', array(
-			'div' => array('class' => 'form-group col-sm-6'),
+			'div' => array('class' => 'mb-3 col-sm-6'),
 			'placeholder' => 'First Name on Card',
 			'label' => array(
 				'class' => $labelClass,
 			)
 		));
 		echo $this->Form->input('cc_lastname', array(
-			'div' => array('class' => 'form-group col-sm-6'),
+			'div' => array('class' => 'mb-3 col-sm-6'),
 			'placeholder' => 'Last Name on Credit Card',
 			'label' => array(
 				'class' => $labelClass,
@@ -28,7 +28,7 @@ $labelClass = 'control-label sr-only';
 		<div class="row">
 		<?php
 		echo $this->Form->input('cc_number', array(
-			'div' => array('class' => 'form-group col-sm-9'),
+			'div' => array('class' => 'mb-3 col-sm-9'),
 			'placeholder' => 'Card Number',
 			'label' => array(
 				'class' => $labelClass,
@@ -36,7 +36,7 @@ $labelClass = 'control-label sr-only';
 			'maxlength' => '20',
 		));
 		echo $this->Form->input('cc_cvv', array(
-			'div' => array('class' => 'form-group col-sm-3'),
+			'div' => array('class' => 'mb-3 col-sm-3'),
 			'placeholder' => 'CVV Code',
 			'label' => array(
 				'class' => $labelClass,
@@ -51,12 +51,12 @@ $labelClass = 'control-label sr-only';
 <div class="row">
 	<div class="col-md-12">
 		<div class="row">
-		<div class="col-sm-4 text-right">
+		<div class="col-sm-4 text-end">
 			<label class="form-label">Expiration:</label>
 		</div>
 		<?php
 		echo $this->Form->input('cc_expires_month', array(
-			'div' => array('class' => 'form-group col-sm-4'),
+			'div' => array('class' => 'mb-3 col-sm-4'),
 			'placeholder' => 'Expiration Month',
 			'label' => array(
 				'class' => $labelClass,
@@ -65,7 +65,7 @@ $labelClass = 'control-label sr-only';
 			'options' => Configure::read('Form.months'),
 		));
 		echo $this->Form->input('cc_expires_year', array(
-			'div' => array('class' => 'form-group col-sm-4'),
+			'div' => array('class' => 'mb-3 col-sm-4'),
 			'placeholder' => 'Expiration Year',
 			'label' => array(
 				'class' => $labelClass,

@@ -1,5 +1,5 @@
-<div class="well well-sm">
-	<dl class="dl-horizontal">
+<div class="bg-light p-2 rounded">
+	<dl class="row">
 	<?php foreach($rates as $key => $rate): ?>
 		<dt>
 			<?php echo $this->Html->link($this->Number->currency($rate['Rate'], 'USD'), '#', array(

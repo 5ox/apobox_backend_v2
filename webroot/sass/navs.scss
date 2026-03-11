@@ -4,17 +4,17 @@
 
   > li {
     > a {
-      @include transition(background-color, .25s);
+      transition: background-color .25s;
       color: $text-color;
 
       &:hover,
       &:focus {
-        @include text-shadow(none);
+        text-shadow: none;
         background-color: $brand-primary;
         color: $white;
 
         &::after {
-          @include transition(all, .25s);
+          transition: all .25s;
           bottom: -2px;
           opacity: 1;
         }
@@ -39,8 +39,8 @@
 
   >.active {
     > a {
-      @include box-shadow(none);
-      @include transition(background-color, .25s);
+      box-shadow: none;
+      transition: background-color .25s;
       background-color: $white;
       background-image: none;
       color: $link-color;

@@ -3,8 +3,8 @@
 .navbar {
   font-size: 16px;
 
-  &.navbar-default {
-    @include box-shadow(none);
+  &.navbar-light {
+    box-shadow: none;
     background-color: $body-bg;
     background-image: none;
     border: 0;

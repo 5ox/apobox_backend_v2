@@ -1,5 +1,5 @@
 <div class="admins form">
-	<div class="actions pull-right">
+	<div class="actions float-end">
 		<?php echo $this->Html->link(__('List Admins'),
 			array(
 				'action' => 'index_list'

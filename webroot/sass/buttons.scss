@@ -2,8 +2,8 @@
 @import "mixins/buttons";
 
 .btn {
-  @include box-sizing();
-  @include transition(color, .25s);
+  box-sizing: border-box;
+  transition: color .25s;
   background-color: transparent;
   background-image: none;
   border: 0;
@@ -15,9 +15,9 @@
   text-transform: $btn-text-transform;
 
   &::before {
-    @include background-image(none);
-    @include border-radius();
-    @include transition(height, .25s);
+    background-image: none;
+    border-radius: $default-border-radius;
+    transition: height .25s;
     height: 0;
     background-color: $gray-light;
     content: "";

@@ -1,4 +1,4 @@
-<div class="col-sm-4 col-sm-offset-8">
+<div class="col-sm-4 offset-sm-8">
 	<?php if ($customer['Customer']['is_active']): ?>
 		<?php if (!$partialSignup): ?>
 			<?php echo $this->Html->link(

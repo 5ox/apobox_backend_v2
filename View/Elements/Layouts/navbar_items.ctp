@@ -22,7 +22,7 @@
 		</li>
 	<?php $this->end(); ?>
 <?php endif; ?>
-<?php $this->append('navbar-pull-right-list-items'); ?>
+<?php $this->append('navbar-float-end-list-items'); ?>
 	<li>
 		<?php echo $this->Html->link(
 			'Customer Support',

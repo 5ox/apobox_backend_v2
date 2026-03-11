@@ -23,7 +23,7 @@
 <?php echo $this->Form->create('Order'); ?>
 <?php echo $this->Form->input('Order.orders_id'); ?>
 <div class="row" id="ChargeForm">
-	<div class="col-sm-6 col-sm-offset-3 col-md-6 col-md-offset-3">
+	<div class="col-sm-6 offset-sm-3 col-md-6 offset-md-3">
 		<div class="row">
 			<div class="col-sm-6">Postage</div>
 			<div class="col-sm-6">
@@ -31,7 +31,7 @@
 					'label' => false,
 					'step' => '0.01',
 					'after' => '</div>',
-					'between' => '<div class="input-group"><div class="input-group-addon">$</div>',
+					'between' => '<div class="input-group"><div class="input-group-text">$</div>',
 				)); ?>
 			</div>
 		</div>
@@ -42,7 +42,7 @@
 					'label' => false,
 					'step' => '0.01',
 					'after' => '</div>',
-					'between' => '<div class="input-group"><div class="input-group-addon">$</div>',
+					'between' => '<div class="input-group"><div class="input-group-text">$</div>',
 				)); ?>
 			</div>
 		</div>
@@ -53,7 +53,7 @@
 					'label' => false,
 					'step' => '0.01',
 					'after' => '</div>',
-					'between' => '<div class="input-group"><div class="input-group-addon">$</div>',
+					'between' => '<div class="input-group"><div class="input-group-text">$</div>',
 				)); ?>
 			</div>
 		</div>
@@ -64,7 +64,7 @@
 					'label' => false,
 					'step' => '0.01',
 					'after' => '</div>',
-					'between' => '<div class="input-group"><div class="input-group-addon">$</div>',
+					'between' => '<div class="input-group"><div class="input-group-text">$</div>',
 				)); ?>
 			</div>
 		</div>
@@ -75,7 +75,7 @@
 					'label' => false,
 					'step' => '0.01',
 					'after' => '</div>',
-					'between' => '<div class="input-group"><div class="input-group-addon">$</div>',
+					'between' => '<div class="input-group"><div class="input-group-text">$</div>',
 				)); ?>
 			</div>
 		</div>
@@ -120,8 +120,8 @@
 			</div>
 		</div>
 		<div class="row">
-			<div class="col-xs-6"><h3>Total</h3></div>
-			<div class="col-xs-6">
+			<div class="col-6"><h3>Total</h3></div>
+			<div class="col-6">
 				<h3>$<span class="total-value"><?php echo number_format($order['OrderTotal']['value'], 2) ?></span></h3>
 			</div>
 		</div>

@@ -4,7 +4,7 @@
 
 <h3>Order Summary</h3>
 <div class="row">
-	<div class="col-md-offset-1 col-md-10 col-lg-offset-2 col-lg-8">
+	<div class="offset-md-1 col-md-10 offset-lg-2 col-lg-8">
 		<div class="row">
 			<div class="col-sm-10">
 				<td>Order #<?php echo $order['Order']['orders_id']?></td>
@@ -24,13 +24,13 @@
 <hr>
 <h3>Payment Information</h3>
 <div class="row">
-	<div class="col-md-offset-1 col-md-10 col-lg-offset-2 col-lg-8">
+	<div class="offset-md-1 col-md-10 offset-lg-2 col-lg-8">
 		<?php
 		echo $this->Form->create('Customer', array(
 			'class' => 'with-checkbox',
 			'inputDefaults' => array(
-				'div' => array('class' => 'form-group'),
-				'label' => array('class' => 'sr-only'),
+				'div' => array('class' => 'mb-3'),
+				'label' => array('class' => 'visually-hidden'),
 				'class' => 'form-control',
 					'between' => false,
 					'before' => false,
@@ -44,10 +44,10 @@
 				<div class="row">
 				<?php
 				echo $this->Form->input('save', array(
-					'div' => array('class' => 'form-group col-sm-12'),
+					'div' => array('class' => 'mb-3 col-sm-12'),
 					'label' => array(
 						'text' => 'Save and Use For Future Orders',
-						'class' => 'control-label',
+						'class' => 'form-label',
 					),
 					'type' => 'checkbox',
 				));
@@ -60,12 +60,12 @@
 
 <h3 class="page-header">Billing Address</h3>
 <div class="row" id="PayManuallyAddress">
-	<div class="col-md-offset-1 col-md-10 col-lg-offset-2 col-lg-8">
+	<div class="offset-md-1 col-md-10 offset-lg-2 col-lg-8">
 		<div class="row">
 			<div class="col-md-12">
 				<div class="row">
 					<?php echo $this->Form->input('Customer.customers_default_address_id', array(
-						'div' => array('class' => 'form-group col-sm-6'),
+						'div' => array('class' => 'mb-3 col-sm-6'),
 						'placeholder' => 'First Name',
 						'options' => $addresses,
 						'empty' => array('custom' => 'Custom'),
@@ -80,11 +80,11 @@
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('Address.entry_firstname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'First Name',
 						)); ?>
 						<?php echo $this->Form->input('Address.entry_lastname', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Last Name',
 						)); ?>
 					</div>
@@ -108,11 +108,11 @@
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('Address.entry_city', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'City',
 						)); ?>
 						<?php echo $this->Form->input('Address.entry_zone_id', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'type' => 'select',
 							'empty' => 'State/Zone',
 							'options' => $zones
@@ -124,11 +124,11 @@
 				<div class="col-md-12">
 					<div class="row">
 						<?php echo $this->Form->input('Address.entry_postcode', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Zip Code',
 						)); ?>
 						<?php echo $this->Form->input('Address.entry_country_id', array(
-							'div' => array('class' => 'form-group col-sm-6'),
+							'div' => array('class' => 'mb-3 col-sm-6'),
 							'placeholder' => 'Country',
 							'options' => array(
 								'223' => 'USA'

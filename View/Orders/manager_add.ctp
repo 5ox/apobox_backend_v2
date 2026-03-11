@@ -7,9 +7,9 @@
 	)); ?>
 	<?php echo $this->element('Orders/form'); ?>
 	<div class="row">
-		<div class="col-sm-offset-2 col-sm-10">
+		<div class="offset-sm-2 col-sm-10">
 			<?php echo $this->Form->button('Add Order', array(
-				'class' => 'btn btn-primary pull-right',
+				'class' => 'btn btn-primary float-end',
 				'type' => 'submit',
 				'id' => 'add-order',
 			)); ?>

@@ -8,7 +8,7 @@
 						'type' => 'select',
 						'label' => array(
 							'text' => 'Carrier and Tracking Number',
-							'class' => 'col-md-8 control-label',
+							'class' => 'col-md-8 form-label',
 						),
 						'empty' => 'Carrier',
 						'options' => array(
@@ -28,7 +28,7 @@
 						'type' => 'text',
 						'label' => array(
 							'text' => 'Inbound Tracking Number',
-							'class' => 'control-label sr-only',
+							'class' => 'form-label visually-hidden',
 						),
 						'between' => '<div class="col-sm-8">',
 						'after' => '</div>',
@@ -43,7 +43,7 @@
 			<div class="row">
 				<div class="col-md-12">
 					<div class="row">
-						<label class="col-sm-4 control-label">
+						<label class="col-sm-4 form-label">
 							Dimensions
 						</label>
 						<div class="col-sm-6">
@@ -53,10 +53,10 @@
 									'type' => 'text',
 									'placeholder' => 'Length',
 									'label' => array(
-										'class' => 'control-label sr-only',
+										'class' => 'form-label visually-hidden',
 									),
 									'between' => '<div class="col-sm-12"><div class="input-group">',
-									'after' => '<div class="input-group-addon">in.</div></div></div>',
+									'after' => '<div class="input-group-text">in.</div></div></div>',
 								)); ?>
 								</div>
 								<div class="col-sm-4">
@@ -64,10 +64,10 @@
 									'type' => 'text',
 									'placeholder' => 'Width',
 									'label' => array(
-										'class' => 'control-label sr-only',
+										'class' => 'form-label visually-hidden',
 									),
 									'between' => '<div class="col-sm-12"><div class="input-group">',
-									'after' => '<div class="input-group-addon">in.</div></div></div>',
+									'after' => '<div class="input-group-text">in.</div></div></div>',
 								)); ?>
 								</div>
 								<div class="col-sm-4">
@@ -75,10 +75,10 @@
 									'type' => 'text',
 									'placeholder' => 'Depth',
 									'label' => array(
-										'class' => 'control-label sr-only',
+										'class' => 'form-label visually-hidden',
 									),
 									'between' => '<div class="col-sm-12"><div class="input-group">',
-									'after' => '<div class="input-group-addon">in.</div></div></div>',
+									'after' => '<div class="input-group-text">in.</div></div></div>',
 								)); ?>
 								</div>
 							</div>
@@ -89,7 +89,7 @@
 			<div class="row">
 				<div class="col-md-12">
 					<div class="row">
-						<label class="col-sm-4 control-label">
+						<label class="col-sm-4 form-label">
 							Weight
 						</label>
 						<div class="col-sm-6">
@@ -99,10 +99,10 @@
 										'type' => 'text',
 										'placeholder' => 'Pounds',
 										'label' => array(
-											'class' => 'control-label sr-only',
+											'class' => 'form-label visually-hidden',
 										),
 										'between' => '<div class="col-sm-12"><div class="input-group">',
-										'after' => '<div class="input-group-addon">lb</div></div></div>',
+										'after' => '<div class="input-group-text">lb</div></div></div>',
 									)); ?>
 								</div>
 								<div class="col-sm-4">
@@ -110,10 +110,10 @@
 										'type' => 'text',
 										'placeholder' => 'Ounces',
 										'label' => array(
-											'class' => 'control-label sr-only',
+											'class' => 'form-label visually-hidden',
 										),
 										'between' => '<div class="col-sm-12"><div class="input-group">',
-										'after' => '<div class="input-group-addon">oz</div></div></div>',
+										'after' => '<div class="input-group-text">oz</div></div></div>',
 									)); ?>
 								</div>
 								<div class="col-sm-2">
@@ -139,7 +139,7 @@
 						'type' => 'text',
 						'label' => array(
 							'text' => 'Customs Description',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 						'value' => Configure::read('Orders.defaultCustomsDescription'),
 					)); ?>
@@ -151,7 +151,7 @@
 						'type' => 'select',
 						'label' => array(
 							'text' => 'Customer Address',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 						'options' => $customersAddresses,
 						'value' => $customer['Customer']['customers_default_address_id'],
@@ -164,7 +164,7 @@
 						'type' => 'select',
 						'label' => array(
 							'text' => 'Delivery Address',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 						'options' => $customersAddresses,
 						'value' => $customer['Customer']['customers_shipping_address_id'],
@@ -177,7 +177,7 @@
 						'type' => 'select',
 						'label' => array(
 							'text' => 'Billing Address',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 						'options' => $customersAddresses,
 						'value' => $customer['Customer']['customers_default_address_id'],
@@ -191,7 +191,7 @@
 						'default' => 'priority',
 						'label' => array(
 							'text' => 'Mail Class',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 						'options' => array(
 							'priority' => 'Priority',
@@ -214,7 +214,7 @@
 					<?php echo $this->Form->input('insurance_coverage', array(
 						'label' => array(
 							'text' => 'Insurance Coverage',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 					)); ?>
 				</div>
@@ -225,7 +225,7 @@
 						'type' => 'textarea',
 						'label' => array(
 							'text' => 'Comments',
-							'class' => 'col-sm-4 control-label',
+							'class' => 'col-sm-4 form-label',
 						),
 					)); ?>
 				</div>

@@ -1,18 +1,24 @@
-import $ from 'jquery';
+import * as bootstrap from 'bootstrap';
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 	loadSettings();
-	$('.settings-btn', '.settings-dropdown').on('click', function(e) {
-		e.preventDefault();
+
+	document.querySelectorAll('.settings-dropdown .settings-btn').forEach(function(btn) {
+		btn.addEventListener('click', function(e) { e.preventDefault(); });
 	});
 
-	$('#scale-status-on, #scale-status-off', '.settings-dropdown').on('change', function(e) {
-		saveSettings();
-		loadSettings();
+	document.querySelectorAll('.settings-dropdown #scale-status-on, .settings-dropdown #scale-status-off').forEach(function(radio) {
+		radio.addEventListener('change', function() {
+			saveSettings();
+			loadSettings();
+		});
 	});
-	$('[id^=scale-id-]', '.settings-dropdown').on('change', function(e) {
-		saveSettings();
-		loadSettings();
+
+	document.querySelectorAll('.settings-dropdown [id^=scale-id-]').forEach(function(radio) {
+		radio.addEventListener('change', function() {
+			saveSettings();
+			loadSettings();
+		});
 	});
 });
 
@@ -26,28 +32,39 @@ function loadSettings() {
 		}
 
 		if (item.key == 'Settings.local.scale_status') {
+			var onRadio = document.querySelector('#scale-status-on');
+			var offRadio = document.querySelector('#scale-status-off');
 			if (value === 'Off') {
-				$('#scale-status-on').prop('checked', false);
-				$('#scale-status-off').prop('checked', true);
+				if (onRadio) onRadio.checked = false;
+				if (offRadio) offRadio.checked = true;
 			}
 		} else if (item.key == 'Settings.local.scale_id') {
-			$('[id^=scale-id-]').prop('checked', false);
-			$('#scale-id-' + value).prop('checked', true);
+			document.querySelectorAll('[id^=scale-id-]').forEach(function(r) { r.checked = false; });
+			var target = document.querySelector('#scale-id-' + value);
+			if (target) target.checked = true;
 		}
 
-		$(input).val(value);
-		$(input).on('keyup', saveSettings);
+		if (input) {
+			input.value = value;
+			input.addEventListener('keyup', saveSettings);
+		}
 	});
 }
 
 function saveSettings(event) {
 	if (event && event.keyCode == 13) {
-		$('.dropdown-toggle', '.settings-dropdown').dropdown('toggle');
+		var toggle = document.querySelector('.settings-dropdown .dropdown-toggle');
+		if (toggle) {
+			var dropdown = bootstrap.Dropdown.getOrCreateInstance(toggle);
+			dropdown.toggle();
+		}
 	}
 	settingInputs().forEach(function(item) {
 		var input = document.getElementById(item.key);
-		if ($(input).find(':radio').length > 0) {
-			input.value = $(input).find(':radio:checked').val();
+		if (!input) return;
+		var checkedRadio = input.querySelector('input[type=radio]:checked');
+		if (checkedRadio) {
+			input.value = checkedRadio.value;
 		}
 		localStorage.setItem(item.key, input.value);
 	});
