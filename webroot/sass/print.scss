@@ -1,7 +1,0 @@
-// print.scss
-
-@media print {
-  a[href]::after {
-    content: none;
-  }
-}

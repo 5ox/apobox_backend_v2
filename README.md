@@ -1,80 +1,97 @@
 # APO Box Account (v2)
 
-[![CI](https://github.com/5ox/apobox_backend_v2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/5ox/apobox_backend_v2/actions)
-
 Account management application for APO Box customers. Allows users to create and manage APO Box accounts including orders, custom requests, addresses, and payment details. Provides two levels of admin users (managers and employees) to perform all administrative tasks.
 
 * **Production URL:** https://account.apobox.com
 * **Repository:** https://github.com/5ox/apobox_backend_v2
 * **Modernization Roadmap:** See `APO_Box_Account_Codebase_Review.docx` in the repo root
 
-> **Note:** This is the v2 modernization repository. It was created as a clean starting point from the original `loadsys/apobox-account` codebase to chart a path toward a modern, supported stack.
-
 ---
 
 ## Current Stack
 
-| Layer | Current | Target |
-|-------|---------|--------|
-| **Backend** | CakePHP 2.9.5 | CakePHP 5.x or Laravel 11 |
-| **PHP** | 5.6 | 8.1+ |
-| **Database** | MySQL 5.5 | MySQL 8.0 |
-| **Frontend** | Vanilla JS + Bootstrap 5.3 | - |
-| **Build Tools** | Vite + Dart Sass | - |
-| **Charts** | Chart.js 4 | - |
-| **Caching** | Memcached | Redis |
-| **Containerization** | Docker + Docker Compose | Docker + Docker Compose |
-| **CI/CD** | GitHub Actions | GitHub Actions |
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Laravel 11 |
+| **PHP** | 8.2+ |
+| **Database** | MySQL 8.0 (InnoDB) |
+| **Frontend** | Vanilla JS + Bootstrap 5.3 |
+| **Build Tools** | Vite + Dart Sass + laravel-vite-plugin |
+| **Charts** | Chart.js 4 |
+| **Caching** | Redis |
+| **Queue** | Redis (Laravel Queue) |
+| **Auth** | Session (multi-guard) + Sanctum (API) |
+| **Containerization** | Docker + Docker Compose |
 
 ---
 
 ## Project Structure
 
 ```
-├── Config/              # App configuration (routes, database, ACL, email, queue)
-│   └── Schema/          # Database schema and migration SQL
-├── Console/             # CLI commands (shells)
-├── Controller/          # MVC controllers (15 controllers)
-│   └── Component/       # Reusable controller components
-├── Lib/                 # Shared libraries (Payment, FedEx, USPS, Endicia, Zebra)
-├── Model/               # Data models (33 models)
-│   └── Behavior/        # Model behaviors
-├── Plugin/              # CakePHP plugins (Endicia, FedEx, USPS)
-├── Serializer/          # JSON:API serializers
-├── Test/                # PHPUnit tests & fixtures
-│   ├── Case/            # Test cases
-│   └── Fixture/         # Test data fixtures
-├── View/                # Server-rendered templates (.ctp)
-│   ├── Elements/        # Reusable view partials
-│   ├── Layouts/         # Page layouts & email templates
-│   └── [Controller]/    # Per-controller view directories
-├── Vendor/              # Composer dependencies (not committed)
-├── webroot/             # Public web directory
-│   ├── css/             # Compiled stylesheets
-│   ├── sass/            # SCSS source files
-│   ├── js/              # JavaScript (bundled & source)
-│   │   └── src/         # JS source files (18 modules)
-│   ├── img/             # Images
-│   └── widgets/         # Embeddable signup widgets
-├── chrome_app/          # Chrome extension (scale & label printing)
-├── docker/              # Docker configuration files
-├── Dockerfile           # Container build definition
-├── docker-compose.yml   # Local development orchestration
-├── scripts/             # Build scripts (email, widget)
-├── composer.json        # PHP dependencies
-├── package.json         # Node.js dependencies
-└── vite.config.js       # Vite build configuration
+├── app/
+│   ├── Auth/                # Custom password hasher (legacy MD5+salt support)
+│   ├── Console/Commands/    # Artisan commands (reminders, search index, sync)
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/         # JSON API controllers (Sanctum auth)
+│   │   │   ├── Auth/        # Login controllers (customer, admin, Google OAuth)
+│   │   │   ├── Customer/    # Customer portal controllers
+│   │   │   └── Manager/     # Admin panel controllers (shared manager/employee)
+│   │   ├── Middleware/       # IP whitelist, role check, admin layout
+│   │   └── Requests/        # Form request validation (13 classes)
+│   ├── Models/
+│   │   ├── Concerns/        # Traits: MasksCreditCard, Searchable
+│   │   └── OrderLineItems/  # STI subclasses (10 types on orders_total)
+│   ├── Observers/           # Customer, OrderLineItem, AuthorizedName
+│   ├── Policies/            # Order, Address, AuthorizedName, CustomPackageRequest
+│   ├── Providers/           # App + View service providers
+│   └── Services/
+│       └── Shipping/        # USPS, FedEx, Endicia, Zebra label services
+├── bootstrap/               # Laravel app bootstrap
+├── config/                  # App config (apobox.php, shipping.php, auth.php)
+├── database/
+│   ├── migrations/          # 20 migration files (all tables)
+│   ├── reference/           # Original CakePHP schema SQL (for reference)
+│   └── seeders/             # Country, Zone, Insurance, OrderStatus seeders
+├── public/                  # Web root (index.php, assets, images)
+├── resources/
+│   ├── js/                  # JavaScript source (Vite entry)
+│   ├── sass/                # SCSS source (global, public, admin, email)
+│   └── views/
+│       ├── auth/            # Login/register/password reset templates
+│       ├── components/      # Blade components
+│       ├── customer/        # Customer portal views
+│       ├── emails/          # Email notification templates
+│       ├── errors/          # Error pages (404, 500)
+│       ├── layouts/         # Page layouts (default, manager, error, email)
+│       ├── manager/         # Admin panel views
+│       ├── pages/           # Static pages (TOS, widget)
+│       └── partials/        # Shared partials (navbar, footer, flash, sidebar)
+├── routes/
+│   ├── web.php              # Web routes (~100 routes)
+│   ├── api.php              # API routes (Sanctum-protected)
+│   └── console.php          # Scheduled commands
+├── storage/
+│   └── wsdl/                # FedEx WSDL files
+├── tests/                   # PHPUnit tests
+├── chrome_app/              # Chrome extension (scale & label printing)
+├── scripts/                 # Build scripts (email, widget)
+├── Dockerfile               # PHP 8.2 + Apache container
+├── docker-compose.yml       # Local dev (app, queue, MySQL, Redis)
+├── composer.json             # PHP dependencies
+├── package.json              # Node.js dependencies
+└── vite.config.js            # Vite build configuration
 ```
 
 ---
 
 ## Key Integrations
 
-* **Shipping:** USPS, FedEx, Endicia (label generation and tracking)
-* **Payment:** PayPal REST API, credit card validation (PayPal vault storage)
-* **Hardware:** Zebra label printers, shipping scale (via Chrome extension)
-* **Email:** HTML templates with CSS inlining (juice)
-* **Background Jobs:** CakePHP Queue plugin (cron-based, every 14 minutes)
+* **Shipping:** USPS (XML API), FedEx (SOAP/WSDL), Endicia (DAZzle XML labels)
+* **Payment:** PayPal REST API (vault storage, authorize, charge)
+* **Hardware:** Zebra label printers (ZPL, network printing), shipping scale (Chrome extension)
+* **Email:** Blade email templates with HTML layout
+* **Background Jobs:** Laravel Queue (Redis driver) with scheduled commands
 
 ---
 
@@ -82,10 +99,11 @@ Account management application for APO Box customers. Allows users to create and
 
 ### Requirements
 
-* PHP 5.6+ (with intl, pdo_mysql, mbstring, openssl, memcached extensions)
-* MySQL 5.5+
-* Memcached (production)
+* PHP 8.2+ (with intl, pdo_mysql, mbstring, openssl, redis, soap, gd extensions)
+* MySQL 8.0+
+* Redis
 * Node.js 18+ + npm (for frontend asset building)
+* Composer 2
 * Docker + Docker Compose (recommended for local development)
 
 ### Development Setup (Docker)
@@ -94,57 +112,57 @@ Account management application for APO Box customers. Allows users to create and
 git clone https://github.com/5ox/apobox_backend_v2.git
 cd apobox_backend_v2
 
+# Copy environment file
+cp .env.example .env
+
 # Start the containers
 docker-compose up -d
 
 # Install PHP dependencies (inside container)
-docker-compose exec web composer install
+docker-compose exec app composer install
 
-# Install frontend dependencies (on host)
+# Generate application key
+docker-compose exec app php artisan key:generate
+
+# Run migrations and seed data
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan db:seed
+
+# Install frontend dependencies and build
 npm install
-
-# Build frontend assets
 npm run build
 ```
 
-### Development Setup (Legacy Vagrant)
-
-```bash
-git clone https://github.com/5ox/apobox_backend_v2.git
-cd apobox_backend_v2
-./bootstrap.sh vagrant
-```
-
-Add the following to `/etc/hosts`:
-
-```
-192.168.15.43 apobox.dev
-```
-
-The site will be available at https://apobox.dev. Default credentials: `test@loadsys.com` / `password`.
+The site will be available at http://localhost:8080.
 
 ---
 
 ## Configuration
 
-App configuration is stored in `Config/core.php`, extended by environment-specific files:
+Environment configuration uses `.env` file (see `.env.example` for all options):
 
-| File | Environment |
-|------|-------------|
-| `Config/core-dev.php` | Development |
-| `Config/core-stage.php` | Staging |
-| `Config/core-ci.php` | CI/CD |
-| `Config/core-local.php` | Local overrides (not committed) |
-
-Set the `APP_ENV` environment variable to select the configuration (e.g., `export APP_ENV=dev`).
+| Config File | Purpose |
+|-------------|---------|
+| `config/apobox.php` | App-specific settings (fees, reminders, billing) |
+| `config/shipping.php` | Shipping API credentials (USPS, FedEx, Endicia, Zebra) |
+| `config/auth.php` | Multi-guard auth (customer, admin, Sanctum) |
 
 ---
 
 ## Database
 
-All SQL changes are recorded in `Config/Schema/db_updates.sql`. The full schema is in `Config/Schema/database.sql`.
+Migrations are in `database/migrations/`. Original CakePHP schema preserved in `database/reference/` for reference.
 
-Changes are applied manually in production and automatically during initial provisioning in development.
+```bash
+# Run migrations
+php artisan migrate
+
+# Seed reference data (countries, zones, insurance rates, order statuses)
+php artisan db:seed
+
+# Fresh migration + seed
+php artisan migrate:fresh --seed
+```
 
 ---
 
@@ -153,7 +171,7 @@ Changes are applied manually in production and automatically during initial prov
 | Command | Description |
 |---------|-------------|
 | `npm run build` | Build JS bundle and compile SCSS via Vite |
-| `npm run dev` | Watch mode — rebuild on file changes |
+| `npm run dev` | Vite dev server with HMR |
 | `npm run build:email` | Build email templates with CSS inlining |
 | `npm run build:widget` | Build the embeddable signup widget |
 | `npm run build:app` | Package the Chrome extension |
@@ -161,44 +179,38 @@ Changes are applied manually in production and automatically during initial prov
 
 ---
 
-## Testing
+## Artisan Commands
 
-Tests use PHPUnit with a minimum 67% code coverage enforced.
-
-```bash
-# Run all tests (inside VM or container)
-bin/run-tests
-
-# Run tests without coverage (faster)
-bin/cake test app All
-
-# Run PHP CodeSniffer
-bin/run-codesniffer
-```
-
-Coverage reports are generated in `tmp/coverage/html/`.
+| Command | Description |
+|---------|-------------|
+| `php artisan app:customer-reminders --awaiting-payment` | Email customers with unpaid orders |
+| `php artisan app:customer-reminders --partial-signups` | Email incomplete registrations |
+| `php artisan app:customer-reminders --expiring-cards` | Email customers with expiring CCs |
+| `php artisan app:customer-reminders --purge-partials` | Remove stale partial signups |
+| `php artisan app:rebuild-search-index` | Rebuild FULLTEXT search index |
+| `php artisan app:sync-customers-info` | Create missing customers_info records |
+| `php artisan app:match-custom-orders` | Match custom requests to orders by tracking |
 
 ---
 
-## Branching
+## Authentication
 
-| Branch | Purpose |
-|--------|---------|
-| `main` | Primary branch (production-ready code) |
+| Guard | Provider | Method |
+|-------|----------|--------|
+| `customer` | Customer model (session) | Email/password login |
+| `admin` | Admin model (session) | Email/password + Google OAuth |
+| `sanctum` | Admin model (tokens) | API token auth |
+
+Legacy passwords (MD5+salt) are transparently upgraded to bcrypt on login.
 
 ---
 
-## Modernization Roadmap
+## Modernization History
 
-This repository is the starting point for a phased modernization effort. See `APO_Box_Account_Codebase_Review.docx` for the full analysis and plan.
-
-| Phase | Goal | Timeline |
-|-------|------|----------|
-| **Phase 1** | Upgrade PHP 5.6 to 8.1+, MySQL to 8.0 | 2-3 months |
-| **Phase 2** | ~~Replace Grunt/JSPM/Compass with Vite, upgrade Bootstrap 5~~ **DONE** | - |
-| **Phase 3** | Extract service layer, standardize API | 3-4 months |
-| **Phase 4** | Migrate to CakePHP 5 or Laravel 11 | 4-6 months |
-| **Phase 5** | Redis, queue workers, monitoring | Ongoing |
+| Phase | Status |
+|-------|--------|
+| **Phase 2** | Frontend modernization (Vite, BS5, vanilla JS, Chart.js) - DONE |
+| **Phase 4** | CakePHP 2.9.5 to Laravel 11 migration - DONE |
 
 ---
 

@@ -1,8 +1,0 @@
-// mixins/flash-messages.scss
-@import "mixins/contrast";
-
-@mixin flash-varient($background, $border) {
-  background-color: $background;
-  border-color: $border;
-  color: contrast-color($background, $gray-darker, $white);
-}

@@ -1,8 +1,26 @@
-# App specific
-webroot/widgets/dev
-perl/local.pl
-webroot/js/jspm/packages
-chrome_app/apobox_scale.zip
+# Laravel
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+
+# IDE
+/.fleet
+/.idea
+/.vscode
 
 # OS generated files
 .DS_Store
@@ -10,32 +28,7 @@ chrome_app/apobox_scale.zip
 ._*
 .Spotlight-V100
 .Trashes
-Icon?
-ehthumbs.db
 Thumbs.db
 
-# Loadsys
-/Lib/Cake
-/backups
-/Config/core-local.php
-
-# Composer
-/Vendor
-/bin
-/Plugin/DebugKit
-/Plugin/Migrations
-/Plugin/BoostCake
-/Plugin/Serializers
-/Plugin/SerializersErrors
-/Plugin/Queue
-!bin/composer.phar
-
-# Vagrant + puphpet
-/.vagrant
-/xhprof
-/phpmyadmin
-
-# npm + Vite
-/node_modules
-/webroot/build
-/webroot/assets
+# App specific
+chrome_app/apobox_scale.zip

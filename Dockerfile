@@ -1,68 +1,73 @@
-FROM php:5.6-apache AS base
+FROM php:8.2-apache
 
-RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list
-RUN sed -i s/security.debian.org/archive.debian.org/g /etc/apt/sources.list
-RUN sed -i s/stretch-updates/stretch/g /etc/apt/sources.list
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libicu-dev \
+    libsodium-dev \
+    libfreetype6-dev \
+    libjpeg-dev \
+    zip \
+    unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        intl \
+        soap \
+        sockets \
+        zip \
+        opcache \
+        sodium \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update \
-	&& apt-get install -y \
-		git                                             `# composer` \
-		zip                                             `# composer` \
-		unzip                                           `# composer` \
-		rsync                                           `# tests` \
-		zlib1g-dev                                      `# memcached` \
-		libmemcached-dev                                `# memcached` \
-		libmcrypt-dev                                   `# mcrypt` \
-		libfreetype6-dev                                `# gd` \
-		libpng-dev                                      `# gd` \
-		libjpeg-dev                                     `# gd` \
-		libicu-dev                                      `# intl` \
-		libxml2-dev                                     `# soap` \
-	&& docker-php-ext-configure gd \
-		--with-freetype-dir=/usr/include/ \
-		--with-jpeg-dir=/usr/include/ \
-		--with-png-dir=/usr/include/ \
-	&& docker-php-ext-configure intl \
-	&& docker-php-ext-install -j$(nproc) \
-		pdo_mysql \
-		gd \
-		mcrypt \
-		opcache \
-		intl \
-		soap \
-		sockets \
-    && pecl install \
-		memcached-2.2.0 \
-		# xdebug-2.7.0 \
-    && docker-php-ext-enable \
-		memcached \
-		# xdebug \
-	&& apt-get purge -y \
-		zlib1g-dev \
-		libmemcached-dev \
-		libmcrypt-dev \
-		libfreetype6-dev \
-		libpng-dev \
-		libjpeg-dev \
-		libicu-dev \
-		libxml2-dev \
-	&& rm -rf /var/lib/apt/lists/*
+# Enable Apache modules
+RUN a2enmod rewrite headers env
 
-COPY docker/php/php-site.ini /usr/local/etc/php/conf.d/local.ini
-COPY docker/php/apache-site.conf /etc/apache2/sites-enabled/000-default.conf
-COPY docker/php/apache-security.conf /etc/apache2/conf-available/security.conf
-RUN a2enmod env info rewrite headers
+# Set Apache document root to Laravel public directory
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-WORKDIR /var/www
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-#### Composer Install - cache friendly way to pre-install dependencies
-COPY --from=composer:1 /usr/bin/composer /usr/bin/composer
-COPY composer.json composer.lock /var/www/
-RUN composer install --no-interaction --no-autoloader --no-scripts
+# Set working directory
+WORKDIR /var/www/html
 
-COPY ./ /var/www/
-RUN chown -R www-data:www-data ./tmp
-RUN composer install --no-interaction
+# Copy composer files first for better caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-ENTRYPOINT ["docker/php/entrypoint.sh"]
+# Copy application files
+COPY . .
+RUN composer dump-autoload --optimize
+
+# Set permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
+
+# PHP configuration
+RUN echo "opcache.enable=1\n\
+opcache.memory_consumption=128\n\
+opcache.interned_strings_buffer=8\n\
+opcache.max_accelerated_files=4000\n\
+opcache.validate_timestamps=0\n\
+upload_max_filesize=20M\n\
+post_max_size=20M\n\
+memory_limit=256M" > /usr/local/etc/php/conf.d/custom.ini
+
+EXPOSE 80
+
 CMD ["apache2-foreground"]

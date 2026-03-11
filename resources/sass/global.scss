@@ -1,0 +1,31 @@
+// APO Box Account - Global Styles
+// Shared across all layouts (customer + admin)
+
+// Variables
+$apobox-blue: #1a4b8c;
+$apobox-blue-light: #2a6cb8;
+$apobox-gray: #f5f5f5;
+
+// Base overrides
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+}
+
+// Flash messages
+.flash-message {
+    margin-top: 15px;
+}
+
+// Utility classes
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.text-apobox {
+    color: $apobox-blue;
+}
+
+.bg-apobox {
+    background-color: $apobox-blue;
+}
