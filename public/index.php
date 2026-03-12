@@ -1,5 +1,18 @@
 <?php
 
+// Temporary debug endpoint — shows last 50 lines of Laravel log
+if ($_SERVER['REQUEST_URI'] === '/debug-log') {
+    header('Content-Type: text/plain');
+    $logFile = __DIR__ . '/../storage/logs/laravel.log';
+    if (file_exists($logFile)) {
+        $lines = file($logFile);
+        echo implode('', array_slice($lines, -50));
+    } else {
+        echo 'No log file found. Checking stderr...';
+    }
+    exit;
+}
+
 // Lightweight health check — bypass Laravel entirely to avoid session/Redis deps
 if ($_SERVER['REQUEST_URI'] === '/health') {
     header('Content-Type: application/json');
