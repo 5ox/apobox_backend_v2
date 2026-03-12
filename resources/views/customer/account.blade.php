@@ -10,10 +10,10 @@
                 <tbody>
                     @foreach($requests as $request)
                         <tr>
-                            <td>{{ $request->request_date?->format('m/d/Y') }}</td>
-                            <td>{{ $request->description }}</td>
-                            <td>{{ $request->status_label ?? $request->status }}</td>
-                            <td><a href="{{ url('/requests/edit/' . $request->custom_package_requests_id) }}">Edit</a></td>
+                            <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                            <td>{{ $request->instructions }}</td>
+                            <td>{{ $request->status_label }}</td>
+                            <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
                         </tr>
                     @endforeach
                 </tbody>

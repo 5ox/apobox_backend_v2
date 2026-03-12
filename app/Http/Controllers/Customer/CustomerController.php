@@ -55,7 +55,7 @@ class CustomerController extends Controller
             ->get();
 
         $requests = CustomPackageRequest::where('customers_id', $customerId)
-            ->whereIn('status', ['pending', 'approved'])
+            ->active()
             ->get();
 
         $totalOrders = $customer->orders()->count();
