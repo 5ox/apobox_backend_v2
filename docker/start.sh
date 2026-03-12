@@ -7,6 +7,12 @@ if [ -z "$APP_KEY" ] && [ -f /var/www/html/.env ]; then
 fi
 rm -f /var/www/html/.env
 
+# Ensure APP_KEY has the required base64: prefix
+if [ -n "$APP_KEY" ] && [[ "$APP_KEY" != base64:* ]]; then
+    echo "WARNING: APP_KEY missing base64: prefix — adding it"
+    export APP_KEY="base64:${APP_KEY}"
+fi
+
 # Map Railway MySQL vars to Laravel's expected DB_* vars
 export DB_CONNECTION=mysql
 export DB_HOST="${DB_HOST:-$MYSQLHOST}"
