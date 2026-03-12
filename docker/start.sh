@@ -10,7 +10,7 @@ export DB_HOST="${DB_HOST:-$MYSQLHOST}"
 export DB_PORT="${DB_PORT:-$MYSQLPORT}"
 export DB_DATABASE="${DB_DATABASE:-$MYSQLDATABASE}"
 export DB_USERNAME="${DB_USERNAME:-$MYSQLUSER}"
-export DB_PASSWORD="${DB_PASSWORD:-$MYSQL_ROOT_PASSWORD}"
+export DB_PASSWORD="${DB_PASSWORD:-$MYSQLPASSWORD}"
 
 # Railway injects PORT — tell Apache to listen on it
 if [ -n "$PORT" ]; then
