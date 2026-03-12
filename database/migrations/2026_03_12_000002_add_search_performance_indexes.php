@@ -1,51 +1,50 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
+/**
+ * Uses raw CREATE INDEX instead of Schema::table to avoid MySQL strict mode
+ * re-validating legacy columns (customers_dob has invalid 0000-00-00 default).
+ */
 return new class extends Migration
 {
     public function up(): void
     {
-        $orderIndexes = [
-            'idx_usps_track'    => 'usps_track_num',
-            'idx_usps_track_in' => 'usps_track_num_in',
-            'idx_ups_track'     => 'ups_track_num',
-            'idx_fedex_track'   => 'fedex_track_num',
-            'idx_dhl_track'     => 'dhl_track_num',
+        $indexes = [
+            ['orders', 'idx_usps_track',    'usps_track_num'],
+            ['orders', 'idx_usps_track_in', 'usps_track_num_in'],
+            ['orders', 'idx_ups_track',     'ups_track_num'],
+            ['orders', 'idx_fedex_track',   'fedex_track_num'],
+            ['orders', 'idx_dhl_track',     'dhl_track_num'],
+            ['customers', 'idx_customer_name', 'customers_lastname, customers_firstname'],
+            ['customers', 'idx_backup_email',  'backup_email_address'],
         ];
 
-        foreach ($orderIndexes as $name => $column) {
-            if (!$this->indexExists('orders', $name)) {
-                Schema::table('orders', fn (Blueprint $t) => $t->index($column, $name));
+        foreach ($indexes as [$table, $name, $columns]) {
+            if (!$this->indexExists($table, $name)) {
+                DB::statement("CREATE INDEX `{$name}` ON `{$table}` ({$columns})");
             }
-        }
-
-        if (!$this->indexExists('customers', 'idx_customer_name')) {
-            Schema::table('customers', fn (Blueprint $t) => $t->index(['customers_lastname', 'customers_firstname'], 'idx_customer_name'));
-        }
-
-        if (!$this->indexExists('customers', 'idx_backup_email')) {
-            Schema::table('customers', fn (Blueprint $t) => $t->index('backup_email_address', 'idx_backup_email'));
         }
     }
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropIndex('idx_usps_track');
-            $table->dropIndex('idx_usps_track_in');
-            $table->dropIndex('idx_ups_track');
-            $table->dropIndex('idx_fedex_track');
-            $table->dropIndex('idx_dhl_track');
-        });
+        $indexes = [
+            ['orders', 'idx_usps_track'],
+            ['orders', 'idx_usps_track_in'],
+            ['orders', 'idx_ups_track'],
+            ['orders', 'idx_fedex_track'],
+            ['orders', 'idx_dhl_track'],
+            ['customers', 'idx_customer_name'],
+            ['customers', 'idx_backup_email'],
+        ];
 
-        Schema::table('customers', function (Blueprint $table) {
-            $table->dropIndex('idx_customer_name');
-            $table->dropIndex('idx_backup_email');
-        });
+        foreach ($indexes as [$table, $name]) {
+            if ($this->indexExists($table, $name)) {
+                DB::statement("DROP INDEX `{$name}` ON `{$table}`");
+            }
+        }
     }
 
     private function indexExists(string $table, string $indexName): bool
