@@ -56,8 +56,11 @@ if [ "$SESSION_DRIVER" = "redis" ] || [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_
 fi
 
 # Force logging to file so /health can read errors (stderr is invisible to us)
-export LOG_CHANNEL="${LOG_CHANNEL:-daily}"
-export LOG_STACK="${LOG_STACK:-daily}"
+export LOG_CHANNEL=daily
+export LOG_STACK=daily
+
+# TEMPORARY: Show errors in browser for debugging (remove once stable)
+export APP_DEBUG=true
 
 # Suppress "not a git repo" warnings from Sentry
 export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
