@@ -12,8 +12,6 @@ use App\Http\Controllers\PageController;
 // Public routes
 // =========================================================================
 
-Route::get('/health', \App\Http\Controllers\HealthCheckController::class);
-
 Route::redirect('/', '/account');
 Route::get('/login', [CustomerLoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [CustomerLoginController::class, 'login']);
