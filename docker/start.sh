@@ -39,9 +39,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Skip auto-migrations — existing DB has all tables from CakePHP era.
-# Run migrations manually via `railway run php artisan migrate` when needed.
-# php artisan migrate --force
+# Seed migrations table with legacy tables (idempotent), then run new migrations
+php artisan migrate:seed-existing
+php artisan migrate --force
 
 # Ensure only mpm_prefork is loaded (Railway may inject mpm_event at runtime)
 a2dismod mpm_event mpm_worker 2>/dev/null || true
