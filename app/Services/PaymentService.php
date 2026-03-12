@@ -2,47 +2,68 @@
 
 namespace App\Services;
 
-use PayPal\Api\CreditCard as PayPalCreditCard;
-use PayPal\Api\CreditCardToken;
-use PayPal\Api\FundingInstrument;
-use PayPal\Api\Payer;
-use PayPal\Api\Amount;
-use PayPal\Api\Transaction;
-use PayPal\Api\Payment;
-use PayPal\Auth\OAuthTokenCredential;
-use PayPal\Rest\ApiContext;
+use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use Exception;
 
 class PaymentService
 {
-    protected ApiContext $apiContext;
+    protected PayPalClient $client;
 
     public function __construct(string $clientId, string $clientSecret, string $mode = 'sandbox')
     {
-        $this->apiContext = new ApiContext(
-            new OAuthTokenCredential($clientId, $clientSecret)
-        );
-        $this->apiContext->setConfig(['mode' => $mode, 'log.LogEnabled' => false]);
+        $this->client = new PayPalClient;
+        $this->client->setApiCredentials([
+            'mode' => $mode,
+            $mode => [
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+            ],
+            'payment_action' => 'Sale',
+            'currency' => 'USD',
+            'notify_url' => '',
+            'locale' => 'en_US',
+            'validate_ssl' => true,
+        ]);
+        $this->client->getAccessToken();
     }
 
     /**
      * Store a credit card in PayPal vault.
+     *
+     * Creates a setup token then converts it to a permanent payment token.
+     * Returns the payment token ID (vault ID) for future charges.
      */
     public function storeCard(array $cardData): ?string
     {
         try {
-            $card = new PayPalCreditCard();
-            $card->setType($cardData['type'] ?? 'visa')
-                ->setNumber($cardData['number'])
-                ->setExpireMonth($cardData['expire_month'])
-                ->setExpireYear('20' . $cardData['expire_year'])
-                ->setCvv2($cardData['cvv'])
-                ->setFirstName($cardData['first_name'] ?? '')
-                ->setLastName($cardData['last_name'] ?? '');
+            $expiry = '20' . $cardData['expire_year'] . '-' . str_pad($cardData['expire_month'], 2, '0', STR_PAD_LEFT);
 
-            $card->create($this->apiContext);
+            $setupToken = $this->client->createPaymentSetupToken([
+                'payment_source' => [
+                    'card' => [
+                        'number' => $cardData['number'],
+                        'expiry' => $expiry,
+                        'name' => trim(($cardData['first_name'] ?? '') . ' ' . ($cardData['last_name'] ?? '')),
+                        'security_code' => $cardData['cvv'],
+                    ],
+                ],
+            ]);
 
-            return $card->getId();
+            if (empty($setupToken['id'])) {
+                report(new Exception('PayPal setup token creation failed: ' . json_encode($setupToken)));
+                return null;
+            }
+
+            $paymentToken = $this->client->createPaymentSourceToken([
+                'payment_source' => [
+                    'token' => [
+                        'id' => $setupToken['id'],
+                        'type' => 'SETUP_TOKEN',
+                    ],
+                ],
+            ]);
+
+            return $paymentToken['id'] ?? null;
         } catch (Exception $e) {
             report($e);
             return null;
@@ -50,7 +71,7 @@ class PaymentService
     }
 
     /**
-     * Authorize a credit card (zero-dollar auth for validation).
+     * Authorize a credit card (vault it for validation).
      */
     public function authorizeCard(array $cardData): ?string
     {
@@ -58,40 +79,36 @@ class PaymentService
     }
 
     /**
-     * Charge a stored card by token.
+     * Charge a stored card by vault token.
      */
     public function chargeCard(string $cardToken, float $amount, string $description = ''): array
     {
         try {
-            $creditCardToken = new CreditCardToken();
-            $creditCardToken->setCreditCardId($cardToken);
+            $order = $this->client->createOrder([
+                'intent' => 'CAPTURE',
+                'purchase_units' => [
+                    [
+                        'amount' => [
+                            'currency_code' => 'USD',
+                            'value' => number_format($amount, 2, '.', ''),
+                        ],
+                        'description' => $description ?: 'APO Box Shipping',
+                    ],
+                ],
+                'payment_source' => [
+                    'card' => [
+                        'vault_id' => $cardToken,
+                    ],
+                ],
+            ]);
 
-            $fundingInstrument = new FundingInstrument();
-            $fundingInstrument->setCreditCardToken($creditCardToken);
-
-            $payer = new Payer();
-            $payer->setPaymentMethod('credit_card')
-                ->setFundingInstruments([$fundingInstrument]);
-
-            $payAmount = new Amount();
-            $payAmount->setCurrency('USD')
-                ->setTotal(number_format($amount, 2, '.', ''));
-
-            $transaction = new Transaction();
-            $transaction->setAmount($payAmount)
-                ->setDescription($description ?: 'APO Box Shipping');
-
-            $payment = new Payment();
-            $payment->setIntent('sale')
-                ->setPayer($payer)
-                ->setTransactions([$transaction]);
-
-            $payment->create($this->apiContext);
+            $status = $order['status'] ?? 'UNKNOWN';
+            $paymentId = $order['id'] ?? null;
 
             return [
-                'success' => true,
-                'payment_id' => $payment->getId(),
-                'state' => $payment->getState(),
+                'success' => $status === 'COMPLETED',
+                'payment_id' => $paymentId,
+                'state' => strtolower($status),
             ];
         } catch (Exception $e) {
             report($e);
