@@ -12,6 +12,9 @@ use App\Http\Controllers\PageController;
 // Public routes
 // =========================================================================
 
+// Health check for Railway (no auth, no middleware)
+Route::get('/health', fn () => response('ok', 200));
+
 Route::redirect('/', '/account');
 Route::get('/login', [CustomerLoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [CustomerLoginController::class, 'login']);
