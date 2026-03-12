@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Remove build-time .env so only Railway's injected env vars are used
+rm -f /var/www/html/.env
+
 # Railway injects PORT — tell Apache to listen on it
 if [ -n "$PORT" ]; then
     sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
