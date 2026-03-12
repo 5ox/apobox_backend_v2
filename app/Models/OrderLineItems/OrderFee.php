@@ -22,19 +22,21 @@ class OrderFee extends OrderLineItem
     /**
      * Look up the handling fee for a given weight in ounces
      * using the fee schedule defined in config('apobox.fee_by_weight').
+     *
+     * Config keys are minimum ounces, sorted ascending.
+     * e.g. [0 => 10.95, 17 => 12.95] means 0–16 oz = $10.95, 17+ oz = $12.95.
      */
     public static function getFee(int $ounces): float
     {
         $schedule = config('apobox.fee_by_weight', []);
+        $fee = 0.00;
 
-        // Schedule is expected as an array of [max_ounces => fee] sorted ascending.
-        foreach ($schedule as $maxOz => $fee) {
-            if ($ounces <= $maxOz) {
-                return (float) $fee;
+        foreach ($schedule as $minOz => $amount) {
+            if ($ounces >= $minOz) {
+                $fee = (float) $amount;
             }
         }
 
-        // If weight exceeds all thresholds, return the last (highest) fee.
-        return (float) end($schedule) ?: 0.00;
+        return $fee;
     }
 }

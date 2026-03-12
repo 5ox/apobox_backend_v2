@@ -440,11 +440,114 @@ class OrderController extends Controller
             }
         }
 
+        // -----------------------------------------------------------------
+        // Auto-calculate rates on GET (first visit with $0.00 line items)
+        // -----------------------------------------------------------------
+        $uspsRates = [];
+        $autoRate = null;
+
+        $weightOz = (int) ($order->weight_oz ?? 0);
+
+        if ($weightOz > 0 && !empty($order->delivery_postcode)) {
+            try {
+                $usps = app(UspsService::class);
+                $weight = $usps->calculateWeight($weightOz);
+
+                $rateParams = [
+                    'pounds' => $weight['pounds'],
+                    'ounces' => $weight['ounces'],
+                    'length' => (float) ($order->length ?? 0),
+                    'width'  => (float) ($order->width ?? 0),
+                    'height' => (float) ($order->depth ?? 0),
+                    'zip'    => $order->delivery_postcode,
+                ];
+
+                $uspsRates = $usps->getRate($rateParams);
+
+                // Find the rate matching this order's mail class
+                if (!empty($uspsRates) && !isset($uspsRates['error'])) {
+                    $orderMailClass = strtoupper(trim($order->mail_class ?? ''));
+                    foreach ($uspsRates as $rate) {
+                        $service = strtoupper($rate['service'] ?? '');
+                        if ($service === $orderMailClass || str_contains($service, $orderMailClass)) {
+                            $autoRate = $rate;
+                            break;
+                        }
+                    }
+                    // Fallback: use the first/cheapest rate if no exact match
+                    if (!$autoRate) {
+                        $autoRate = $uspsRates[0] ?? null;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::channel('shipping')->warning('Auto-rate lookup failed for order #' . $id . ': ' . $e->getMessage());
+            }
+        }
+
+        // Auto-calculate fee and insurance
+        $autoFee = \App\Models\OrderLineItems\OrderFee::getFee($weightOz);
+        $autoInsurance = (float) ($order->customer->insurance_fee ?? 0);
+
+        // Pre-populate line items if they're still at $0.00 (first visit)
+        $allZero = ($order->shipping?->value == 0)
+            && ($order->fee?->value == 0)
+            && ($order->insurance?->value == 0);
+
+        if ($allZero && $allowCharge['allow']) {
+            if ($autoRate && $order->shipping) {
+                $order->shipping->update([
+                    'value' => $autoRate['rate'],
+                    'text'  => '$' . number_format($autoRate['rate'], 2),
+                ]);
+            }
+            if ($autoFee > 0 && $order->fee) {
+                $order->fee->update([
+                    'value' => $autoFee,
+                    'text'  => '$' . number_format($autoFee, 2),
+                ]);
+            }
+            if ($autoInsurance > 0 && $order->insurance) {
+                $order->insurance->update([
+                    'value' => $autoInsurance,
+                    'text'  => '$' . number_format($autoInsurance, 2),
+                ]);
+            }
+
+            // Recalculate subtotal & total
+            $sub = ($order->shipping?->fresh()->value ?? 0)
+                 + ($order->fee?->fresh()->value ?? 0)
+                 + ($order->insurance?->fresh()->value ?? 0)
+                 + ($order->battery?->value ?? 0)
+                 + ($order->repack?->value ?? 0)
+                 + ($order->storage?->value ?? 0)
+                 + ($order->returnItem?->value ?? 0)
+                 + ($order->misaddressed?->value ?? 0)
+                 + ($order->shipToUS?->value ?? 0);
+
+            if ($order->subtotal) {
+                $order->subtotal->update(['value' => $sub, 'text' => '$' . number_format($sub, 2)]);
+            }
+            if ($order->total) {
+                $order->total->update(['value' => $sub, 'text' => '$' . number_format($sub, 2)]);
+            }
+
+            // Refresh relationships so the view shows updated values
+            $order->load([
+                'shipping', 'fee', 'insurance', 'battery', 'repack',
+                'storage', 'returnItem', 'misaddressed', 'shipToUS',
+                'subtotal', 'total',
+            ]);
+        }
+
         return view('manager.orders.charge', compact(
             'order',
             'allowCharge',
             'feeRates',
-            'invoiceCustomer'
+            'invoiceCustomer',
+            'uspsRates',
+            'autoRate',
+            'autoFee',
+            'autoInsurance'
         ));
     }
 

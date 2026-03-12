@@ -8,29 +8,178 @@
     <div class="alert alert-warning"><i data-lucide="alert-triangle" class="icon--sm me-1"></i>{{ $allowCharge['message'] }}</div>
 @endif
 
-<x-table-card title="Charge Summary">
-    <table class="table table-modern">
-        <tbody>
-            @if($order->shipping)<tr><td>Shipping</td><td class="text-end">${{ number_format($order->shipping->value, 2) }}</td></tr>@endif
-            @if($order->insurance)<tr><td>Insurance</td><td class="text-end">${{ number_format($order->insurance->value, 2) }}</td></tr>@endif
-            @if($order->battery)<tr><td>Battery</td><td class="text-end">${{ number_format($order->battery->value, 2) }}</td></tr>@endif
-            @if($order->repack)<tr><td>Repack</td><td class="text-end">${{ number_format($order->repack->value, 2) }}</td></tr>@endif
-            @if($order->storage)<tr><td>Storage</td><td class="text-end">${{ number_format($order->storage->value, 2) }}</td></tr>@endif
-            @if($order->fee)<tr><td>Fee</td><td class="text-end">${{ number_format($order->fee->value, 2) }}</td></tr>@endif
-            @if($order->subtotal)<tr class="fw-bold"><td>Subtotal</td><td class="text-end">${{ number_format($order->subtotal->value, 2) }}</td></tr>@endif
-            @if($order->total)<tr class="fw-bold"><td>Total</td><td class="text-end">${{ number_format($order->total->value, 2) }}</td></tr>@endif
-        </tbody>
-    </table>
-</x-table-card>
+<div class="row">
+    {{-- Left column: Order Info --}}
+    <div class="col-md-5">
+        <x-detail-card title="Order Info">
+            <x-detail-row label="Customer"><a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}">{{ $order->customer?->full_name }}</a></x-detail-row>
+            <x-detail-row label="Status"><x-status-badge :status="$order->status?->orders_status_name" /></x-detail-row>
+            <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
+            <x-detail-row label="Weight">{{ $order->weight ? $order->weight . ' lb' : 'N/A' }} ({{ (int)($order->weight_oz ?? 0) }} oz)</x-detail-row>
+            <x-detail-row label="Dimensions">{{ $order->dimensions ?: 'N/A' }}</x-detail-row>
+            <x-detail-row label="Ship to">{{ $order->delivery_city }}, {{ $order->delivery_state }} {{ $order->delivery_postcode }}</x-detail-row>
+            <x-detail-row label="Payment">
+                @if($invoiceCustomer)
+                    <span class="badge bg-info">Invoice Customer</span>
+                @elseif($order->customer?->card_token)
+                    <span class="badge bg-success">Card on File</span>
+                @else
+                    <span class="badge bg-danger">No Payment Method</span>
+                @endif
+            </x-detail-row>
+        </x-detail-card>
 
-<div class="action-bar mt-3">
-    @if($allowCharge['allow'])
-        <form method="POST" action="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" style="display:inline">
+        {{-- USPS Rate Lookup Results --}}
+        @if(!empty($uspsRates) && !isset($uspsRates['error']))
+            <x-detail-card title="USPS Rate Lookup">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Service</th><th class="text-end">Rate</th></tr></thead>
+                    <tbody>
+                        @foreach($uspsRates as $rate)
+                            <tr @if($autoRate && ($rate['class_id'] ?? '') === ($autoRate['class_id'] ?? '')) class="table-success" @endif>
+                                <td>{{ $rate['description'] ?: $rate['service'] }}</td>
+                                <td class="text-end">${{ number_format($rate['rate'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </x-detail-card>
+        @elseif(isset($uspsRates['error']))
+            <div class="alert alert-danger mt-2"><i data-lucide="alert-circle" class="icon--sm me-1"></i>USPS rate lookup error: {{ $uspsRates['error'] }}</div>
+        @elseif(empty($order->weight_oz) || empty($order->delivery_postcode))
+            <div class="alert alert-warning mt-2"><i data-lucide="alert-triangle" class="icon--sm me-1"></i>Cannot look up USPS rates: missing weight or delivery ZIP code.</div>
+        @endif
+    </div>
+
+    {{-- Right column: Editable Charge Form --}}
+    <div class="col-md-7">
+        <form method="POST" action="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" id="chargeForm">
             @csrf
-            <input type="hidden" name="submit" value="charge">
-            <button type="submit" class="btn btn-success" onclick="return confirm('Charge ${{ number_format($order->total?->value ?? 0, 2) }}?')"><i data-lucide="credit-card" class="icon--sm me-1"></i>Confirm Charge</button>
+            <x-table-card title="Charge Summary">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr><th>Line Item</th><th class="text-end" style="width:140px">Amount</th><th style="width:100px"></th></tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $lineItems = [
+                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate['rate'] ?? null, 'hint' => $autoRate ? ($autoRate['description'] ?: $autoRate['service']) : null],
+                                ['name' => 'OrderFee', 'label' => 'Handling Fee', 'relation' => 'fee', 'auto' => $autoFee ?? null, 'hint' => null],
+                                ['name' => 'OrderInsurance', 'label' => 'Insurance', 'relation' => 'insurance', 'auto' => $autoInsurance ?? null, 'hint' => null],
+                                ['name' => 'OrderStorage', 'label' => 'Storage', 'relation' => 'storage', 'auto' => null, 'hint' => null],
+                                ['name' => 'OrderRepack', 'label' => 'Repack', 'relation' => 'repack', 'auto' => null, 'hint' => null],
+                                ['name' => 'OrderBattery', 'label' => 'Battery', 'relation' => 'battery', 'auto' => $feeRates['battery'] ?? null, 'hint' => null],
+                                ['name' => 'OrderReturn', 'label' => 'Return', 'relation' => 'returnItem', 'auto' => $feeRates['return'] ?? null, 'hint' => null],
+                                ['name' => 'OrderMisaddressed', 'label' => 'Misaddressed', 'relation' => 'misaddressed', 'auto' => $feeRates['misaddressed'] ?? null, 'hint' => null],
+                                ['name' => 'OrderShipToUS', 'label' => 'Ship to US', 'relation' => 'shipToUS', 'auto' => $feeRates['ship_to_us'] ?? null, 'hint' => null],
+                            ];
+                        @endphp
+                        @foreach($lineItems as $item)
+                            @php $lineItem = $order->{$item['relation']}; @endphp
+                            @if($lineItem)
+                                <tr>
+                                    <td>
+                                        {{ $item['label'] }}
+                                        @if($item['hint'])
+                                            <br><small class="text-muted">{{ $item['hint'] }}</small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" step="0.01" min="0" name="{{ $item['name'] }}[value]"
+                                                value="{{ number_format($lineItem->value, 2, '.', '') }}"
+                                                class="form-control form-control-sm text-end line-item-input"
+                                                @if(!$allowCharge['allow']) disabled @endif>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($item['auto'] && $lineItem->value == 0 && $allowCharge['allow'])
+                                            <button type="button" class="btn btn-outline-primary btn-sm auto-fill-btn"
+                                                data-value="{{ number_format((float)$item['auto'], 2, '.', '') }}"
+                                                data-target="{{ $item['name'] }}[value]"
+                                                title="Auto-fill ${{ number_format((float)$item['auto'], 2) }}">
+                                                <i data-lucide="zap" class="icon--xs"></i>
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endif
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td>Subtotal</td>
+                            <td class="text-end" id="subtotalDisplay">${{ number_format($order->subtotal?->value ?? 0, 2) }}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="fw-bold fs-5">
+                            <td>Total</td>
+                            <td class="text-end" id="totalDisplay">${{ number_format($order->total?->value ?? 0, 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </x-table-card>
+
+            <div class="action-bar mt-3">
+                @if($allowCharge['allow'])
+                    <button type="submit" name="submit" value="save" class="btn btn-primary">
+                        <i data-lucide="save" class="icon--sm me-1"></i>Save Totals
+                    </button>
+                    <button type="submit" name="submit" value="charge" class="btn btn-success"
+                        onclick="return confirm('Charge ' + document.getElementById('totalDisplay').textContent + ' to this customer?')">
+                        <i data-lucide="credit-card" class="icon--sm me-1"></i>
+                        {{ $invoiceCustomer ? 'Record Invoice' : 'Charge Card' }}
+                    </button>
+                @endif
+                <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="btn btn-secondary">
+                    <i data-lucide="arrow-left" class="icon--sm me-1"></i>Back
+                </a>
+            </div>
         </form>
-    @endif
-    <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="btn btn-secondary"><i data-lucide="arrow-left" class="icon--sm me-1"></i>Back</a>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('chargeForm');
+    if (!form) return;
+
+    const inputs = form.querySelectorAll('.line-item-input');
+    const subtotalEl = document.getElementById('subtotalDisplay');
+    const totalEl = document.getElementById('totalDisplay');
+
+    function recalculate() {
+        let sum = 0;
+        inputs.forEach(function(input) {
+            sum += parseFloat(input.value) || 0;
+        });
+        const formatted = '$' + sum.toFixed(2);
+        subtotalEl.textContent = formatted;
+        totalEl.textContent = formatted;
+    }
+
+    inputs.forEach(function(input) {
+        input.addEventListener('input', recalculate);
+        input.addEventListener('change', recalculate);
+    });
+
+    // Auto-fill buttons
+    form.querySelectorAll('.auto-fill-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetName = this.getAttribute('data-target');
+            const value = this.getAttribute('data-value');
+            const input = form.querySelector('[name="' + targetName + '"]');
+            if (input) {
+                input.value = value;
+                input.dispatchEvent(new Event('input'));
+                this.remove();
+            }
+        });
+    });
+});
+</script>
+@endpush

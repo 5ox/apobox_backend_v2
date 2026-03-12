@@ -13,8 +13,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'usps' => [
-        'client_id' => env('USPS_CLIENT_ID', ''),
-        'client_secret' => env('USPS_CLIENT_SECRET', ''),
+        'client_id' => env('USPS_API_CUSTOMER_KEY', ''),
+        'client_secret' => env('USPS_API_CUSTOMER_SECRET', ''),
         'account_number' => env('USPS_ACCOUNT_NUMBER', ''),
         'rate_classes' => [
             'Priority Mail Express 2-Day' => '3',
