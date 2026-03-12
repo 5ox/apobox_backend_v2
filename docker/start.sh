@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-# Remove build-time .env so only Railway's injected env vars are used
+# Extract APP_KEY from build-time .env before removing it
+if [ -z "$APP_KEY" ] && [ -f /var/www/html/.env ]; then
+    export APP_KEY=$(grep '^APP_KEY=' /var/www/html/.env | cut -d= -f2-)
+fi
 rm -f /var/www/html/.env
 
 # Map Railway MySQL vars to Laravel's expected DB_* vars
@@ -11,6 +14,14 @@ export DB_PORT="${DB_PORT:-$MYSQLPORT}"
 export DB_DATABASE="${DB_DATABASE:-$MYSQLDATABASE}"
 export DB_USERNAME="${DB_USERNAME:-$MYSQLUSER}"
 export DB_PASSWORD="${DB_PASSWORD:-$MYSQLPASSWORD}"
+
+# Use file-based drivers unless Redis is explicitly configured
+export SESSION_DRIVER="${SESSION_DRIVER:-file}"
+export CACHE_STORE="${CACHE_STORE:-file}"
+export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
+
+# Suppress "not a git repo" warnings from Sentry
+export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
 
 # Railway injects PORT — tell Apache to listen on it
 if [ -n "$PORT" ]; then
