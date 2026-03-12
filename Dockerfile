@@ -1,3 +1,13 @@
+# --- Stage 1: Build frontend assets ---
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm install
+COPY vite.config.js ./
+COPY resources/ ./resources/
+RUN npm run build
+
+# --- Stage 2: PHP application ---
 FROM php:8.2-apache
 
 # Install system dependencies
@@ -56,6 +66,9 @@ RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --n
 
 # Copy application files
 COPY . .
+
+# Copy Vite build output from frontend stage
+COPY --from=frontend /app/public/build public/build
 
 # Ensure Laravel directories exist (empty dirs aren't tracked by git)
 RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs
