@@ -2,10 +2,17 @@
 @section('title', $customer->full_name . ' - APO Box Admin')
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
-<x-page-header title="{{ $customer->full_name }}" subtitle="Billing ID: {{ $customer->billing_id }}">
-    @if($closed)
-        <x-slot:actions><x-status-badge status="Closed {{ $closed }}" /></x-slot:actions>
-    @endif
+<x-page-header title="{{ $customer->full_name }}">
+    <x-slot:actions>
+        <div class="d-flex align-items-center gap-2">
+            @if($closed)
+                <x-status-badge status="Closed {{ $closed }}" />
+            @endif
+            @if($customer->billing_id)
+                <span class="badge bg-primary fs-5 px-3 py-2">{{ $customer->billing_id }}</span>
+            @endif
+        </div>
+    </x-slot:actions>
 </x-page-header>
 
 @if($partialSignup) <div class="alert alert-warning"><i data-lucide="alert-triangle" class="icon--sm me-1"></i>Partial signup - no billing ID</div> @endif
