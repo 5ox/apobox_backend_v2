@@ -104,7 +104,7 @@ class Order extends Model
         'last_modified' => 'datetime',
         'date_purchased' => 'datetime',
         'orders_date_finished' => 'datetime',
-        'billing_status' => 'boolean',
+        'billing_status' => 'integer',
     ];
 
     // ---------------------------------------------------------------

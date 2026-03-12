@@ -255,6 +255,11 @@ class OrderController extends Controller
         $data['customers_email_address'] = $customer->customers_email_address;
         $data['creator_id'] = auth('admin')->id();
         $data['orders_status'] = $validated['orders_status'];
+        $data['date_purchased'] = now();
+
+        // Required NOT NULL columns with no database default
+        $data['postage_id'] = '';
+        $data['trans_id'] = '';
 
         // Map inbound tracking
         if (!empty($validated['inbound_tracking'])) {
@@ -314,12 +319,10 @@ class OrderController extends Controller
             }
         }
 
-        // Invoice customers
+        // Invoice customers get billing_status 5
         if ($this->checkForInvoiceCustomer($customer)) {
             $data['billing_status'] = 5;
         }
-
-        $data['date_purchased'] = now();
 
         // Link custom package request if selected
         if (!empty($validated['custom_package_request_id'])) {
@@ -342,8 +345,12 @@ class OrderController extends Controller
 
             return redirect()->route($prefix . '.orders.charge', ['id' => $order->orders_id]);
         } catch (\Exception $e) {
-            Log::error('OrderController::store: ' . $e->getMessage());
-            session()->flash('message', 'The order could not be saved. Please, try again.');
+            Log::error('OrderController::store failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'customer_id' => $customerId,
+            ]);
+            session()->flash('message', 'The order could not be saved: ' . $e->getMessage());
             return redirect()->back()->withInput();
         }
     }
