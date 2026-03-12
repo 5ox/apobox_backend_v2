@@ -25,6 +25,30 @@ export SESSION_DRIVER="${SESSION_DRIVER:-file}"
 export CACHE_STORE="${CACHE_STORE:-file}"
 export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
 
+# Test Redis connectivity — fall back to file if unreachable
+if [ "$SESSION_DRIVER" = "redis" ] || [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_CONNECTION" = "redis" ]; then
+    REDIS_OK=$(php -r "
+        try {
+            \$r = new Redis();
+            \$r->connect('${REDIS_HOST:-127.0.0.1}', ${REDIS_PORT:-6379}, 3);
+            \$pw = '${REDIS_PASSWORD}';
+            if (\$pw !== '') \$r->auth(\$pw);
+            \$r->ping();
+            echo 'ok';
+        } catch (Throwable \$e) {
+            echo 'fail';
+        }
+    " 2>/dev/null)
+    if [ "$REDIS_OK" != "ok" ]; then
+        echo "WARNING: Redis unreachable at ${REDIS_HOST:-127.0.0.1}:${REDIS_PORT:-6379}, falling back to file-based drivers"
+        export SESSION_DRIVER=file
+        export CACHE_STORE=file
+        export QUEUE_CONNECTION=sync
+    else
+        echo "Redis connected at ${REDIS_HOST}:${REDIS_PORT}"
+    fi
+fi
+
 # Suppress "not a git repo" warnings from Sentry
 export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
 
