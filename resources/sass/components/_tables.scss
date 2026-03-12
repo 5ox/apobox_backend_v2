@@ -37,4 +37,35 @@
     &--clickable tbody tr {
         cursor: pointer;
     }
+
+    // Sortable column headers
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+        transition: color var(--apo-transition-fast);
+
+        &:hover {
+            color: var(--apo-text-primary);
+        }
+
+        .icon--sm {
+            opacity: 0.3;
+            transition: opacity var(--apo-transition-fast);
+        }
+
+        &.sort-asc .icon--sm,
+        &.sort-desc .icon--sm {
+            opacity: 1;
+            color: #1a5fb4;
+        }
+
+        &.sort-asc .icon--sm {
+            transform: rotate(180deg);
+        }
+    }
+
+    // Monospace for tracking numbers
+    .text-monospace {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
 }

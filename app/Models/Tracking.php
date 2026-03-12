@@ -17,13 +17,9 @@ class Tracking extends Model
         'warehouse',
         'comments',
         'shipped',
-        'created',
-        'modified',
     ];
 
     protected $casts = [
         'timestamp' => 'datetime',
-        'created' => 'datetime',
-        'modified' => 'datetime',
     ];
 }

@@ -20,9 +20,9 @@
                 <tbody>
                     @foreach($results as $tracking)
                         <tr>
-                            <td>{{ $tracking->tracking_number }}</td>
+                            <td>{{ $tracking->tracking_id }}</td>
                             <td>{{ $tracking->timestamp?->format('m/d/Y g:i A') }}</td>
-                            <td>{{ $tracking->notes }}</td>
+                            <td>{{ $tracking->comments }}</td>
                             <td>
                                 <a href="/{{ $prefix }}/scan/edit/{{ $tracking->tracking_id }}" class="btn btn-sm btn-outline-primary"><i data-lucide="pencil" class="icon-sm"></i></a>
                                 @if($userIsManager)

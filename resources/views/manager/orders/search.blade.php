@@ -48,7 +48,7 @@
         </div>
         <x-slot:footer>{{ $results->appends(request()->query())->links() }}</x-slot:footer>
     </x-table-card>
-@elseif($search)
+@elseif($search || $showStatus)
     <p class="text-muted">No results found.</p>
 @endif
 @endsection

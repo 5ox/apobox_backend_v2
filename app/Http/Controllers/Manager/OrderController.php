@@ -39,20 +39,22 @@ class OrderController extends Controller
         $results = collect();
         $customRequests = collect();
 
-        if (!empty($search)) {
+        if (!empty($search) || !empty($showStatus)) {
             $query = Order::with(['status', 'customer', 'total']);
 
             // Build search conditions: search by order ID, tracking numbers
-            $terms = explode(' ', $search);
-            foreach ($terms as $term) {
-                $query->where(function ($q) use ($term) {
-                    $q->where('orders_id', 'LIKE', '%' . $term . '%')
-                      ->orWhere('usps_track_num', 'LIKE', '%' . $term . '%')
-                      ->orWhere('usps_track_num_in', 'LIKE', '%' . $term . '%')
-                      ->orWhere('ups_track_num', 'LIKE', '%' . $term . '%')
-                      ->orWhere('fedex_track_num', 'LIKE', '%' . $term . '%')
-                      ->orWhere('dhl_track_num', 'LIKE', '%' . $term . '%');
-                });
+            if (!empty($search)) {
+                $terms = explode(' ', $search);
+                foreach ($terms as $term) {
+                    $query->where(function ($q) use ($term) {
+                        $q->where('orders_id', 'LIKE', '%' . $term . '%')
+                          ->orWhere('usps_track_num', 'LIKE', '%' . $term . '%')
+                          ->orWhere('usps_track_num_in', 'LIKE', '%' . $term . '%')
+                          ->orWhere('ups_track_num', 'LIKE', '%' . $term . '%')
+                          ->orWhere('fedex_track_num', 'LIKE', '%' . $term . '%')
+                          ->orWhere('dhl_track_num', 'LIKE', '%' . $term . '%');
+                    });
+                }
             }
 
             if (!empty($fromThePast) && $fromThePast !== 'all') {

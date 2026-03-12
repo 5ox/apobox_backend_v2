@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class OrderStatusHistory extends Model
 {
@@ -50,13 +51,36 @@ class OrderStatusHistory extends Model
         string $comments = '',
         bool $notified = false
     ): static {
-        return static::create([
+        $entry = static::create([
             'orders_id' => $orderId,
             'orders_status_id' => $statusId,
             'date_added' => now(),
             'customer_notified' => $notified,
             'comments' => $comments,
         ]);
+
+        // Bust report caches when order status changes
+        static::clearReportCaches();
+
+        return $entry;
+    }
+
+    /**
+     * Clear all report-related caches.
+     */
+    public static function clearReportCaches(): void
+    {
+        $patterns = ['reports:summary:', 'reports:trends:', 'reports:customers:', 'reports:status_counts', 'reports:sales:', 'reports:signups:'];
+        foreach ($patterns as $pattern) {
+            // Clear known cache keys for common ranges
+            if (str_ends_with($pattern, ':')) {
+                foreach (['7d', '30d', '90d', '12m'] as $range) {
+                    Cache::forget($pattern . $range);
+                }
+            } else {
+                Cache::forget($pattern);
+            }
+        }
     }
 
     // ---------------------------------------------------------------

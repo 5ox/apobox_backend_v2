@@ -152,6 +152,11 @@ $adminRoutes = function () {
 
     // ---- Reports ----
     Route::get('/reports/index', [Manager\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/api/summary', [Manager\ReportApiController::class, 'summary'])->name('reports.api.summary');
+    Route::get('/reports/api/trends', [Manager\ReportApiController::class, 'trends'])->name('reports.api.trends');
+    Route::get('/reports/api/customers', [Manager\ReportApiController::class, 'customers'])->name('reports.api.customers');
+    Route::get('/reports/api/orders', [Manager\ReportApiController::class, 'orders'])->name('reports.api.orders');
+    Route::get('/reports/api/export', [Manager\ReportApiController::class, 'export'])->name('reports.api.export');
 
     // ---- Admins CRUD ----
     Route::get('/admins/index', [Manager\AdminController::class, 'index'])->name('admins.index');
