@@ -1,8 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark navbar-apobox">
     <div class="container">
         <a class="navbar-brand" href="/">
-            <i data-lucide="package" class="icon--lg"></i>
-            <span>APO Box</span>
+            <img src="/images/logo.png" alt="APO Box" height="32">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>

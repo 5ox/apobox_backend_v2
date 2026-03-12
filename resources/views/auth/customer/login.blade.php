@@ -5,7 +5,7 @@
     <div class="col-md-4">
         <div class="form-signin">
             <div class="text-center mb-4">
-                <i data-lucide="package" class="icon--xl text-primary"></i>
+                <img src="/images/logo.png" alt="APO Box" height="48">
             </div>
             <h2 class="text-center mb-3">Please sign in</h2>
             <form method="POST" action="{{ url('/login') }}">

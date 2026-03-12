@@ -2,8 +2,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark navbar-admin">
     <div class="container-fluid">
         <a class="navbar-brand" href="/{{ $prefix }}">
-            <i data-lucide="package" class="icon--lg"></i>
-            <span>APO Box</span>
+            <img src="/images/logo.png" alt="APO Box" height="32">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
             <span class="navbar-toggler-icon"></span>
