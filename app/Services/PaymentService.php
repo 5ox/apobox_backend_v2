@@ -32,23 +32,16 @@ class PaymentService
 
         if (empty($this->clientId) || empty($this->clientSecret)) {
             throw new RuntimeException(
-                'PayPal credentials not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET environment variables.'
+                'PayPal credentials not configured. '
+                . 'client_id=' . (empty($this->clientId) ? 'EMPTY' : 'set(' . strlen($this->clientId) . ' chars)')
+                . ', client_secret=' . (empty($this->clientSecret) ? 'EMPTY' : 'set(' . strlen($this->clientSecret) . ' chars)')
+                . ', mode=' . $this->mode
+                . '. Check PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET environment variables.'
             );
         }
 
         $this->client = new PayPalClient;
-        $this->client->setApiCredentials([
-            'mode' => $this->mode,
-            $this->mode => [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-            ],
-            'payment_action' => 'Sale',
-            'currency' => 'USD',
-            'notify_url' => '',
-            'locale' => 'en_US',
-            'validate_ssl' => true,
-        ]);
+        $this->client->setApiCredentials(config('paypal'));
         $this->client->getAccessToken();
         $this->initialized = true;
     }
