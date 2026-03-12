@@ -4,27 +4,36 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Uses raw CREATE INDEX instead of Schema::table to avoid MySQL strict mode
- * re-validating legacy columns (customers_dob has invalid 0000-00-00 default).
+ * Temporarily disables strict mode so MySQL won't reject the ALTER/CREATE INDEX
+ * due to customers_dob having an invalid 0000-00-00 default from the CakePHP era.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        $indexes = [
-            ['orders', 'idx_usps_track',    'usps_track_num'],
-            ['orders', 'idx_usps_track_in', 'usps_track_num_in'],
-            ['orders', 'idx_ups_track',     'ups_track_num'],
-            ['orders', 'idx_fedex_track',   'fedex_track_num'],
-            ['orders', 'idx_dhl_track',     'dhl_track_num'],
-            ['customers', 'idx_customer_name', 'customers_lastname, customers_firstname'],
-            ['customers', 'idx_backup_email',  'backup_email_address'],
-        ];
+        // Save current mode, disable strict for this migration
+        $currentMode = DB::selectOne("SELECT @@SESSION.sql_mode as m")->m;
+        DB::statement("SET SESSION sql_mode = ''");
 
-        foreach ($indexes as [$table, $name, $columns]) {
-            if (!$this->indexExists($table, $name)) {
-                DB::statement("CREATE INDEX `{$name}` ON `{$table}` ({$columns})");
+        try {
+            $indexes = [
+                ['orders', 'idx_usps_track',    'usps_track_num'],
+                ['orders', 'idx_usps_track_in', 'usps_track_num_in'],
+                ['orders', 'idx_ups_track',     'ups_track_num'],
+                ['orders', 'idx_fedex_track',   'fedex_track_num'],
+                ['orders', 'idx_dhl_track',     'dhl_track_num'],
+                ['customers', 'idx_customer_name', 'customers_lastname, customers_firstname'],
+                ['customers', 'idx_backup_email',  'backup_email_address'],
+            ];
+
+            foreach ($indexes as [$table, $name, $columns]) {
+                if (!$this->indexExists($table, $name)) {
+                    DB::statement("CREATE INDEX `{$name}` ON `{$table}` ({$columns})");
+                }
             }
+        } finally {
+            // Restore strict mode
+            DB::statement("SET SESSION sql_mode = ?", [$currentMode]);
         }
     }
 
