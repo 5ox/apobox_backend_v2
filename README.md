@@ -290,6 +290,35 @@ USPS_ACCOUNT_NUMBER=your_eps_account_number
 
 ---
 
+## Known Issues / TODO
+
+### Chrome App (Scale & Printer) — Needs Replacement
+
+The `chrome_app/` directory contains a **Chrome App** (`manifest_version: 2`) that handled serial scale reading and Zebra label printing. **Chrome Apps were deprecated in 2020 and fully removed in 2024**, so this no longer works.
+
+**Current state:**
+- The navbar settings dropdown (Printer IP, Scale ID, Scale Status) renders the UI but has **no JavaScript** to persist or read the values — settings are inert
+- The Chrome App used `chrome.serial` and `chrome.usb` APIs that only existed in Chrome Apps, not extensions
+- The `externally_connectable` manifest only lists old domains (`account.apobox.com`, `apobox.dev`), not the Railway deployment URL
+- No web app JS exists to send messages to the Chrome App — the bridge code was never migrated from CakePHP
+
+**Recommended replacement:**
+- **Scale reading:** Use the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) (Chrome 89+) — no extension needed, works directly from page JS
+- **Zebra printing:** Use network HTTP POST to `http://{printer_ip}/pstprnt` from JS, or the backend's existing `ZebraLabelService` TCP socket approach
+- **Settings persistence:** Wire up `localStorage` for Printer IP / Scale ID / Scale Status so the navbar dropdown actually saves and loads values
+
+**Files involved:**
+| File | Purpose |
+|------|---------|
+| `chrome_app/scale.js` | Serial scale communication + USB/network printing |
+| `chrome_app/background.js` | Chrome App lifecycle + default serial options |
+| `chrome_app/window.js` | Serial port config UI |
+| `chrome_app/manifest.json` | Chrome App manifest (deprecated format) |
+| `resources/views/partials/admin-navbar.blade.php` | Settings dropdown (Printer IP, Scale ID, Scale Status) |
+| `app/Services/Shipping/ZebraLabelService.php` | Backend ZPL generation + network print (TCP:9100) |
+
+---
+
 ## License
 
 Copyright (c) 2016 APO Box

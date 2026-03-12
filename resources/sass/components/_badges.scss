@@ -47,6 +47,12 @@
         &::before { background-color: #c01c28; }
     }
 
+    &--problem {
+        background-color: rgba(230, 97, 0, 0.1);
+        color: #a35500;
+        &::before { background-color: #e66100; }
+    }
+
     &--awaiting-package {
         background-color: rgba(229, 165, 10, 0.1);
         color: #92610a;

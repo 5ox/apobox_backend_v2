@@ -14,7 +14,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'daily')),
+            'channels' => explode(',', env('LOG_STACK', 'daily,stderr')),
             'ignore_exceptions' => false,
         ],
         'single' => [
@@ -31,6 +31,11 @@ return [
             'replace_placeholders' => true,
         ],
         'payment' => [
+            'driver' => 'stack',
+            'channels' => ['payment_file', 'stderr'],
+            'ignore_exceptions' => false,
+        ],
+        'payment_file' => [
             'driver' => 'daily',
             'path' => storage_path('logs/payment.log'),
             'level' => 'info',

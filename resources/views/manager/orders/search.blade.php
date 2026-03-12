@@ -1,36 +1,29 @@
 @extends('layouts.manager')
-@section('title', 'Search Orders - APO Box Admin')
+@section('title', 'Orders - APO Box Admin')
 @section('module', 'search')
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
-<x-page-header title="Orders" />
 
-<x-form-section>
-    <form method="GET" action="/{{ $prefix }}/orders" class="row g-3 align-items-end" id="order-search-form">
-        <div class="col-md-5 col-lg-4">
-            <div class="input-group">
-                <span class="input-group-text"><i data-lucide="search" class="icon--sm"></i></span>
-                <input type="text" name="q" id="search-input" class="form-control"
-                       placeholder="Order #, tracking, customer name..."
-                       value="{{ $search }}" autocomplete="off"
-                       data-search-url="/{{ $prefix }}/orders"
-                       data-search-type="orders">
-            </div>
-            <div class="form-text">Search by order #, tracking number, customer name, or billing ID</div>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h1 class="h4 fw-bold mb-0">Orders</h1>
+    <form method="GET" action="/{{ $prefix }}/orders" class="d-flex flex-wrap align-items-center gap-2" id="order-search-form">
+        <div class="input-group" style="max-width: 300px;">
+            <span class="input-group-text"><i data-lucide="search" class="icon--sm"></i></span>
+            <input type="text" name="q" id="search-input" class="form-control form-control-sm"
+                   placeholder="Order #, tracking, name..."
+                   value="{{ $search }}" autocomplete="off"
+                   data-search-url="/{{ $prefix }}/orders"
+                   data-search-type="orders">
         </div>
-        <div class="col-auto">
-            <select name="showStatus" id="status-filter" class="form-select">
-                <option value="">All Statuses</option>
-                @foreach($statusFilterOptions as $id => $name)
-                    <option value="{{ $id }}" @selected($showStatus == $id)>{{ $name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-primary"><i data-lucide="search" class="icon--sm me-1"></i>Search</button>
-        </div>
+        <select name="showStatus" id="status-filter" class="form-select form-select-sm" style="width: auto;">
+            <option value="">All Statuses</option>
+            @foreach($statusFilterOptions as $id => $name)
+                <option value="{{ $id }}" @selected($showStatus == $id)>{{ $name }}</option>
+            @endforeach
+        </select>
+        <button type="submit" class="btn btn-sm btn-primary"><i data-lucide="search" class="icon--sm me-1"></i>Search</button>
     </form>
-</x-form-section>
+</div>
 
 {{-- Live search results container --}}
 <div id="live-results" class="d-none">
@@ -47,7 +40,7 @@
 
 {{-- Server-rendered results --}}
 <div id="static-results">
-@if($results instanceof \Illuminate\Pagination\LengthAwarePaginator && $results->isNotEmpty())
+@if($results->isNotEmpty())
     <x-table-card>
         <div class="table-responsive">
             <table class="table table-modern">
@@ -71,7 +64,7 @@
         </div>
         <x-slot:footer>{{ $results->appends(request()->query())->links() }}</x-slot:footer>
     </x-table-card>
-@elseif($search || $showStatus)
+@else
     <div class="text-center py-5 text-muted">
         <i data-lucide="search-x" style="width:48px;height:48px" class="mb-3 opacity-50"></i>
         <p>No orders found{{ $search ? ' for "' . e($search) . '"' : '' }}</p>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
+use Illuminate\Support\Facades\Log;
 use Exception;
 use RuntimeException;
 
@@ -40,9 +41,23 @@ class PaymentService
             );
         }
 
+        Log::channel('payment')->info('PayPal: initializing client', [
+            'mode' => $this->mode,
+            'client_id_len' => strlen($this->clientId),
+        ]);
+
         $this->client = new PayPalClient;
         $this->client->setApiCredentials(config('paypal'));
-        $this->client->getAccessToken();
+        $token = $this->client->getAccessToken();
+
+        if (empty($token)) {
+            Log::channel('payment')->error('PayPal: getAccessToken returned empty', [
+                'mode' => $this->mode,
+            ]);
+            throw new RuntimeException('PayPal: failed to obtain access token. Check credentials and mode.');
+        }
+
+        Log::channel('payment')->info('PayPal: access token obtained');
         $this->initialized = true;
     }
 
@@ -109,10 +124,16 @@ class PaymentService
      */
     public function chargeCard(string $cardToken, float $amount, string $description = ''): array
     {
+        Log::channel('payment')->info('PayPal: chargeCard called', [
+            'vault_id' => substr($cardToken, 0, 8) . '...',
+            'amount' => $amount,
+            'description' => $description,
+        ]);
+
         $this->ensureInitialized();
 
         try {
-            $order = $this->client->createOrder([
+            $orderPayload = [
                 'intent' => 'CAPTURE',
                 'purchase_units' => [
                     [
@@ -128,10 +149,25 @@ class PaymentService
                         'vault_id' => $cardToken,
                     ],
                 ],
-            ]);
+            ];
+
+            $order = $this->client->createOrder($orderPayload);
 
             $status = $order['status'] ?? 'UNKNOWN';
             $paymentId = $order['id'] ?? null;
+
+            Log::channel('payment')->info('PayPal: createOrder response', [
+                'status' => $status,
+                'payment_id' => $paymentId,
+                'full_response' => $order,
+            ]);
+
+            if ($status !== 'COMPLETED') {
+                Log::channel('payment')->warning('PayPal: order not COMPLETED', [
+                    'status' => $status,
+                    'response' => $order,
+                ]);
+            }
 
             return [
                 'success' => $status === 'COMPLETED',
@@ -139,6 +175,10 @@ class PaymentService
                 'state' => strtolower($status),
             ];
         } catch (Exception $e) {
+            Log::channel('payment')->error('PayPal: chargeCard exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             report($e);
             return [
                 'success' => false,

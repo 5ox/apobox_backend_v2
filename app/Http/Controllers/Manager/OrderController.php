@@ -40,79 +40,76 @@ class OrderController extends Controller
         $search = trim((string) $request->query('q', ''));
         $showStatus = $request->query('showStatus');
         $fromThePast = $request->query('from_the_past', config('apobox.search.date.default', '-6 months'));
-        $results = collect();
         $customRequests = collect();
         $isAjax = $request->wantsJson() || $request->ajax();
 
-        if ($search !== '' || !empty($showStatus)) {
-            $query = Order::with(['status', 'customer', 'total'])
-                ->select([
-                    'orders_id', 'customers_id', 'date_purchased', 'orders_status',
-                    'usps_track_num', 'usps_track_num_in', 'ups_track_num',
-                    'fedex_track_num', 'dhl_track_num',
-                ]);
+        $query = Order::with(['status', 'customer', 'total'])
+            ->select([
+                'orders_id', 'customers_id', 'date_purchased', 'orders_status',
+                'usps_track_num', 'usps_track_num_in', 'ups_track_num',
+                'fedex_track_num', 'dhl_track_num',
+            ]);
 
-            if ($search !== '') {
-                // Exact order ID match (fast — uses primary key)
-                if (ctype_digit($search)) {
-                    $query->where('orders_id', (int) $search);
+        if ($search !== '') {
+            // Exact order ID match (fast — uses primary key)
+            if (ctype_digit($search)) {
+                $query->where('orders_id', (int) $search);
+            } else {
+                // Find matching customer IDs first (fast indexed query)
+                // then use whereIn instead of slow correlated EXISTS subqueries
+                $terms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $customerQuery = Customer::select('customers_id');
+
+                if (count($terms) === 1) {
+                    $like = '%' . $this->escapeLike($search) . '%';
+                    $customerQuery->where(function ($cq) use ($like) {
+                        $cq->where('billing_id', 'LIKE', $like)
+                           ->orWhere('customers_firstname', 'LIKE', $like)
+                           ->orWhere('customers_lastname', 'LIKE', $like)
+                           ->orWhere('customers_email_address', 'LIKE', $like);
+                    });
                 } else {
-                    // Find matching customer IDs first (fast indexed query)
-                    // then use whereIn instead of slow correlated EXISTS subqueries
-                    $terms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                    $customerQuery = Customer::select('customers_id');
-
-                    if (count($terms) === 1) {
-                        $like = '%' . $this->escapeLike($search) . '%';
+                    foreach ($terms as $term) {
+                        $like = '%' . $this->escapeLike($term) . '%';
                         $customerQuery->where(function ($cq) use ($like) {
                             $cq->where('billing_id', 'LIKE', $like)
                                ->orWhere('customers_firstname', 'LIKE', $like)
-                               ->orWhere('customers_lastname', 'LIKE', $like)
-                               ->orWhere('customers_email_address', 'LIKE', $like);
+                               ->orWhere('customers_lastname', 'LIKE', $like);
                         });
-                    } else {
-                        foreach ($terms as $term) {
-                            $like = '%' . $this->escapeLike($term) . '%';
-                            $customerQuery->where(function ($cq) use ($like) {
-                                $cq->where('billing_id', 'LIKE', $like)
-                                   ->orWhere('customers_firstname', 'LIKE', $like)
-                                   ->orWhere('customers_lastname', 'LIKE', $like);
-                            });
-                        }
+                    }
+                }
+
+                $matchedCustomerIds = $customerQuery->pluck('customers_id');
+
+                $query->where(function ($q) use ($search, $terms, $matchedCustomerIds) {
+                    // Customer name/billing ID match via pre-fetched IDs
+                    if ($matchedCustomerIds->isNotEmpty()) {
+                        $q->whereIn('customers_id', $matchedCustomerIds);
                     }
 
-                    $matchedCustomerIds = $customerQuery->pluck('customers_id');
-
-                    $query->where(function ($q) use ($search, $terms, $matchedCustomerIds) {
-                        // Customer name/billing ID match via pre-fetched IDs
-                        if ($matchedCustomerIds->isNotEmpty()) {
-                            $q->whereIn('customers_id', $matchedCustomerIds);
-                        }
-
-                        // Tracking number search (uses indexes)
-                        $like = '%' . $this->escapeLike($search) . '%';
-                        $q->orWhere('usps_track_num', 'LIKE', $like)
-                          ->orWhere('usps_track_num_in', 'LIKE', $like)
-                          ->orWhere('ups_track_num', 'LIKE', $like)
-                          ->orWhere('fedex_track_num', 'LIKE', $like)
-                          ->orWhere('dhl_track_num', 'LIKE', $like);
-                    });
-                }
+                    // Tracking number search (uses indexes)
+                    $like = '%' . $this->escapeLike($search) . '%';
+                    $q->orWhere('usps_track_num', 'LIKE', $like)
+                      ->orWhere('usps_track_num_in', 'LIKE', $like)
+                      ->orWhere('ups_track_num', 'LIKE', $like)
+                      ->orWhere('fedex_track_num', 'LIKE', $like)
+                      ->orWhere('dhl_track_num', 'LIKE', $like);
+                });
             }
-
-            if (!empty($fromThePast) && $fromThePast !== 'all') {
-                $fromDate = date_create($fromThePast);
-                if ($fromDate) {
-                    $query->where('date_purchased', '>=', $fromDate->format('Y-m-d H:i:s'));
-                }
-            }
-
-            if (!empty($showStatus)) {
-                $query->where('orders_status', $showStatus);
-            }
-
-            $results = $query->orderByDesc('date_purchased')->paginate(20)->appends($request->query());
         }
+
+        if (!empty($fromThePast) && $fromThePast !== 'all') {
+            $fromDate = date_create($fromThePast);
+            if ($fromDate) {
+                $query->where('date_purchased', '>=', $fromDate->format('Y-m-d H:i:s'));
+            }
+        }
+
+        if (!empty($showStatus)) {
+            $query->where('orders_status', $showStatus);
+        }
+
+        $results = $query->orderByDesc('date_purchased')->paginate(20)->appends($request->query());
 
         // AJAX: return JSON for live search
         if ($isAjax) {

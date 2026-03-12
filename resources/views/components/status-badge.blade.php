@@ -6,6 +6,7 @@
         'Shipped'           => 'shipped',
         'Paid'              => 'paid',
         'Returned'          => 'returned',
+        'Problem'           => 'problem',
         'Awaiting Package'  => 'awaiting-package',
     ];
     $slug = $statusMap[$status] ?? \Illuminate\Support\Str::slug($status ?? 'unknown');

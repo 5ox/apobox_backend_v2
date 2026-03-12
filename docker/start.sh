@@ -55,9 +55,9 @@ if [ "$SESSION_DRIVER" = "redis" ] || [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_
     fi
 fi
 
-# Force logging to file so /health can read errors (stderr is invisible to us)
-export LOG_CHANNEL=daily
-export LOG_STACK=daily
+# Log to both daily files and stderr (Railway Application Logs)
+export LOG_CHANNEL=stack
+export LOG_STACK=daily,stderr
 
 # TEMPORARY: Show errors in browser for debugging (remove once stable)
 export APP_DEBUG=true
