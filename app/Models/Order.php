@@ -194,6 +194,11 @@ class Order extends Model
         return $this->hasMany(OrderData::class, 'orders_id', 'orders_id');
     }
 
+    public function customPackageRequests()
+    {
+        return $this->hasMany(CustomPackageRequest::class, 'orders_id', 'orders_id');
+    }
+
     // ---------------------------------------------------------------
     // Accessors
     // ---------------------------------------------------------------

@@ -462,10 +462,14 @@ class OrderController extends Controller
         $order = Order::with('customer')->findOrFail($id);
 
         $labelData = $this->prepareLabelData($order);
-        $label = $zebraLabel->printLabel($labelData);
+        $result = $zebraLabel->printLabel($labelData);
 
         if ($request->ajax()) {
-            return response($label, 200)->header('Content-Type', 'text/plain');
+            if (isset($result['error'])) {
+                return response($result['error'], 500)->header('Content-Type', 'text/plain');
+            }
+            $zpl = $result['data'] ?? '';
+            return response($zpl, 200)->header('Content-Type', 'text/plain');
         }
 
         return redirect()->route('manager.orders.view', ['id' => $id]);

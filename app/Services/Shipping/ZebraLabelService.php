@@ -16,28 +16,55 @@ class ZebraLabelService
     }
 
     /**
-     * Generate a ZPL label string.
+     * Generate a ZPL label string from structured label data (header/body/footer sections).
      */
     public function generateLabel(array $data): string
     {
         $zpl = "^XA\n";
-        $zpl .= "^CF0,30\n";
 
-        // Order info
-        $zpl .= "^FO50,50^FD" . ($data['billing_id'] ?? '') . "^FS\n";
-        $zpl .= "^FO50,90^FD" . ($data['customer_name'] ?? '') . "^FS\n";
+        $yPos = 50;
 
-        // Tracking
-        if (!empty($data['tracking_id'])) {
-            $zpl .= "^FO50,140^BY2^BCN,80,Y,N,N^FD" . $data['tracking_id'] . "^FS\n";
+        // Header section
+        if (!empty($data['header'])) {
+            $size = $data['header']['size'] ?? 30;
+            $zpl .= "^CF0,{$size}\n";
+            foreach (explode("\n", $data['header']['content'] ?? '') as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $zpl .= "^FO50,{$yPos}^FD{$line}^FS\n";
+                    $yPos += $size + 10;
+                }
+            }
         }
 
-        // Date
-        $zpl .= "^FO50,260^FD" . date('m/d/Y') . "^FS\n";
+        $yPos += 10;
 
-        // Weight
-        if (!empty($data['weight_oz'])) {
-            $zpl .= "^FO50,300^FDWeight: " . $data['weight_oz'] . " oz^FS\n";
+        // Body section
+        if (!empty($data['body'])) {
+            $size = $data['body']['size'] ?? 26;
+            $zpl .= "^CF0,{$size}\n";
+            foreach (explode("\n", $data['body']['content'] ?? '') as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $zpl .= "^FO50,{$yPos}^FD{$line}^FS\n";
+                    $yPos += $size + 8;
+                }
+            }
+        }
+
+        $yPos += 10;
+
+        // Footer section
+        if (!empty($data['footer'])) {
+            $size = $data['footer']['size'] ?? 20;
+            $zpl .= "^CF0,{$size}\n";
+            foreach (explode("\n", $data['footer']['content'] ?? '') as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $zpl .= "^FO50,{$yPos}^FD{$line}^FS\n";
+                    $yPos += $size + 8;
+                }
+            }
         }
 
         $zpl .= "^XZ";
@@ -46,10 +73,12 @@ class ZebraLabelService
     }
 
     /**
-     * Print a label (either raw ZPL data return or network print).
+     * Print a label from structured data or raw ZPL string.
      */
-    public function printLabel(string $zpl): array
+    public function printLabel(string|array $data): array
     {
+        $zpl = is_array($data) ? $this->generateLabel($data) : $data;
+
         if ($this->method === 'network' && $this->printerIp) {
             return $this->networkPrint($zpl);
         }
