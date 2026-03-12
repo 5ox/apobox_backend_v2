@@ -23,10 +23,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# TEMPORARY: fake-mark all existing migrations, then run normally
-# TODO: revert to just `php artisan migrate --force` after first deploy
-php artisan migrate --fake --force
-php artisan migrate --force
+# Skip auto-migrations — existing DB has all tables from CakePHP era.
+# Run migrations manually via `railway run php artisan migrate` when needed.
+# php artisan migrate --force
 
 # Start Apache
 apache2-foreground
