@@ -13,7 +13,7 @@
             <x-detail-row label="Outbound Tracking">{{ $order->usps_track_num ?: 'N/A' }}</x-detail-row>
             <x-detail-row label="Inbound Tracking">{{ $order->inbound_tracking ?: 'N/A' }}</x-detail-row>
             <x-detail-row label="Dimensions">{{ $order->dimensions }}</x-detail-row>
-            <x-detail-row label="Weight">{{ $order->weight }} lb</x-detail-row>
+            <x-detail-row label="Weight">{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</x-detail-row>
         </x-detail-card>
     </div>
 </div>

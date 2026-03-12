@@ -221,10 +221,34 @@ class Order extends Model
 
     public function getDimensionsAttribute(): ?string
     {
-        if (empty($this->width) && empty($this->length) && empty($this->depth)) {
+        $dimensions = array_values(array_filter([
+            $this->formatMeasurement($this->length),
+            $this->formatMeasurement($this->width),
+            $this->formatMeasurement($this->depth),
+        ], static fn (?string $value): bool => $value !== null));
+
+        if ($dimensions === []) {
             return null;
         }
 
-        return "{$this->length}x{$this->width}x{$this->depth}";
+        return implode('x', $dimensions);
+    }
+
+    public function getWeightAttribute(): ?string
+    {
+        if ($this->weight_oz === null || $this->weight_oz === '') {
+            return null;
+        }
+
+        return $this->formatMeasurement((float) $this->weight_oz / 16);
+    }
+
+    protected function formatMeasurement(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     }
 }

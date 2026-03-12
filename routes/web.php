@@ -93,7 +93,7 @@ $adminRoutes = function () {
 
     // ---- Customers ----
     Route::get('/customers', [Manager\CustomerController::class, 'search'])->name('customers.search');
-    Route::get('/customers/{billingId}/view', [Manager\CustomerController::class, 'viewByBillingId'])->where('billingId', '[A-Z]{2}\d{4}')->name('customers.view-billing');
+    Route::get('/customers/{billingId}/view', [Manager\CustomerController::class, 'viewByBillingId'])->where('billingId', '[A-Za-z]{2}\d{4}')->name('customers.view-billing');
     Route::get('/customers/view/{id}', [Manager\CustomerController::class, 'view'])->where('id', '[0-9]+')->name('customers.view');
     Route::get('/customers/{id}/recent-orders', [Manager\CustomerController::class, 'recentOrders'])->name('customers.recent-orders');
     Route::get('/customers/{id}/edit/payment-info', [Manager\CustomerController::class, 'editPaymentInfo'])->name('customers.edit-payment');

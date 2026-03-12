@@ -38,7 +38,7 @@
                                 <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
                                 <td>{{ $order->inbound_tracking }}</td>
                                 <td>{{ $order->dimensions }}</td>
-                                <td>{{ $order->weight }} lb</td>
+                                <td>{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</td>
                                 <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
                             </tr>
                         @endforeach

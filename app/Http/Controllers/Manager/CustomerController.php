@@ -9,9 +9,9 @@ use App\Models\Address;
 use App\Models\Customer;
 use App\Models\CustomersInfo;
 use App\Models\Order;
-use App\Models\SearchIndex;
 use App\Models\ShippingAddress;
 use App\Services\CreditCardService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -20,26 +20,97 @@ use Illuminate\Http\RedirectResponse;
 class CustomerController extends Controller
 {
     /**
-     * Search and list customers using fulltext search index.
+     * Search and list customers by billing ID, email, phone, or name.
      */
     public function search(Request $request): View|RedirectResponse
     {
-        $search = $request->query('q');
+        $search = trim((string) $request->query('q', ''));
         $results = collect();
 
-        if ($search) {
-            $wrappedSearch = $this->autoWrapFullnameOrEmail($search);
+        if ($search !== '') {
+            $normalizedSearch = mb_strtolower($search);
+            $directMatch = Customer::query()
+                ->where(function (Builder $query) use ($normalizedSearch, $search) {
+                    $query->whereRaw('LOWER(billing_id) = ?', [$normalizedSearch])
+                        ->orWhereRaw('LOWER(customers_email_address) = ?', [$normalizedSearch])
+                        ->orWhereRaw('LOWER(backup_email_address) = ?', [$normalizedSearch]);
 
-            $results = SearchIndex::where('model', Customer::class)
-                ->whereRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE)', [$wrappedSearch])
-                ->orderByRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE) DESC', [$wrappedSearch])
+                    if (ctype_digit($search)) {
+                        $query->orWhere('customers_id', (int) $search);
+                    }
+                })
+                ->first();
+
+            if ($directMatch) {
+                return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $directMatch->customers_id]);
+            }
+
+            $results = Customer::query()
+                ->where(function (Builder $query) use ($search, $normalizedSearch) {
+                    $searchLike = '%' . $this->escapeLike($normalizedSearch) . '%';
+                    $phoneLike = '%' . $this->normalizePhone($search) . '%';
+                    $terms = preg_split('/\s+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+                    $query->whereRaw('LOWER(billing_id) LIKE ?', [$searchLike])
+                        ->orWhereRaw('LOWER(customers_email_address) LIKE ?', [$searchLike])
+                        ->orWhereRaw('LOWER(backup_email_address) LIKE ?', [$searchLike]);
+
+                    if ($this->normalizePhone($search) !== '') {
+                        $query->orWhereRaw(
+                            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(customers_telephone, '-', ''), '(', ''), ')', ''), ' ', ''), '+', '') LIKE ?",
+                            [$phoneLike]
+                        );
+                    }
+
+                    if ($terms !== []) {
+                        $query->orWhere(function (Builder $nameQuery) use ($terms) {
+                            foreach ($terms as $term) {
+                                $termLike = '%' . $this->escapeLike($term) . '%';
+
+                                $nameQuery->where(function (Builder $termQuery) use ($termLike) {
+                                    $termQuery->whereRaw('LOWER(customers_firstname) LIKE ?', [$termLike])
+                                        ->orWhereRaw('LOWER(customers_lastname) LIKE ?', [$termLike])
+                                        ->orWhereHas('authorizedNames', function (Builder $authorizedQuery) use ($termLike) {
+                                            $authorizedQuery->whereRaw('LOWER(authorized_firstname) LIKE ?', [$termLike])
+                                                ->orWhereRaw('LOWER(authorized_lastname) LIKE ?', [$termLike]);
+                                        });
+                                });
+                            }
+                        });
+                    }
+
+                    if (ctype_digit($search)) {
+                        $query->orWhere('customers_id', (int) $search);
+                    }
+                })
+                ->orderByRaw(
+                    'CASE
+                        WHEN LOWER(billing_id) = ? THEN 0
+                        WHEN LOWER(customers_email_address) = ? THEN 1
+                        WHEN LOWER(backup_email_address) = ? THEN 2
+                        WHEN LOWER(billing_id) LIKE ? THEN 3
+                        WHEN LOWER(customers_lastname) LIKE ? THEN 4
+                        WHEN LOWER(customers_firstname) LIKE ? THEN 5
+                        ELSE 6
+                    END',
+                    [
+                        $normalizedSearch,
+                        $normalizedSearch,
+                        $normalizedSearch,
+                        $this->escapeLike($normalizedSearch) . '%',
+                        $this->escapeLike($normalizedSearch) . '%',
+                        $this->escapeLike($normalizedSearch) . '%',
+                    ]
+                )
+                ->orderBy('customers_lastname')
+                ->orderBy('customers_firstname')
                 ->paginate(20)
                 ->appends($request->query());
 
             // If exactly one result, redirect directly to customer view
             if ($results->total() === 1) {
                 $first = $results->first();
-                return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $first->association_key]);
+                return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $first->customers_id]);
             }
         }
 
@@ -101,7 +172,7 @@ class CustomerController extends Controller
      */
     public function viewByBillingId(string $billingId): RedirectResponse
     {
-        $customer = Customer::where('billing_id', $billingId)->firstOrFail();
+        $customer = Customer::whereRaw('LOWER(billing_id) = ?', [mb_strtolower($billingId)])->firstOrFail();
 
         return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $customer->customers_id]);
     }
@@ -336,9 +407,9 @@ class CustomerController extends Controller
      */
     public function processQuickOrder(Request $request): RedirectResponse
     {
-        $search = $request->query('q', $request->input('q'));
+        $search = trim((string) $request->query('q', $request->input('q', '')));
 
-        $customer = Customer::where('billing_id', $search)
+        $customer = Customer::whereRaw('LOWER(billing_id) = ?', [mb_strtolower($search)])
             ->where('is_active', true)
             ->first();
 
@@ -411,21 +482,13 @@ class CustomerController extends Controller
         return view('manager.customers.demographics', compact('options', 'data', 'reportFields'));
     }
 
-    /**
-     * If a search is multiple words, wrap in quotes for exact fulltext matching.
-     * Also wraps email address patterns.
-     */
-    protected function autoWrapFullnameOrEmail(string $search): string
+    protected function escapeLike(string $value): string
     {
-        // Multi-word name pattern
-        if (preg_match('/^[A-Za-z0-9_\']+ [A-Za-z0-9_\']+( [A-Za-z0-9_\']+)*$/', $search)) {
-            return '"' . $search . '"';
-        }
-        // Email pattern
-        if (preg_match('/^[\w.%+-]+@[\w.-]+\.[A-Z]{2,}$/i', $search)) {
-            return '"' . $search . '"';
-        }
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
 
-        return $search;
+    protected function normalizePhone(string $value): string
+    {
+        return preg_replace('/\D+/', '', $value) ?? '';
     }
 }

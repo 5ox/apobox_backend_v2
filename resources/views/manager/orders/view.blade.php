@@ -1,7 +1,22 @@
 @extends('layouts.manager')
 @section('title', 'Order #' . $order->orders_id . ' - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php
+    $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee';
+    $packageMetrics = collect([
+        ['short' => 'L', 'label' => 'Length', 'value' => $order->length],
+        ['short' => 'W', 'label' => 'Width', 'value' => $order->width],
+        ['short' => 'H', 'label' => 'Height', 'value' => $order->depth],
+    ])->filter(static fn (array $dimension): bool => filled($dimension['value']))
+        ->map(static fn (array $dimension): array => [
+            ...$dimension,
+            'display' => rtrim(rtrim(number_format((float) $dimension['value'], 2, '.', ''), '0'), '.'),
+        ])->values();
+    $dimensionHeadline = $packageMetrics->isNotEmpty()
+        ? $packageMetrics->pluck('display')->implode(' × ') . ' in'
+        : null;
+    $weightDisplay = $order->weight ? $order->weight . ' lb' : 'N/A';
+@endphp
 <x-page-header title="Order #{{ $order->orders_id }}" subtitle="{{ $order->customer?->full_name }}" />
 
 <div class="row">
@@ -13,8 +28,34 @@
             <x-detail-row label="Mail Class">{{ $order->mail_class }}</x-detail-row>
             <x-detail-row label="Outbound">{{ $order->usps_track_num ?: 'N/A' }}</x-detail-row>
             <x-detail-row label="Inbound">{{ $order->inbound_tracking ?: 'N/A' }}</x-detail-row>
-            <x-detail-row label="Dimensions">{{ $order->dimensions }}</x-detail-row>
-            <x-detail-row label="Weight">{{ $order->weight }} lb</x-detail-row>
+            <x-detail-row label="Dimensions" class="detail-card__row--package">
+                @if($packageMetrics->isNotEmpty())
+                    <div class="package-dimensions">
+                        <div class="package-dimensions__visual" aria-hidden="true">
+                            <div class="package-box">
+                                <span class="package-box__face package-box__face--top"></span>
+                                <span class="package-box__face package-box__face--side"></span>
+                                <span class="package-box__face package-box__face--front"></span>
+                                <span class="package-box__tape"></span>
+                            </div>
+                        </div>
+                        <div class="package-dimensions__content">
+                            <div class="package-dimensions__headline">{{ $dimensionHeadline }}</div>
+                            <div class="package-dimensions__chips">
+                                @foreach($packageMetrics as $metric)
+                                    <span class="package-dimensions__chip" title="{{ $metric['label'] }}">
+                                        <span class="package-dimensions__chip-label">{{ $metric['short'] }}</span>
+                                        <span class="package-dimensions__chip-value">{{ $metric['display'] }} in</span>
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <span class="text-muted">N/A</span>
+                @endif
+            </x-detail-row>
+            <x-detail-row label="Weight">{{ $weightDisplay }}</x-detail-row>
             @if($creator)<x-detail-row label="Created by">{{ $creator }}</x-detail-row>@endif
         </x-detail-card>
     </div>
