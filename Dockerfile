@@ -50,8 +50,12 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
+# Create minimal .env for build (real env vars injected at runtime)
+RUN cp .env.example .env && php artisan key:generate
+
 # Install dependencies (generates lock file if missing)
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-interaction
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && composer dump-autoload --optimize
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
