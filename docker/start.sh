@@ -83,8 +83,8 @@ php artisan view:cache
 php artisan migrate:seed-existing
 php artisan migrate --force
 
-# One-time: rebuild search index to fix legacy column names (remove after first deploy)
-php artisan app:rebuild-search-index
+# One-time: rebuild search index in background so it doesn't block healthcheck (remove after first deploy)
+php artisan app:rebuild-search-index > /dev/null 2>&1 &
 
 # Ensure only mpm_prefork is loaded (Railway may inject mpm_event at runtime)
 a2dismod mpm_event mpm_worker 2>/dev/null || true
