@@ -76,7 +76,7 @@
                     <tbody>
                         @php
                             $lineItems = [
-                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate['rate'] ?? null, 'hint' => $autoRate ? ($autoRate['description'] ?: $autoRate['service']) : null],
+                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate ? ($autoRate['retail_rate'] ?? $autoRate['rate']) : null, 'hint' => $autoRate ? ($autoRate['description'] ?: $autoRate['service']) . ' (retail)' : null],
                                 ['name' => 'OrderFee', 'label' => 'Handling Fee', 'relation' => 'fee', 'auto' => $autoFee ?? null, 'hint' => null],
                                 ['name' => 'OrderInsurance', 'label' => 'Insurance', 'relation' => 'insurance', 'auto' => $autoInsurance ?? null, 'hint' => null],
                                 ['name' => 'OrderStorage', 'label' => 'Storage', 'relation' => 'storage', 'auto' => null, 'hint' => null],

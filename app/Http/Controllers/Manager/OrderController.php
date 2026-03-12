@@ -495,9 +495,11 @@ class OrderController extends Controller
 
         if ($allZero && $allowCharge['allow']) {
             if ($autoRate && $order->shipping) {
+                // Always bill the customer the retail rate
+                $shippingRate = $autoRate['retail_rate'] ?? $autoRate['rate'];
                 $order->shipping->update([
-                    'value' => $autoRate['rate'],
-                    'text'  => '$' . number_format($autoRate['rate'], 2),
+                    'value' => $shippingRate,
+                    'text'  => '$' . number_format($shippingRate, 2),
                 ]);
             }
             if ($autoFee > 0 && $order->fee) {
