@@ -59,9 +59,9 @@ COPY . .
 # Ensure Laravel directories exist (empty dirs aren't tracked by git)
 RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs
 
-# Generate app key and optimize autoloader
+# Generate app key and optimize autoloader (use sqlite to avoid DB connection during build)
 RUN cp .env.example .env \
-    && php artisan key:generate \
+    && DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan key:generate \
     && composer dump-autoload --optimize
 
 # Set permissions
