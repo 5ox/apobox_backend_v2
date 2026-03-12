@@ -56,6 +56,9 @@ RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --n
 # Copy application files
 COPY . .
 
+# Ensure Laravel directories exist (empty dirs aren't tracked by git)
+RUN mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs
+
 # Generate app key and optimize autoloader
 RUN cp .env.example .env \
     && php artisan key:generate \
