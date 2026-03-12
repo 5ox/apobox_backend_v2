@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Order;
-use App\Models\OrderStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -15,10 +15,8 @@ class DashboardController extends Controller
     /**
      * Show the admin dashboard.
      *
-     * Displays a global search form, recent paid-manually orders,
-     * recent warehouse orders, and order status counts.
-     * The search box redirects to the appropriate controller
-     * based on the query format (customer, order, tracking).
+     * Displays actionable orders grouped by status:
+     * Paid, Awaiting Payment, Warehouse, and Problem.
      */
     public function index(Request $request): View|RedirectResponse
     {
@@ -28,21 +26,54 @@ class DashboardController extends Controller
             return $this->redirectSearch($query);
         }
 
-        $paidManually = Order::with(['status', 'customer', 'total'])
+        $eagerLoad = ['status', 'customer', 'total'];
+
+        $paid = Order::with($eagerLoad)
             ->where('orders_status', 4)
-            ->orderByDesc('date_purchased')
-            ->limit(10)
+            ->orderByDesc('last_modified')
+            ->limit(25)
             ->get();
 
-        $inWarehouse = Order::with(['status', 'customer', 'total'])
+        $awaitingPayment = Order::with($eagerLoad)
+            ->where('orders_status', 2)
+            ->orderByDesc('last_modified')
+            ->limit(25)
+            ->get();
+
+        $inWarehouse = Order::with($eagerLoad)
             ->where('orders_status', 1)
-            ->orderByDesc('date_purchased')
-            ->limit(10)
+            ->orderByDesc('last_modified')
+            ->limit(25)
             ->get();
 
-        $orderStatuses = OrderStatus::all();
+        $problem = Order::with($eagerLoad)
+            ->where('orders_status', 6)
+            ->orderByDesc('last_modified')
+            ->limit(25)
+            ->get();
 
-        return view('manager.dashboard', compact('paidManually', 'inWarehouse', 'orderStatuses'));
+        // Today's package counts per employee
+        $todayStats = Order::select('creator_id', DB::raw('COUNT(*) as total'))
+            ->whereDate('date_purchased', today())
+            ->whereNotNull('creator_id')
+            ->groupBy('creator_id')
+            ->orderByDesc('total')
+            ->get()
+            ->map(function ($row) {
+                $admin = Admin::find($row->creator_id);
+                return [
+                    'name'  => $admin ? explode('@', $admin->email)[0] : 'Unknown',
+                    'email' => $admin->email ?? 'unknown',
+                    'count' => $row->total,
+                ];
+            });
+
+        $todayTotal = $todayStats->sum('count');
+
+        return view('manager.dashboard', compact(
+            'paid', 'awaitingPayment', 'inWarehouse', 'problem',
+            'todayStats', 'todayTotal',
+        ));
     }
 
     /**
