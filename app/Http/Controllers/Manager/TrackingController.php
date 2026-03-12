@@ -24,33 +24,34 @@ class TrackingController extends Controller
      */
     public function store(StoreTrackingRequest $request): RedirectResponse
     {
-        $trackingId = $request->input('tracking_id');
+        $prefix = auth('admin')->user()->role;
+        $trackingNumber = $request->input('tracking_number');
 
-        if (empty($trackingId)) {
-            return redirect()->route('manager.tracking.add');
+        if (empty($trackingNumber)) {
+            return redirect()->route($prefix . '.tracking.add');
         }
 
         // Check for duplicates
-        if (Tracking::where('tracking_id', $trackingId)->exists()) {
+        if (Tracking::where('tracking_id', $trackingNumber)->exists()) {
             session()->flash('message', 'Tracking ID exists.');
-            return redirect()->route('manager.tracking.add');
+            return redirect()->route($prefix . '.tracking.add');
         }
 
         $data = [
-            'tracking_id' => $trackingId,
+            'tracking_id' => $trackingNumber,
             'warehouse' => config('apobox.warehouse.code', 'APO'),
         ];
 
-        // Only include comments if the exception checkbox was checked
-        if ($request->filled('add_exception') && $request->input('add_exception')) {
-            $data['comments'] = $request->input('comments', '');
+        // Only include comments/notes if provided
+        if ($request->filled('notes')) {
+            $data['comments'] = $request->input('notes', '');
         }
 
         Tracking::create($data);
 
         session()->flash('message', 'Tracking ID has been saved.');
 
-        return redirect()->route('manager.tracking.add');
+        return redirect()->route($prefix . '.tracking.add');
     }
 
     /**
@@ -59,7 +60,7 @@ class TrackingController extends Controller
     public function search(Request $request): View
     {
         $search = $request->input('q');
-        $fromThePast = $request->input('from_the_past', config('apobox.search.date.default'));
+        $fromThePast = $request->input('from_the_past', config('apobox.search.date.default', '-6 months'));
 
         $query = Tracking::query();
 
@@ -70,8 +71,11 @@ class TrackingController extends Controller
             }
         }
 
-        if (!empty($fromThePast)) {
-            $query->where('timestamp', '>=', $fromThePast);
+        if (!empty($fromThePast) && $fromThePast !== 'all') {
+            $fromDate = date_create($fromThePast);
+            if ($fromDate) {
+                $query->where('timestamp', '>=', $fromDate->format('Y-m-d H:i:s'));
+            }
         }
 
         $results = $query->orderBy('timestamp', 'desc')->paginate(25);
@@ -89,7 +93,7 @@ class TrackingController extends Controller
     /**
      * Show the edit form for a tracking entry.
      */
-    public function edit(int $id): View
+    public function edit(string $id): View
     {
         $tracking = Tracking::findOrFail($id);
 
@@ -99,29 +103,29 @@ class TrackingController extends Controller
     /**
      * Update an existing tracking entry.
      */
-    public function update(StoreTrackingRequest $request, int $id): RedirectResponse
+    public function update(Request $request, string $id): RedirectResponse
     {
         $tracking = Tracking::findOrFail($id);
 
         $tracking->update([
-            'comments' => $request->input('comments', ''),
+            'comments' => $request->input('comments', $request->input('notes', '')),
         ]);
 
         session()->flash('message', 'The scan has been updated.');
 
-        return redirect()->route('manager.tracking.search');
+        return redirect()->route(auth('admin')->user()->role . '.tracking.search');
     }
 
     /**
      * Delete a tracking entry.
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(string $id): RedirectResponse
     {
         $tracking = Tracking::findOrFail($id);
         $tracking->delete();
 
         session()->flash('message', 'The scan has been deleted.');
 
-        return redirect()->route('manager.tracking.search');
+        return redirect()->route(auth('admin')->user()->role . '.tracking.search');
     }
 }

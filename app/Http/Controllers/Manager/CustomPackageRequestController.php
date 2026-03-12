@@ -90,7 +90,7 @@ class CustomPackageRequestController extends Controller
 
         session()->flash('message', 'The custom package request has been created.');
 
-        return redirect()->route('manager.requests.index');
+        return redirect()->route(auth('admin')->user()->role . '.requests.index');
     }
 
     /**
@@ -118,7 +118,7 @@ class CustomPackageRequestController extends Controller
 
         session()->flash('message', 'Custom package request was successfully updated!');
 
-        return redirect()->route('manager.requests.index');
+        return redirect()->route(auth('admin')->user()->role . '.requests.index');
     }
 
     /**
@@ -131,13 +131,13 @@ class CustomPackageRequestController extends Controller
         // Cannot delete if associated with an order
         if (!empty($packageRequest->orders_id)) {
             session()->flash('message', "The custom package request could not be deleted because it's associated with an order.");
-            return redirect()->route('manager.requests.index');
+            return redirect()->route(auth('admin')->user()->role . '.requests.index');
         }
 
         $packageRequest->delete();
 
         session()->flash('message', 'The custom package request was successfully deleted!');
 
-        return redirect()->route('manager.requests.index');
+        return redirect()->route(auth('admin')->user()->role . '.requests.index');
     }
 }

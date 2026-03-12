@@ -24,6 +24,6 @@ class AddressController extends Controller
 
         session()->flash('message', 'The address has been saved.');
 
-        return redirect()->route('manager.customers.view', $customer->customers_id);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', $customer->customers_id);
     }
 }

@@ -38,7 +38,7 @@ class AffiliateLinkController extends Controller
 
         session()->flash('message', 'The affiliate link has been saved.');
 
-        return redirect()->route('manager.affiliate-links.index');
+        return redirect()->route(auth('admin')->user()->role . '.affiliate-links.index');
     }
 
     /**
@@ -61,7 +61,7 @@ class AffiliateLinkController extends Controller
 
         session()->flash('message', 'The affiliate link has been saved.');
 
-        return redirect()->route('manager.affiliate-links.index');
+        return redirect()->route(auth('admin')->user()->role . '.affiliate-links.index');
     }
 
     /**
@@ -74,6 +74,6 @@ class AffiliateLinkController extends Controller
 
         session()->flash('message', 'The affiliate link has been deleted.');
 
-        return redirect()->route('manager.affiliate-links.index');
+        return redirect()->route(auth('admin')->user()->role . '.affiliate-links.index');
     }
 }

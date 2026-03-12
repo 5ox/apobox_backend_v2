@@ -139,6 +139,12 @@ return [
     | Search Date Options
     |--------------------------------------------------------------------------
     */
+    'search' => [
+        'date' => [
+            'default' => '-60 days',
+        ],
+    ],
+
     'search_date' => [
         'default' => '-60 days',
         'options' => [

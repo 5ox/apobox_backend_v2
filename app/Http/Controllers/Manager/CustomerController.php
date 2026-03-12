@@ -39,7 +39,7 @@ class CustomerController extends Controller
             // If exactly one result, redirect directly to customer view
             if ($results->total() === 1) {
                 $first = $results->first();
-                return redirect()->route('manager.customers.view', ['id' => $first->association_key]);
+                return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $first->association_key]);
             }
         }
 
@@ -103,7 +103,7 @@ class CustomerController extends Controller
     {
         $customer = Customer::where('billing_id', $billingId)->firstOrFail();
 
-        return redirect()->route('manager.customers.view', ['id' => $customer->customers_id]);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $customer->customers_id]);
     }
 
     /**
@@ -204,7 +204,7 @@ class CustomerController extends Controller
 
         session()->flash('message', "The customer's credit card has been updated.");
 
-        return redirect()->route('manager.customers.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
     }
 
     /**
@@ -239,7 +239,7 @@ class CustomerController extends Controller
 
         session()->flash('message', "The customer's information has been updated.");
 
-        return redirect()->route('manager.customers.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
     }
 
     /**
@@ -314,7 +314,7 @@ class CustomerController extends Controller
 
         if ($customer->update($request->only($fields))) {
             session()->flash('message', "The customer's default addresses have been updated.");
-            return redirect()->route('manager.customers.view', ['id' => $id]);
+            return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
         }
 
         session()->flash('message', "The customer's default addresses were unable to be updated.");
@@ -343,12 +343,12 @@ class CustomerController extends Controller
             ->first();
 
         if ($customer) {
-            return redirect()->route('manager.orders.add', ['customerId' => $customer->customers_id]);
+            return redirect()->route(auth('admin')->user()->role . '.orders.add', ['customerId' => $customer->customers_id]);
         }
 
         session()->flash('message', 'An active customer with Billing ID: "' . $search . '" was not found.');
 
-        return redirect()->route('manager.dashboard');
+        return redirect()->route(auth('admin')->user()->role . '.dashboard');
     }
 
     /**
@@ -364,7 +364,7 @@ class CustomerController extends Controller
             session()->flash('message', "There was a problem closing this customer's account.");
         }
 
-        return redirect()->route('manager.customers.view', ['id' => $customerId]);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $customerId]);
     }
 
     /**

@@ -43,7 +43,7 @@ class AdminController extends Controller
 
         session()->flash('message', 'The admin has been saved.');
 
-        return redirect()->route('manager.admins.index');
+        return redirect()->route(auth('admin')->user()->role . '.admins.index');
     }
 
     /**
@@ -77,7 +77,7 @@ class AdminController extends Controller
 
         session()->flash('message', 'The admin has been saved.');
 
-        return redirect()->route('manager.admins.index');
+        return redirect()->route(auth('admin')->user()->role . '.admins.index');
     }
 
     /**
@@ -90,6 +90,6 @@ class AdminController extends Controller
 
         session()->flash('message', 'The admin has been deleted.');
 
-        return redirect()->route('manager.admins.index');
+        return redirect()->route(auth('admin')->user()->role . '.admins.index');
     }
 }

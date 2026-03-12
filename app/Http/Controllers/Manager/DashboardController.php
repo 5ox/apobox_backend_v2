@@ -51,20 +51,20 @@ class DashboardController extends Controller
      */
     protected function redirectSearch(string $query): RedirectResponse
     {
-        $trackingPrefix = config('tracking.prefix', 'TRK');
+        $trackingPrefix = config('apobox.tracking.prefix', 'TRK');
 
         // If query starts with the tracking prefix, redirect to tracking search
         if (str_starts_with(strtoupper($query), strtoupper($trackingPrefix))) {
             $strippedQuery = substr($query, strlen($trackingPrefix));
-            return redirect()->route('manager.tracking.search', ['q' => $strippedQuery]);
+            return redirect()->route(auth('admin')->user()->role . '.tracking.search', ['q' => $strippedQuery]);
         }
 
         // If query is purely numeric, likely an order ID
         if (ctype_digit($query)) {
-            return redirect()->route('manager.orders.search', ['q' => $query]);
+            return redirect()->route(auth('admin')->user()->role . '.orders.search', ['q' => $query]);
         }
 
         // Default: customer search
-        return redirect()->route('manager.customers.search', ['q' => $query]);
+        return redirect()->route(auth('admin')->user()->role . '.customers.search', ['q' => $query]);
     }
 }

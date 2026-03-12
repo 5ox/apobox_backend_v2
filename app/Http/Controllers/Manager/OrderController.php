@@ -35,7 +35,7 @@ class OrderController extends Controller
     {
         $search = $request->query('q');
         $showStatus = $request->query('showStatus');
-        $fromThePast = $request->query('from_the_past', config('search.date.default', '-6 months'));
+        $fromThePast = $request->query('from_the_past', config('apobox.search.date.default', '-6 months'));
         $results = collect();
         $customRequests = collect();
 
@@ -119,10 +119,10 @@ class OrderController extends Controller
             $xml = null;
         } else {
             $mailClass = 'fedex';
-            $url = route('manager.orders.print-fedex', ['id' => $order->orders_id]);
+            $url = route(auth('admin')->user()->role . '.orders.print-fedex', ['id' => $order->orders_id]);
             $reprint = OrderData::getValue($id, 'fedex-zpl') !== null;
             if ($reprint) {
-                $url = route('manager.orders.print-fedex', ['id' => $order->orders_id, 'reprint' => 'reprint']);
+                $url = route(auth('admin')->user()->role . '.orders.print-fedex', ['id' => $order->orders_id, 'reprint' => 'reprint']);
                 $action = 'Reprint';
             }
             $xml = null;
@@ -157,7 +157,7 @@ class OrderController extends Controller
 
         if ($customersAddresses->isEmpty()) {
             session()->flash('message', 'This customer has insufficient address data for an order to be created.');
-            return redirect()->route('manager.dashboard');
+            return redirect()->route(auth('admin')->user()->role . '.dashboard');
         }
 
         $orderStatuses = OrderStatus::pluck('orders_status_name', 'orders_status_id');
@@ -182,31 +182,54 @@ class OrderController extends Controller
      */
     public function store(StoreOrderRequest $request, int $customerId): RedirectResponse
     {
+        $prefix = auth('admin')->user()->role;
         $customer = Customer::findOrFail($customerId);
 
-        $data = $request->validated();
+        $validated = $request->validated();
+
+        $data = [];
         $data['customers_id'] = $customerId;
         $data['customers_telephone'] = $customer->customers_telephone;
         $data['customers_email_address'] = $customer->customers_email_address;
         $data['creator_id'] = auth('admin')->id();
+        $data['orders_status'] = $validated['orders_status'];
 
-        // Set insurance coverage from customer defaults if not provided
-        if (empty($data['insurance_coverage'])) {
-            $data['insurance_coverage'] = $customer->insurance_amount;
-        }
-        if (isset($data['insurance']) && !$data['insurance']) {
-            unset($data['insurance_coverage']);
+        // Map inbound tracking
+        if (!empty($validated['inbound_tracking'])) {
+            $data['usps_track_num_in'] = $validated['inbound_tracking'];
         }
 
-        // Set mail class from customer default if not provided
-        if (empty($data['mail_class']) && !empty($customer->default_postal_type)) {
+        // Parse dimensions string (LxWxH) into individual fields
+        if (!empty($validated['dimensions'])) {
+            $parts = preg_split('/[xX×]/', $validated['dimensions']);
+            if (count($parts) >= 3) {
+                $data['length'] = (float) trim($parts[0]);
+                $data['width'] = (float) trim($parts[1]);
+                $data['depth'] = (float) trim($parts[2]);
+            }
+        }
+
+        // Convert weight from pounds to ounces
+        if (!empty($validated['weight'])) {
+            $data['weight_oz'] = (float) $validated['weight'] * 16;
+        }
+
+        // Set insurance coverage from customer defaults
+        $data['insurance_coverage'] = $customer->insurance_amount ?? 0;
+
+        // Set mail class from customer default
+        if (!empty($customer->default_postal_type)) {
             $data['mail_class'] = strtoupper($customer->default_postal_type);
         }
 
+        // Default package type
+        $data['package_type'] = 'YOUR_PACKAGING';
+
         // Marshal address data into order fields
+        $deliveryAddressId = $validated['address_id'];
         $addressTypes = [
             'customers' => $customer->customers_default_address_id,
-            'delivery' => $request->input('delivery_address_id', $customer->customers_shipping_address_id),
+            'delivery' => $deliveryAddressId,
             'billing' => $customer->customers_default_address_id,
         ];
 
@@ -236,15 +259,26 @@ class OrderController extends Controller
 
         $data['date_purchased'] = now();
 
+        // Link custom package request if selected
+        if (!empty($validated['custom_package_request_id'])) {
+            $data['comments'] = 'Custom request #' . $validated['custom_package_request_id'];
+        }
+
         try {
             $order = Order::create($data);
+
+            // Link custom package request to the order
+            if (!empty($validated['custom_package_request_id'])) {
+                \App\Models\CustomPackageRequest::where('custom_orders_id', $validated['custom_package_request_id'])
+                    ->update(['orders_id' => $order->orders_id]);
+            }
 
             // Create default line items for the order
             $this->createDefaultLineItems($order);
 
             session()->flash('message', 'The order has been created.');
 
-            return redirect()->route('manager.orders.charge', ['id' => $order->orders_id]);
+            return redirect()->route($prefix . '.orders.charge', ['id' => $order->orders_id]);
         } catch (\Exception $e) {
             Log::error('OrderController::store: ' . $e->getMessage());
             session()->flash('message', 'The order could not be saved. Please, try again.');
@@ -274,7 +308,7 @@ class OrderController extends Controller
         ])->findOrFail($id);
 
         $allowCharge = $this->checkIfOrderCanBeCharged($order);
-        $feeRates = config('orders.feeRates', []);
+        $feeRates = config('apobox.orders.fee_rates', []);
         $invoiceCustomer = $this->checkForInvoiceCustomer($order->customer);
 
         if ($request->isMethod('post') || $request->isMethod('put')) {
@@ -333,7 +367,7 @@ class OrderController extends Controller
                     session()->flash('message', 'Order totals have been saved.');
                 }
 
-                return redirect()->route('manager.orders.view', ['id' => $id]);
+                return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
             }
         }
 
@@ -365,7 +399,7 @@ class OrderController extends Controller
             session()->flash('message', sprintf('Order #%d could not be marked as shipped. Please try again.', $id));
         }
 
-        return redirect()->route('manager.orders.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
     }
 
     /**
@@ -403,10 +437,10 @@ class OrderController extends Controller
 
             // If the new status is shipped, redirect to dashboard
             if ($newStatus == 3) {
-                return redirect()->route('manager.dashboard');
+                return redirect()->route(auth('admin')->user()->role . '.dashboard');
             }
 
-            return redirect()->route('manager.orders.view', ['id' => $id]);
+            return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
         }
 
         session()->flash('message', "The order's status could not be saved. Please, try again.");
@@ -433,10 +467,10 @@ class OrderController extends Controller
         session()->flash('message', 'The order has been deleted.');
 
         if ($customerId) {
-            return redirect()->route('manager.customers.view', ['id' => $customerId]);
+            return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $customerId]);
         }
 
-        return redirect()->route('manager.orders.search');
+        return redirect()->route(auth('admin')->user()->role . '.orders.search');
     }
 
     /**
@@ -472,7 +506,7 @@ class OrderController extends Controller
             return response($zpl, 200)->header('Content-Type', 'text/plain');
         }
 
-        return redirect()->route('manager.orders.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
     }
 
     /**
@@ -489,20 +523,42 @@ class OrderController extends Controller
                 if ($request->ajax()) {
                     return response($label, 200)->header('Content-Type', 'text/plain');
                 }
-                return redirect()->route('manager.orders.view', ['id' => $id]);
+                return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
             }
         }
 
         // Request new label from FedEx API
-        $label = $fedex->printLabel($order);
-        if ($label) {
+        $recipient = [
+            'StreetLines' => $order->delivery_street_address,
+            'City' => $order->delivery_city,
+            'StateOrProvinceCode' => $order->delivery_state,
+            'PostalCode' => $order->delivery_postcode,
+            'CountryCode' => $order->delivery_country,
+        ];
+        $weightLbs = ($order->weight_oz ?? 16) / 16;
+        $options = [
+            'contact' => [
+                'PersonName' => $order->delivery_name ?? '',
+                'PhoneNumber' => $order->customers_telephone ?? '',
+            ],
+        ];
+        $result = $fedex->printLabel($recipient, $weightLbs, $options);
+
+        if (!empty($result['success']) && !empty($result['label_data'])) {
+            $label = $result['label_data'];
+
+            // Store tracking number if returned
+            if (!empty($result['tracking_number'])) {
+                $order->update(['fedex_track_num' => $result['tracking_number']]);
+            }
+
             OrderData::setValue($id, 'fedex-zpl', $label);
             if ($request->ajax()) {
                 return response($label, 200)->header('Content-Type', 'text/plain');
             }
         }
 
-        return redirect()->route('manager.orders.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
     }
 
     /**
@@ -520,7 +576,7 @@ class OrderController extends Controller
             session()->flash('message', 'The FedEx label could not be removed.');
         }
 
-        return redirect()->route('manager.orders.view', ['id' => $id]);
+        return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);
     }
 
     /**

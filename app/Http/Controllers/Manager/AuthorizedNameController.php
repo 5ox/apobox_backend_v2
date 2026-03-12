@@ -25,7 +25,7 @@ class AuthorizedNameController extends Controller
 
         session()->flash('message', 'The authorized name has been saved.');
 
-        return redirect()->route('manager.customers.view', $customer->customers_id);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', $customer->customers_id);
     }
 
     /**
@@ -49,7 +49,7 @@ class AuthorizedNameController extends Controller
 
         session()->flash('message', 'The authorized name has been saved.');
 
-        return redirect()->route('manager.customers.view', $authorizedName->customers_id);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', $authorizedName->customers_id);
     }
 
     /**
@@ -64,6 +64,6 @@ class AuthorizedNameController extends Controller
 
         session()->flash('message', 'The authorized name has been deleted.');
 
-        return redirect()->route('manager.customers.view', $customerId);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', $customerId);
     }
 }

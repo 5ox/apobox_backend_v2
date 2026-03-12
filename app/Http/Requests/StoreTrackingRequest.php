@@ -21,9 +21,7 @@ class StoreTrackingRequest extends FormRequest
     {
         return [
             'tracking_number' => ['required', 'string', 'max:128'],
-            'carrier' => ['required', 'string', 'max:32'],
-            'orders_id' => ['nullable', 'integer', 'exists:orders,orders_id'],
-            'status' => ['nullable', 'string', 'max:32'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -34,7 +32,6 @@ class StoreTrackingRequest extends FormRequest
     {
         return [
             'tracking_number.required' => 'Tracking number is required.',
-            'carrier.required' => 'Carrier is required.',
         ];
     }
 }

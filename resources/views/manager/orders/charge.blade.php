@@ -25,7 +25,11 @@
 
 <div class="action-bar mt-3">
     @if($allowCharge['allow'])
-        <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge?confirm=1" class="btn btn-success" onclick="return confirm('Charge ${{ number_format($order->total?->value ?? 0, 2) }}?')"><i data-lucide="credit-card" class="icon--sm me-1"></i>Confirm Charge</a>
+        <form method="POST" action="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" style="display:inline">
+            @csrf
+            <input type="hidden" name="submit" value="charge">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Charge ${{ number_format($order->total?->value ?? 0, 2) }}?')"><i data-lucide="credit-card" class="icon--sm me-1"></i>Confirm Charge</button>
+        </form>
     @endif
     <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="btn btn-secondary"><i data-lucide="arrow-left" class="icon--sm me-1"></i>Back</a>
 </div>

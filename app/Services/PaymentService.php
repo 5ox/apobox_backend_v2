@@ -4,19 +4,44 @@ namespace App\Services;
 
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use Exception;
+use RuntimeException;
 
 class PaymentService
 {
-    protected PayPalClient $client;
+    protected ?PayPalClient $client = null;
+    protected string $clientId;
+    protected string $clientSecret;
+    protected string $mode;
+    protected bool $initialized = false;
 
     public function __construct(string $clientId, string $clientSecret, string $mode = 'sandbox')
     {
+        $this->clientId = $clientId;
+        $this->clientSecret = $clientSecret;
+        $this->mode = $mode;
+    }
+
+    /**
+     * Lazily initialize the PayPal client on first use.
+     */
+    protected function ensureInitialized(): void
+    {
+        if ($this->initialized) {
+            return;
+        }
+
+        if (empty($this->clientId) || empty($this->clientSecret)) {
+            throw new RuntimeException(
+                'PayPal credentials not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET environment variables.'
+            );
+        }
+
         $this->client = new PayPalClient;
         $this->client->setApiCredentials([
-            'mode' => $mode,
-            $mode => [
-                'client_id' => $clientId,
-                'client_secret' => $clientSecret,
+            'mode' => $this->mode,
+            $this->mode => [
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
             ],
             'payment_action' => 'Sale',
             'currency' => 'USD',
@@ -25,16 +50,24 @@ class PaymentService
             'validate_ssl' => true,
         ]);
         $this->client->getAccessToken();
+        $this->initialized = true;
+    }
+
+    /**
+     * Check if PayPal credentials are configured.
+     */
+    public function isConfigured(): bool
+    {
+        return !empty($this->clientId) && !empty($this->clientSecret);
     }
 
     /**
      * Store a credit card in PayPal vault.
-     *
-     * Creates a setup token then converts it to a permanent payment token.
-     * Returns the payment token ID (vault ID) for future charges.
      */
     public function storeCard(array $cardData): ?string
     {
+        $this->ensureInitialized();
+
         try {
             $expiry = '20' . $cardData['expire_year'] . '-' . str_pad($cardData['expire_month'], 2, '0', STR_PAD_LEFT);
 
@@ -83,6 +116,8 @@ class PaymentService
      */
     public function chargeCard(string $cardToken, float $amount, string $description = ''): array
     {
+        $this->ensureInitialized();
+
         try {
             $order = $this->client->createOrder([
                 'intent' => 'CAPTURE',
