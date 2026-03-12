@@ -33,10 +33,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache modules (mpm_prefork is already default in php:8.2-apache)
+# Enable Apache modules
+# Remove ALL mpm configs — prefork is compiled-in statically, loading it
+# again via mods-enabled causes "More than one MPM loaded"
 RUN a2enmod rewrite headers \
-    && ls /etc/apache2/mods-enabled/mpm_* \
-    && rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
+    && rm -f /etc/apache2/mods-enabled/mpm_*
 
 # Set Apache document root to Laravel public directory
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
