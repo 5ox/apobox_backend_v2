@@ -3,18 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class SearchIndex extends Model
 {
     protected $table = 'search_indices';
     public $timestamps = true;
 
-    const CREATED_AT = 'created';
-    const UPDATED_AT = 'modified';
-
     protected $fillable = [
         'model',
-        'association_key',
+        'foreign_key',
         'data',
     ];
 
@@ -24,12 +22,15 @@ class SearchIndex extends Model
 
     /**
      * Search across all indexed models using FULLTEXT search.
+     * Accepts a raw query and converts it to boolean mode terms.
      */
-    public static function searchModels(string $query, ?string $modelType = null)
+    public static function searchModels(string $query, ?string $modelType = null): Collection
     {
+        $booleanQuery = static::toBooleanQuery($query);
+
         $builder = static::whereRaw(
             'MATCH(data) AGAINST(? IN BOOLEAN MODE)',
-            [$query]
+            [$booleanQuery]
         );
 
         if ($modelType) {
@@ -38,8 +39,24 @@ class SearchIndex extends Model
 
         return $builder->orderByRaw(
             'MATCH(data) AGAINST(? IN BOOLEAN MODE) DESC',
-            [$query]
+            [$booleanQuery]
         )->get();
+    }
+
+    /**
+     * Convert a user search string into MySQL FULLTEXT boolean mode query.
+     * Each term gets a leading + (required) and trailing * (prefix match).
+     */
+    public static function toBooleanQuery(string $query): string
+    {
+        $terms = preg_split('/\s+/', trim($query), -1, PREG_SPLIT_NO_EMPTY);
+
+        if ($terms === false || $terms === []) {
+            return '';
+        }
+
+        // Each term: +term* (required prefix match)
+        return implode(' ', array_map(fn(string $t) => '+' . $t . '*', $terms));
     }
 
     /**
@@ -48,7 +65,7 @@ class SearchIndex extends Model
     public static function updateIndex(string $modelType, int $modelId, string $content): static
     {
         return static::updateOrCreate(
-            ['model' => $modelType, 'association_key' => $modelId],
+            ['model' => $modelType, 'foreign_key' => $modelId],
             ['data' => $content]
         );
     }
@@ -59,7 +76,7 @@ class SearchIndex extends Model
     public static function removeIndex(string $modelType, int $modelId): void
     {
         static::where('model', $modelType)
-            ->where('association_key', $modelId)
+            ->where('foreign_key', $modelId)
             ->delete();
     }
 }

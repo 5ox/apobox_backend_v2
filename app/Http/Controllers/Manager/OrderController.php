@@ -19,6 +19,7 @@ use App\Services\Shipping\EndiciaService;
 use App\Services\Shipping\FedexService;
 use App\Services\Shipping\UspsService;
 use App\Services\Shipping\ZebraLabelService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,31 +31,68 @@ class OrderController extends Controller
 {
     /**
      * Search and list orders.
+     * Searches by order ID, tracking numbers, customer name, and billing ID.
      */
-    public function search(Request $request): View
+    public function search(Request $request): View|\Illuminate\Http\JsonResponse
     {
-        $search = $request->query('q');
+        $search = trim((string) $request->query('q', ''));
         $showStatus = $request->query('showStatus');
         $fromThePast = $request->query('from_the_past', config('apobox.search.date.default', '-6 months'));
         $results = collect();
         $customRequests = collect();
+        $isAjax = $request->wantsJson() || $request->ajax();
 
-        if (!empty($search) || !empty($showStatus)) {
-            $query = Order::with(['status', 'customer', 'total']);
+        if ($search !== '' || !empty($showStatus)) {
+            $query = Order::with(['status', 'customer', 'total'])
+                ->select([
+                    'orders_id', 'customers_id', 'date_purchased', 'orders_status',
+                    'usps_track_num', 'usps_track_num_in', 'ups_track_num',
+                    'fedex_track_num', 'dhl_track_num',
+                ]);
 
-            // Build search conditions: search by order ID, tracking numbers
-            if (!empty($search)) {
-                $terms = explode(' ', $search);
-                foreach ($terms as $term) {
-                    $query->where(function ($q) use ($term) {
-                        $q->where('orders_id', 'LIKE', '%' . $term . '%')
-                          ->orWhere('usps_track_num', 'LIKE', '%' . $term . '%')
-                          ->orWhere('usps_track_num_in', 'LIKE', '%' . $term . '%')
-                          ->orWhere('ups_track_num', 'LIKE', '%' . $term . '%')
-                          ->orWhere('fedex_track_num', 'LIKE', '%' . $term . '%')
-                          ->orWhere('dhl_track_num', 'LIKE', '%' . $term . '%');
-                    });
-                }
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    // Exact order ID match (fast — uses primary key)
+                    if (ctype_digit($search)) {
+                        $q->where('orders_id', (int) $search);
+                        return;
+                    }
+
+                    $terms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+                    // Single-term: OR across tracking + customer fields
+                    if (count($terms) === 1) {
+                        $like = '%' . $this->escapeLike($search) . '%';
+                        $q->where('usps_track_num', 'LIKE', $like)
+                          ->orWhere('usps_track_num_in', 'LIKE', $like)
+                          ->orWhere('ups_track_num', 'LIKE', $like)
+                          ->orWhere('fedex_track_num', 'LIKE', $like)
+                          ->orWhere('dhl_track_num', 'LIKE', $like)
+                          ->orWhereHas('customer', function (Builder $cq) use ($like, $search) {
+                              $cq->where('billing_id', 'LIKE', $like)
+                                ->orWhere('customers_firstname', 'LIKE', $like)
+                                ->orWhere('customers_lastname', 'LIKE', $like)
+                                ->orWhere('customers_email_address', 'LIKE', $like);
+                          });
+                    } else {
+                        // Multi-term: AND — each term must match somewhere
+                        foreach ($terms as $term) {
+                            $like = '%' . $this->escapeLike($term) . '%';
+                            $q->where(function ($inner) use ($like) {
+                                $inner->where('usps_track_num', 'LIKE', $like)
+                                      ->orWhere('usps_track_num_in', 'LIKE', $like)
+                                      ->orWhere('ups_track_num', 'LIKE', $like)
+                                      ->orWhere('fedex_track_num', 'LIKE', $like)
+                                      ->orWhere('dhl_track_num', 'LIKE', $like)
+                                      ->orWhereHas('customer', function (Builder $cq) use ($like) {
+                                          $cq->where('billing_id', 'LIKE', $like)
+                                            ->orWhere('customers_firstname', 'LIKE', $like)
+                                            ->orWhere('customers_lastname', 'LIKE', $like);
+                                      });
+                            });
+                        }
+                    }
+                });
             }
 
             if (!empty($fromThePast) && $fromThePast !== 'all') {
@@ -69,6 +107,25 @@ class OrderController extends Controller
             }
 
             $results = $query->orderByDesc('date_purchased')->paginate(20)->appends($request->query());
+        }
+
+        // AJAX: return JSON for live search
+        if ($isAjax) {
+            $items = $results instanceof \Illuminate\Pagination\LengthAwarePaginator
+                ? $results->map(fn(Order $o) => [
+                    'orders_id'      => $o->orders_id,
+                    'customer_name'  => $o->customer?->full_name,
+                    'customer_id'    => $o->customer?->customers_id,
+                    'status'         => $o->status?->orders_status_name,
+                    'total'          => $o->total?->value ?? 0,
+                    'date_purchased' => $o->date_purchased?->format('m/d/Y'),
+                ])
+                : [];
+
+            return response()->json([
+                'results' => $items,
+                'total'   => $results instanceof \Illuminate\Pagination\LengthAwarePaginator ? $results->total() : 0,
+            ]);
         }
 
         $statusFilterOptions = OrderStatus::pluck('orders_status_name', 'orders_status_id');
@@ -756,6 +813,11 @@ class OrderController extends Controller
                 'last_modified' => now(),
             ]);
         }
+    }
+
+    protected function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     /**

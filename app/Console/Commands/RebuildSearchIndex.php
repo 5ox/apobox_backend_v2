@@ -15,22 +15,30 @@ class RebuildSearchIndex extends Command
     {
         $this->info('Rebuilding search index...');
 
+        // Clear all customer entries
+        SearchIndex::where('model', Customer::class)->delete();
+        // Also clear legacy entries that used the short class name
         SearchIndex::where('model', 'Customer')->delete();
 
-        $customers = Customer::with('authorizedNames')->get();
-        $bar = $this->output->createProgressBar($customers->count());
+        $total = Customer::count();
+        $bar = $this->output->createProgressBar($total);
+        $indexed = 0;
 
-        foreach ($customers as $customer) {
-            SearchIndex::updateOrCreate(
-                ['model' => 'Customer', 'association_key' => $customer->customers_id],
-                ['data' => $customer->indexData()]
-            );
-            $bar->advance();
-        }
+        Customer::with('authorizedNames')->chunk(200, function ($customers) use ($bar, &$indexed) {
+            foreach ($customers as $customer) {
+                SearchIndex::updateIndex(
+                    Customer::class,
+                    $customer->customers_id,
+                    $customer->indexData()
+                );
+                $bar->advance();
+                $indexed++;
+            }
+        });
 
         $bar->finish();
         $this->newLine();
-        $this->info("Rebuilt index for {$customers->count()} customers.");
+        $this->info("Rebuilt index for {$indexed} customers.");
 
         return self::SUCCESS;
     }

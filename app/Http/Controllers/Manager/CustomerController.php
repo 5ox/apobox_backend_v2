@@ -9,6 +9,7 @@ use App\Models\Address;
 use App\Models\Customer;
 use App\Models\CustomersInfo;
 use App\Models\Order;
+use App\Models\SearchIndex;
 use App\Models\ShippingAddress;
 use App\Services\CreditCardService;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,19 +22,23 @@ class CustomerController extends Controller
 {
     /**
      * Search and list customers by billing ID, email, phone, or name.
+     * Uses FULLTEXT search_indices table for fast fuzzy matching.
      */
-    public function search(Request $request): View|RedirectResponse
+    public function search(Request $request): View|RedirectResponse|JsonResponse
     {
         $search = trim((string) $request->query('q', ''));
         $results = collect();
+        $isAjax = $request->wantsJson() || $request->ajax();
 
         if ($search !== '') {
             $normalizedSearch = mb_strtolower($search);
+
+            // Phase 1: exact match redirect (uses indexed columns — instant)
             $directMatch = Customer::query()
                 ->where(function (Builder $query) use ($normalizedSearch, $search) {
-                    $query->whereRaw('LOWER(billing_id) = ?', [$normalizedSearch])
-                        ->orWhereRaw('LOWER(customers_email_address) = ?', [$normalizedSearch])
-                        ->orWhereRaw('LOWER(backup_email_address) = ?', [$normalizedSearch]);
+                    $query->where('billing_id', $normalizedSearch)
+                        ->orWhere('customers_email_address', $normalizedSearch)
+                        ->orWhere('backup_email_address', $normalizedSearch);
 
                     if (ctype_digit($search)) {
                         $query->orWhere('customers_id', (int) $search);
@@ -42,76 +47,84 @@ class CustomerController extends Controller
                 ->first();
 
             if ($directMatch) {
+                if ($isAjax) {
+                    return response()->json([
+                        'redirect' => route(auth('admin')->user()->role . '.customers.view', ['id' => $directMatch->customers_id]),
+                    ]);
+                }
                 return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $directMatch->customers_id]);
             }
 
-            $results = Customer::query()
-                ->where(function (Builder $query) use ($search, $normalizedSearch) {
-                    $searchLike = '%' . $this->escapeLike($normalizedSearch) . '%';
-                    $phoneLike = '%' . $this->normalizePhone($search) . '%';
-                    $terms = preg_split('/\s+/', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            // Phase 2: FULLTEXT search via search_indices (covers name, billing_id,
+            // email, phone, backup_email, and authorized names — all pre-indexed)
+            $booleanQuery = SearchIndex::toBooleanQuery($search);
 
-                    $query->whereRaw('LOWER(billing_id) LIKE ?', [$searchLike])
-                        ->orWhereRaw('LOWER(customers_email_address) LIKE ?', [$searchLike])
-                        ->orWhereRaw('LOWER(backup_email_address) LIKE ?', [$searchLike]);
+            if ($booleanQuery !== '') {
+                $indexHits = SearchIndex::where('model', Customer::class)
+                    ->whereRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE)', [$booleanQuery])
+                    ->orderByRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE) DESC', [$booleanQuery])
+                    ->pluck('foreign_key');
 
-                    if ($this->normalizePhone($search) !== '') {
-                        $query->orWhereRaw(
-                            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(customers_telephone, '-', ''), '(', ''), ')', ''), ' ', ''), '+', '') LIKE ?",
-                            [$phoneLike]
-                        );
-                    }
+                if ($indexHits->isNotEmpty()) {
+                    $ids = $indexHits->toArray();
+                    $idList = implode(',', $ids);
 
-                    if ($terms !== []) {
-                        $query->orWhere(function (Builder $nameQuery) use ($terms) {
-                            foreach ($terms as $term) {
-                                $termLike = '%' . $this->escapeLike($term) . '%';
+                    $results = Customer::whereIn('customers_id', $ids)
+                        ->orderByRaw("FIELD(customers_id, {$idList})")
+                        ->paginate(20)
+                        ->appends($request->query());
+                }
+            }
 
-                                $nameQuery->where(function (Builder $termQuery) use ($termLike) {
-                                    $termQuery->whereRaw('LOWER(customers_firstname) LIKE ?', [$termLike])
-                                        ->orWhereRaw('LOWER(customers_lastname) LIKE ?', [$termLike])
-                                        ->orWhereHas('authorizedNames', function (Builder $authorizedQuery) use ($termLike) {
-                                            $authorizedQuery->whereRaw('LOWER(authorized_firstname) LIKE ?', [$termLike])
-                                                ->orWhereRaw('LOWER(authorized_lastname) LIKE ?', [$termLike]);
-                                        });
-                                });
-                            }
-                        });
-                    }
+            // Phase 3: If FULLTEXT returned nothing (short terms, special chars),
+            // fall back to a targeted LIKE on indexed columns only
+            if ($results instanceof \Illuminate\Support\Collection || $results->total() === 0) {
+                $searchLike = '%' . $this->escapeLike($normalizedSearch) . '%';
 
-                    if (ctype_digit($search)) {
-                        $query->orWhere('customers_id', (int) $search);
-                    }
-                })
-                ->orderByRaw(
-                    'CASE
-                        WHEN LOWER(billing_id) = ? THEN 0
-                        WHEN LOWER(customers_email_address) = ? THEN 1
-                        WHEN LOWER(backup_email_address) = ? THEN 2
-                        WHEN LOWER(billing_id) LIKE ? THEN 3
-                        WHEN LOWER(customers_lastname) LIKE ? THEN 4
-                        WHEN LOWER(customers_firstname) LIKE ? THEN 5
-                        ELSE 6
-                    END',
-                    [
-                        $normalizedSearch,
-                        $normalizedSearch,
-                        $normalizedSearch,
-                        $this->escapeLike($normalizedSearch) . '%',
-                        $this->escapeLike($normalizedSearch) . '%',
-                        $this->escapeLike($normalizedSearch) . '%',
-                    ]
-                )
-                ->orderBy('customers_lastname')
-                ->orderBy('customers_firstname')
-                ->paginate(20)
-                ->appends($request->query());
+                $query = Customer::query()
+                    ->where(function (Builder $q) use ($searchLike, $search) {
+                        $q->where('billing_id', 'LIKE', $searchLike)
+                          ->orWhere('customers_email_address', 'LIKE', $searchLike)
+                          ->orWhere('customers_lastname', 'LIKE', $searchLike)
+                          ->orWhere('customers_firstname', 'LIKE', $searchLike);
 
-            // If exactly one result, redirect directly to customer view
+                        if (ctype_digit($search)) {
+                            $q->orWhere('customers_id', (int) $search);
+                        }
+                    })
+                    ->orderBy('customers_lastname')
+                    ->orderBy('customers_firstname');
+
+                $results = $query->paginate(20)->appends($request->query());
+            }
+
+            // Single-result shortcut
             if ($results->total() === 1) {
                 $first = $results->first();
+                if ($isAjax) {
+                    return response()->json([
+                        'redirect' => route(auth('admin')->user()->role . '.customers.view', ['id' => $first->customers_id]),
+                    ]);
+                }
                 return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $first->customers_id]);
             }
+        }
+
+        // AJAX: return JSON for live search
+        if ($isAjax) {
+            $items = $results instanceof \Illuminate\Pagination\LengthAwarePaginator
+                ? $results->map(fn(Customer $c) => [
+                    'customers_id' => $c->customers_id,
+                    'billing_id'   => $c->billing_id,
+                    'full_name'    => $c->full_name,
+                    'email'        => $c->customers_email_address,
+                ])
+                : [];
+
+            return response()->json([
+                'results' => $items,
+                'total'   => $results instanceof \Illuminate\Pagination\LengthAwarePaginator ? $results->total() : 0,
+            ]);
         }
 
         $userIsManager = auth('admin')->user()->isManager();
