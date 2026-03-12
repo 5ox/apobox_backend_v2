@@ -125,7 +125,10 @@ class Order extends Model
 
     public function lineItems()
     {
-        return $this->hasMany(OrderLineItem::class, 'orders_id', 'orders_id');
+        // Use a concrete subclass with withoutGlobalScopes() to query all
+        // rows in orders_total without the abstract class instantiation issue
+        return $this->hasMany(OrderTotal::class, 'orders_id', 'orders_id')
+            ->withoutGlobalScopes();
     }
 
     public function shipping()
