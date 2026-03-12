@@ -25,11 +25,20 @@ if ($_SERVER['REQUEST_URI'] === '/health') {
         new PDO("mysql:host={$host};port={$port};dbname={$db}", $user, $pass, [
             PDO::ATTR_TIMEOUT => 3,
         ]);
-        echo json_encode(['status' => 'ok', 'database' => 'ok']);
+        $result = ['status' => 'ok', 'database' => 'ok'];
     } catch (Throwable $e) {
         http_response_code(503);
-        echo json_encode(['status' => 'degraded', 'database' => 'error']);
+        $result = ['status' => 'degraded', 'database' => 'error', 'error' => $e->getMessage()];
     }
+    // Append last 30 lines of Laravel log for debugging
+    $logFile = __DIR__ . '/../storage/logs/laravel.log';
+    if (file_exists($logFile)) {
+        $lines = file($logFile);
+        $result['log_tail'] = array_values(array_slice($lines, -30));
+    } else {
+        $result['log_tail'] = ['No log file found'];
+    }
+    echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
