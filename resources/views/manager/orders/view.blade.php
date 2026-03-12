@@ -12,9 +12,6 @@
             ...$dimension,
             'display' => rtrim(rtrim(number_format((float) $dimension['value'], 2, '.', ''), '0'), '.'),
         ])->values();
-    $dimensionHeadline = $packageMetrics->isNotEmpty()
-        ? $packageMetrics->pluck('display')->implode(' × ') . ' in'
-        : null;
     $weightDisplay = $order->weight ? $order->weight . ' lb' : 'N/A';
 @endphp
 <x-page-header title="Order #{{ $order->orders_id }}" subtitle="{{ $order->customer?->full_name }}" />
@@ -28,29 +25,13 @@
             <x-detail-row label="Mail Class">{{ $order->mail_class }}</x-detail-row>
             <x-detail-row label="Outbound">{{ $order->usps_track_num ?: 'N/A' }}</x-detail-row>
             <x-detail-row label="Inbound">{{ $order->inbound_tracking ?: 'N/A' }}</x-detail-row>
-            <x-detail-row label="Dimensions" class="detail-card__row--package">
+            <x-detail-row label="Dimensions">
                 @if($packageMetrics->isNotEmpty())
-                    <div class="package-dimensions">
-                        <div class="package-dimensions__visual" aria-hidden="true">
-                            <div class="package-box">
-                                <span class="package-box__face package-box__face--top"></span>
-                                <span class="package-box__face package-box__face--side"></span>
-                                <span class="package-box__face package-box__face--front"></span>
-                                <span class="package-box__tape"></span>
-                            </div>
-                        </div>
-                        <div class="package-dimensions__content">
-                            <div class="package-dimensions__headline">{{ $dimensionHeadline }}</div>
-                            <div class="package-dimensions__chips">
-                                @foreach($packageMetrics as $metric)
-                                    <span class="package-dimensions__chip" title="{{ $metric['label'] }}">
-                                        <span class="package-dimensions__chip-label">{{ $metric['short'] }}</span>
-                                        <span class="package-dimensions__chip-value">{{ $metric['display'] }} in</span>
-                                    </span>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
+                    <span class="dim-inline">
+                        @foreach($packageMetrics as $metric)
+                            <span class="dim-chip" title="{{ $metric['label'] }}"><span class="dim-chip__ltr">{{ $metric['short'] }}</span>{{ $metric['display'] }}"</span>@if(!$loop->last)<span class="dim-sep">&times;</span>@endif
+                        @endforeach
+                    </span>
                 @else
                     <span class="text-muted">N/A</span>
                 @endif
