@@ -11,14 +11,15 @@ class Insurance extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'coverage_amount',
-        'fee',
-        'description',
+        'amount_from',
+        'amount_to',
+        'insurance_fee',
     ];
 
     protected $casts = [
-        'coverage_amount' => 'decimal:2',
-        'fee' => 'decimal:2',
+        'amount_from' => 'decimal:2',
+        'amount_to' => 'decimal:2',
+        'insurance_fee' => 'decimal:2',
     ];
 
     // ---------------------------------------------------------------
@@ -28,22 +29,21 @@ class Insurance extends Model
     /**
      * Look up the insurance fee for a given coverage amount.
      *
-     * Returns the fee from the first row whose coverage_amount is >= $amount,
-     * or the highest available fee if $amount exceeds all tiers.
+     * Finds the tier where amount_from <= $amount <= amount_to.
      */
     public static function getFeeForCoverageAmount(float $amount): float
     {
-        $tier = static::where('coverage_amount', '>=', $amount)
-            ->orderBy('coverage_amount')
+        $tier = static::where('amount_from', '<=', $amount)
+            ->where('amount_to', '>=', $amount)
             ->first();
 
         if ($tier) {
-            return (float) $tier->fee;
+            return (float) $tier->insurance_fee;
         }
 
         // Fall back to the highest tier
-        $highest = static::orderByDesc('coverage_amount')->first();
+        $highest = static::orderByDesc('amount_to')->first();
 
-        return $highest ? (float) $highest->fee : 0.00;
+        return $highest ? (float) $highest->insurance_fee : 0.00;
     }
 }
