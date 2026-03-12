@@ -83,7 +83,7 @@ php artisan view:cache
 php artisan migrate:seed-existing
 php artisan migrate --force
 
-# Rebuild FULLTEXT search index (fast — runs in chunks, idempotent)
+# One-time: rebuild search index to fix legacy column names (remove after first deploy)
 php artisan app:rebuild-search-index
 
 # Ensure only mpm_prefork is loaded (Railway may inject mpm_event at runtime)
