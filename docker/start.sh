@@ -27,5 +27,10 @@ php artisan view:cache
 # Run migrations manually via `railway run php artisan migrate` when needed.
 # php artisan migrate --force
 
+# Ensure only mpm_prefork is loaded (Railway may inject mpm_event at runtime)
+a2dismod mpm_event mpm_worker 2>/dev/null || true
+rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
+a2enmod mpm_prefork 2>/dev/null || true
+
 # Start Apache
 apache2-foreground
