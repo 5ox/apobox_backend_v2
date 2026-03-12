@@ -51,48 +51,51 @@ class OrderController extends Controller
                 ]);
 
             if ($search !== '') {
-                $query->where(function ($q) use ($search) {
-                    // Exact order ID match (fast — uses primary key)
-                    if (ctype_digit($search)) {
-                        $q->where('orders_id', (int) $search);
-                        return;
-                    }
-
+                // Exact order ID match (fast — uses primary key)
+                if (ctype_digit($search)) {
+                    $query->where('orders_id', (int) $search);
+                } else {
+                    // Find matching customer IDs first (fast indexed query)
+                    // then use whereIn instead of slow correlated EXISTS subqueries
                     $terms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                    $customerQuery = Customer::select('customers_id');
 
-                    // Single-term: OR across tracking + customer fields
                     if (count($terms) === 1) {
                         $like = '%' . $this->escapeLike($search) . '%';
-                        $q->where('usps_track_num', 'LIKE', $like)
-                          ->orWhere('usps_track_num_in', 'LIKE', $like)
-                          ->orWhere('ups_track_num', 'LIKE', $like)
-                          ->orWhere('fedex_track_num', 'LIKE', $like)
-                          ->orWhere('dhl_track_num', 'LIKE', $like)
-                          ->orWhereHas('customer', function (Builder $cq) use ($like, $search) {
-                              $cq->where('billing_id', 'LIKE', $like)
-                                ->orWhere('customers_firstname', 'LIKE', $like)
-                                ->orWhere('customers_lastname', 'LIKE', $like)
-                                ->orWhere('customers_email_address', 'LIKE', $like);
-                          });
+                        $customerQuery->where(function ($cq) use ($like) {
+                            $cq->where('billing_id', 'LIKE', $like)
+                               ->orWhere('customers_firstname', 'LIKE', $like)
+                               ->orWhere('customers_lastname', 'LIKE', $like)
+                               ->orWhere('customers_email_address', 'LIKE', $like);
+                        });
                     } else {
-                        // Multi-term: AND — each term must match somewhere
                         foreach ($terms as $term) {
                             $like = '%' . $this->escapeLike($term) . '%';
-                            $q->where(function ($inner) use ($like) {
-                                $inner->where('usps_track_num', 'LIKE', $like)
-                                      ->orWhere('usps_track_num_in', 'LIKE', $like)
-                                      ->orWhere('ups_track_num', 'LIKE', $like)
-                                      ->orWhere('fedex_track_num', 'LIKE', $like)
-                                      ->orWhere('dhl_track_num', 'LIKE', $like)
-                                      ->orWhereHas('customer', function (Builder $cq) use ($like) {
-                                          $cq->where('billing_id', 'LIKE', $like)
-                                            ->orWhere('customers_firstname', 'LIKE', $like)
-                                            ->orWhere('customers_lastname', 'LIKE', $like);
-                                      });
+                            $customerQuery->where(function ($cq) use ($like) {
+                                $cq->where('billing_id', 'LIKE', $like)
+                                   ->orWhere('customers_firstname', 'LIKE', $like)
+                                   ->orWhere('customers_lastname', 'LIKE', $like);
                             });
                         }
                     }
-                });
+
+                    $matchedCustomerIds = $customerQuery->pluck('customers_id');
+
+                    $query->where(function ($q) use ($search, $terms, $matchedCustomerIds) {
+                        // Customer name/billing ID match via pre-fetched IDs
+                        if ($matchedCustomerIds->isNotEmpty()) {
+                            $q->whereIn('customers_id', $matchedCustomerIds);
+                        }
+
+                        // Tracking number search (uses indexes)
+                        $like = '%' . $this->escapeLike($search) . '%';
+                        $q->orWhere('usps_track_num', 'LIKE', $like)
+                          ->orWhere('usps_track_num_in', 'LIKE', $like)
+                          ->orWhere('ups_track_num', 'LIKE', $like)
+                          ->orWhere('fedex_track_num', 'LIKE', $like)
+                          ->orWhere('dhl_track_num', 'LIKE', $like);
+                    });
+                }
             }
 
             if (!empty($fromThePast) && $fromThePast !== 'all') {
