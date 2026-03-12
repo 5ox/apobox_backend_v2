@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Trust Railway's reverse proxy so Laravel detects HTTPS, real IP, etc.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'warehouse.ip' => EnsureWarehouseIp::class,
             'role' => EnsureRole::class,

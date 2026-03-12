@@ -43,22 +43,12 @@ class CustomerObserver
     /**
      * Handle the Customer "saved" event.
      *
-     * If credit card fields have changed, attempt to authorize the card
-     * via PayPal (or configured gateway).
+     * CC authorization is handled by the controller that has raw card data.
+     * The observer cannot re-authorize because the model only stores encrypted data.
      */
     public function saved(Customer $customer): void
     {
-        $ccFields = ['cc_number', 'cc_number_encrypted', 'cc_expires_month', 'cc_expires_year'];
-        $ccDirty = collect($ccFields)->some(fn ($field) => $customer->wasChanged($field));
-
-        if ($ccDirty && ! empty($customer->cc_number_encrypted)) {
-            try {
-                app(\App\Services\PayPalService::class)->authorizeCard($customer);
-            } catch (\Throwable $e) {
-                Log::error('CC authorization failed for customer ' . $customer->customers_id, [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        // CC authorization intentionally removed — raw card data is not available
+        // on the model. Authorization happens in the controller payment flow.
     }
 }
