@@ -83,6 +83,9 @@ php artisan view:cache
 php artisan migrate:seed-existing
 php artisan migrate --force
 
+# Rebuild FULLTEXT search index (fast — runs in chunks, idempotent)
+php artisan app:rebuild-search-index
+
 # Ensure only mpm_prefork is loaded (Railway may inject mpm_event at runtime)
 a2dismod mpm_event mpm_worker 2>/dev/null || true
 rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
