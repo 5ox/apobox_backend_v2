@@ -55,6 +55,10 @@ if [ "$SESSION_DRIVER" = "redis" ] || [ "$CACHE_STORE" = "redis" ] || [ "$QUEUE_
     fi
 fi
 
+# Force logging to file so /health can read errors (stderr is invisible to us)
+export LOG_CHANNEL="${LOG_CHANNEL:-daily}"
+export LOG_STACK="${LOG_STACK:-daily}"
+
 # Suppress "not a git repo" warnings from Sentry
 export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
 
@@ -63,6 +67,9 @@ if [ -n "$PORT" ]; then
     sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
     sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/*.conf
 fi
+
+# Clear stale debug files from previous deploys
+rm -f /var/www/html/storage/logs/last_error.json /var/www/html/storage/logs/laravel*.log
 
 # Cache config with runtime env vars
 php artisan config:cache
