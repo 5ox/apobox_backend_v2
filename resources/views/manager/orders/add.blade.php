@@ -21,8 +21,8 @@
                 <div class="mb-3">
                     <label class="form-label">Status</label>
                     <select name="orders_status" class="form-select">
-                        @foreach($orderStatuses as $id => $name)
-                            <option value="{{ $id }}" @selected(old('orders_status') == $id)>{{ $name }}</option>
+                        @foreach($orderStatuses as $status)
+                            <option value="{{ $status->orders_status_id }}" @selected(old('orders_status') == $status->orders_status_id)>{{ $status->orders_status_name }}</option>
                         @endforeach
                     </select>
                 </div>

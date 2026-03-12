@@ -219,7 +219,7 @@ class OrderController extends Controller
             return redirect()->route(auth('admin')->user()->role . '.dashboard');
         }
 
-        $orderStatuses = OrderStatus::pluck('orders_status_name', 'orders_status_id');
+        $orderStatuses = OrderStatus::all();
 
         $requests = \App\Models\CustomPackageRequest::where('customers_id', $customerId)
             ->where('package_status', 1)
