@@ -20,10 +20,10 @@ export REDIS_HOST="${REDIS_HOST:-$REDISHOST}"
 export REDIS_PORT="${REDIS_PORT:-$REDISPORT}"
 export REDIS_PASSWORD="${REDIS_PASSWORD:-$REDISPASSWORD}"
 
-# Use Redis for session/cache/queue now that it's available
-export SESSION_DRIVER="${SESSION_DRIVER:-redis}"
-export CACHE_STORE="${CACHE_STORE:-redis}"
-export QUEUE_CONNECTION="${QUEUE_CONNECTION:-redis}"
+# Default to file-based session/cache (safe fallback); set to redis in Railway env if Redis works
+export SESSION_DRIVER="${SESSION_DRIVER:-file}"
+export CACHE_STORE="${CACHE_STORE:-file}"
+export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
 
 # Suppress "not a git repo" warnings from Sentry
 export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
