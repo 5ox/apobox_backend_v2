@@ -33,7 +33,7 @@ class OrderFailedPayment extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: config('mail.from.noreply', 'noreply@apobox.com'),
+            from: config('mail.from.address', 'no-reply@apobox.com'),
             subject: "APO Box Order #{$this->orderId} - Awaiting Payment",
         );
     }

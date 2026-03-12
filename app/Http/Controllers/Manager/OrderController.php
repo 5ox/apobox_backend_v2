@@ -19,10 +19,12 @@ use App\Services\Shipping\EndiciaService;
 use App\Services\Shipping\FedexService;
 use App\Services\Shipping\UspsService;
 use App\Services\Shipping\ZebraLabelService;
+use App\Mail\OrderStatusUpdate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
@@ -607,6 +609,11 @@ class OrderController extends Controller
             $notified = (bool) $request->input('notify_customer', false);
             OrderStatusHistory::record($id, $newStatus, $comments, $notified);
 
+            // Send status update email to the customer
+            if ($notified) {
+                $this->sendOrderStatusEmail($order, $comments ?: null);
+            }
+
             session()->flash('message', sprintf('The status for order # %s has been updated.', $id));
 
             // If the new status is shipped, redirect to dashboard
@@ -926,6 +933,36 @@ class OrderController extends Controller
             $order->update([
                 'orders_status' => 2,
                 'last_modified' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Send an order status update email to the customer.
+     */
+    protected function sendOrderStatusEmail(Order $order, ?string $comments = null): void
+    {
+        $order->load(['customer', 'status']);
+
+        if (!$order->customer) {
+            return;
+        }
+
+        $statusName = $order->status?->orders_status_name ?? 'Unknown';
+
+        try {
+            Mail::to($order->customer->customers_email_address)
+                ->queue(new OrderStatusUpdate(
+                    $order->customer->customers_firstname,
+                    $order->customer->customers_lastname,
+                    (string) $order->orders_id,
+                    $statusName,
+                    $comments
+                ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send order status email', [
+                'orders_id' => $order->orders_id,
+                'error' => $e->getMessage(),
             ]);
         }
     }
