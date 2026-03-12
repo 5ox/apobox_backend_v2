@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Hash;
 use App\Auth\ApoboxPasswordHasher;
@@ -43,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
+
         Hash::extend('apobox', function () {
             return new ApoboxPasswordHasher();
         });
