@@ -44,6 +44,13 @@ class CustomPackageRequestController extends Controller
         $data = $request->validated();
         $data['customers_id'] = $customer->customers_id;
         $data['package_status'] = 1;
+        $data['billing_id'] = $customer->billing_id ?? '';
+        $data['tracking_id'] = '';
+        $data['orders_id'] = '0';
+        $data['package_repack'] = '';
+        $data['insurance_fee'] = '';
+        $data['insurance_coverage'] = '';
+        $data['mail_class'] = $customer->default_postal_type ?? '';
 
         $packageRequest = CustomPackageRequest::create($data);
 

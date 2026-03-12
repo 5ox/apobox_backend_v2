@@ -85,7 +85,16 @@ class CustomPackageRequestController extends Controller
 
         PackageRequest::create(array_merge(
             $request->validated(),
-            ['customers_id' => $customer->customers_id]
+            [
+                'customers_id' => $customer->customers_id,
+                'billing_id' => $customer->billing_id ?? '',
+                'tracking_id' => '',
+                'orders_id' => $request->input('orders_id', '0'),
+                'package_repack' => '',
+                'insurance_fee' => '',
+                'insurance_coverage' => '',
+                'mail_class' => $customer->default_postal_type ?? '',
+            ]
         ));
 
         session()->flash('message', 'The custom package request has been created.');
