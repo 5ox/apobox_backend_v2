@@ -15,10 +15,15 @@ export DB_DATABASE="${DB_DATABASE:-$MYSQLDATABASE}"
 export DB_USERNAME="${DB_USERNAME:-$MYSQLUSER}"
 export DB_PASSWORD="${DB_PASSWORD:-$MYSQLPASSWORD}"
 
-# Use file-based drivers unless Redis is explicitly configured
-export SESSION_DRIVER="${SESSION_DRIVER:-file}"
-export CACHE_STORE="${CACHE_STORE:-file}"
-export QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
+# Map Railway Redis vars to Laravel's expected REDIS_* vars
+export REDIS_HOST="${REDIS_HOST:-$REDISHOST}"
+export REDIS_PORT="${REDIS_PORT:-$REDISPORT}"
+export REDIS_PASSWORD="${REDIS_PASSWORD:-$REDISPASSWORD}"
+
+# Use Redis for session/cache/queue now that it's available
+export SESSION_DRIVER="${SESSION_DRIVER:-redis}"
+export CACHE_STORE="${CACHE_STORE:-redis}"
+export QUEUE_CONNECTION="${QUEUE_CONNECTION:-redis}"
 
 # Suppress "not a git repo" warnings from Sentry
 export SENTRY_RELEASE="${SENTRY_RELEASE:-unknown}"
