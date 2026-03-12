@@ -4,8 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Error') - APO Box</title>
-    <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
-    @vite(['resources/sass/global.scss'])
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 </head>
 <body>
     <div class="container">

@@ -7,6 +7,8 @@ return [
     | Application Identity
     |--------------------------------------------------------------------------
     */
+    'cdn_enabled' => env('CDN_ENABLED', true),
+
     'short_name' => 'APO Box',
     'long_name' => 'APO Box',
     'domain' => 'apobox.com',
