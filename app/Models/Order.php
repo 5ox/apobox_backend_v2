@@ -95,6 +95,9 @@ class Order extends Model
         'postage_id',
         'trans_id',
         'moved_to_invoice',
+        'creator_id',
+        'amazon_track_num',
+        'customs_description',
     ];
 
     protected $casts = [

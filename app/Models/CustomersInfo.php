@@ -18,6 +18,12 @@ class CustomersInfo extends Model
         'customers_info_date_account_created',
         'customers_info_date_account_last_modified',
         'global_product_notifications',
+        'customers_info_source_id',
+        'IP_signup',
+        'IP_lastlogon',
+        'IP_cc_update',
+        'IP_addressbook_update',
+        'customers_info_date_account_closed',
     ];
 
     protected $casts = [

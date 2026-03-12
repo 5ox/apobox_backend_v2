@@ -37,7 +37,6 @@ class AdminLoginController extends Controller
         ]);
 
         $credentials = $request->only('email', 'password');
-        $credentials['is_active'] = true;
 
         if (Auth::guard('admin')->attempt($credentials)) {
             $request->session()->regenerate();

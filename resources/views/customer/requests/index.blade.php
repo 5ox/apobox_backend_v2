@@ -7,16 +7,16 @@
 @else
     <div class="table-responsive">
         <table class="table table-sm table-striped">
-            <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Date</th><th>Instructions</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
                 @foreach($requests as $request)
                     <tr>
-                        <td>{{ $request->request_date?->format('m/d/Y') }}</td>
-                        <td>{{ $request->description }}</td>
-                        <td>{{ $request->status_label ?? $request->status }}</td>
+                        <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                        <td>{{ $request->instructions }}</td>
+                        <td>{{ $request->status_label ?? $request->package_status }}</td>
                         <td>
-                            <a href="{{ url('/requests/edit/' . $request->custom_package_requests_id) }}">Edit</a> |
-                            <a href="{{ url('/requests/delete/' . $request->custom_package_requests_id) }}" onclick="return confirm('Are you sure?')">Delete</a>
+                            <a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a> |
+                            <a href="{{ url('/requests/delete/' . $request->custom_orders_id) }}" onclick="return confirm('Are you sure?')">Delete</a>
                         </td>
                     </tr>
                 @endforeach

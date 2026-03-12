@@ -14,11 +14,9 @@ class StoreAffiliateLinkRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
             'url' => 'required|url|max:500',
-            'code' => 'required|string|max:100|unique:affiliate_links,code',
-            'commission_rate' => 'nullable|numeric|min:0|max:100',
-            'active' => 'nullable|boolean',
+            'enabled' => 'nullable|boolean',
         ];
     }
 }

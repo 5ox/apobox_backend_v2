@@ -30,16 +30,16 @@ class CustomerController extends Controller
         if ($search) {
             $wrappedSearch = $this->autoWrapFullnameOrEmail($search);
 
-            $results = SearchIndex::where('model_type', Customer::class)
-                ->whereRaw('MATCH(content) AGAINST(? IN BOOLEAN MODE)', [$wrappedSearch])
-                ->orderByRaw('MATCH(content) AGAINST(? IN BOOLEAN MODE) DESC', [$wrappedSearch])
+            $results = SearchIndex::where('model', Customer::class)
+                ->whereRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE)', [$wrappedSearch])
+                ->orderByRaw('MATCH(data) AGAINST(? IN BOOLEAN MODE) DESC', [$wrappedSearch])
                 ->paginate(20)
                 ->appends($request->query());
 
             // If exactly one result, redirect directly to customer view
             if ($results->total() === 1) {
                 $first = $results->first();
-                return redirect()->route('manager.customers.view', ['id' => $first->model_id]);
+                return redirect()->route('manager.customers.view', ['id' => $first->association_key]);
             }
         }
 

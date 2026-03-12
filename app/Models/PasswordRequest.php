@@ -13,6 +13,9 @@ class PasswordRequest extends Model
     protected $keyType = 'string';
     public $timestamps = true;
 
+    const CREATED_AT = 'created';
+    const UPDATED_AT = null;
+
     /**
      * Requests expire after 30 minutes.
      */
@@ -21,12 +24,7 @@ class PasswordRequest extends Model
     protected $fillable = [
         'id',
         'customer_id',
-        'token',
-        'expires_at',
-    ];
-
-    protected $casts = [
-        'expires_at' => 'datetime',
+        'admin_id',
     ];
 
     // ---------------------------------------------------------------
@@ -38,12 +36,6 @@ class PasswordRequest extends Model
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
-            }
-            if (empty($model->token)) {
-                $model->token = Str::random(64);
-            }
-            if (empty($model->expires_at)) {
-                $model->expires_at = now()->addMinutes(self::EXPIRY_MINUTES);
             }
         });
     }
@@ -62,11 +54,11 @@ class PasswordRequest extends Model
     // ---------------------------------------------------------------
 
     /**
-     * Scope to only valid (non-expired) requests.
+     * Scope to only valid (non-expired) requests based on created.
      */
     public function scopeValid($query)
     {
-        return $query->where('expires_at', '>', now());
+        return $query->where('created', '>', now()->subMinutes(self::EXPIRY_MINUTES));
     }
 
     /**
@@ -74,7 +66,7 @@ class PasswordRequest extends Model
      */
     public function scopeDeleteExpired($query)
     {
-        return $query->where('expires_at', '<=', now())->delete();
+        return $query->where('created', '<=', now()->subMinutes(self::EXPIRY_MINUTES))->delete();
     }
 
     // ---------------------------------------------------------------
@@ -83,6 +75,6 @@ class PasswordRequest extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        return $this->created->addMinutes(self::EXPIRY_MINUTES)->isPast();
     }
 }

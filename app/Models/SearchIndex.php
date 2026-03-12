@@ -9,10 +9,13 @@ class SearchIndex extends Model
     protected $table = 'search_indices';
     public $timestamps = true;
 
+    const CREATED_AT = 'created';
+    const UPDATED_AT = 'modified';
+
     protected $fillable = [
-        'model_type',
-        'model_id',
-        'content',
+        'model',
+        'association_key',
+        'data',
     ];
 
     // ---------------------------------------------------------------
@@ -21,24 +24,20 @@ class SearchIndex extends Model
 
     /**
      * Search across all indexed models using FULLTEXT search.
-     *
-     * @param  string  $query  The search terms.
-     * @param  string|null  $modelType  Optional: restrict to a specific model class.
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function searchModels(string $query, ?string $modelType = null)
     {
         $builder = static::whereRaw(
-            'MATCH(content) AGAINST(? IN BOOLEAN MODE)',
+            'MATCH(data) AGAINST(? IN BOOLEAN MODE)',
             [$query]
         );
 
         if ($modelType) {
-            $builder->where('model_type', $modelType);
+            $builder->where('model', $modelType);
         }
 
         return $builder->orderByRaw(
-            'MATCH(content) AGAINST(? IN BOOLEAN MODE) DESC',
+            'MATCH(data) AGAINST(? IN BOOLEAN MODE) DESC',
             [$query]
         )->get();
     }
@@ -49,8 +48,8 @@ class SearchIndex extends Model
     public static function updateIndex(string $modelType, int $modelId, string $content): static
     {
         return static::updateOrCreate(
-            ['model_type' => $modelType, 'model_id' => $modelId],
-            ['content' => $content]
+            ['model' => $modelType, 'association_key' => $modelId],
+            ['data' => $content]
         );
     }
 
@@ -59,8 +58,8 @@ class SearchIndex extends Model
      */
     public static function removeIndex(string $modelType, int $modelId): void
     {
-        static::where('model_type', $modelType)
-            ->where('model_id', $modelId)
+        static::where('model', $modelType)
+            ->where('association_key', $modelId)
             ->delete();
     }
 }

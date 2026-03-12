@@ -60,13 +60,13 @@ class CustomerReminders extends Command
             $reminder = CustomerReminder::firstOrCreate(
                 [
                     'customers_id' => $order->customers_id,
-                    'type' => 'awaiting_payment',
-                    'reference_id' => $order->orders_id,
+                    'reminder_type' => 'awaiting_payment',
+                    'orders_id' => $order->orders_id,
                 ],
-                ['count' => 0]
+                ['reminder_count' => 0]
             );
 
-            if ($reminder->count >= $maxReminders) {
+            if ($reminder->reminder_count >= $maxReminders) {
                 continue;
             }
 
@@ -74,14 +74,13 @@ class CustomerReminders extends Command
                 Mail::to($order->customer->customers_email_address)
                     ->queue(new AwaitingPaymentAlert($order->customer, $order));
 
-                $reminder->increment('count');
-                $reminder->update(['last_sent_at' => now()]);
+                $reminder->increment('reminder_count');
                 $sent++;
 
                 Log::channel('email')->info('Awaiting payment reminder sent', [
                     'customers_id' => $order->customers_id,
                     'orders_id' => $order->orders_id,
-                    'reminder_count' => $reminder->count,
+                    'reminder_count' => $reminder->reminder_count,
                 ]);
             } catch (\Exception $e) {
                 Log::channel('email')->error('Failed to send awaiting payment reminder', [
@@ -105,11 +104,11 @@ class CustomerReminders extends Command
         $sent = 0;
         foreach ($customers as $customer) {
             $reminder = CustomerReminder::firstOrCreate(
-                ['customers_id' => $customer->customers_id, 'type' => 'partial_signup'],
-                ['count' => 0]
+                ['customers_id' => $customer->customers_id, 'reminder_type' => 'partial_signup'],
+                ['reminder_count' => 0]
             );
 
-            if ($reminder->count >= $maxReminders) {
+            if ($reminder->reminder_count >= $maxReminders) {
                 continue;
             }
 
@@ -117,8 +116,7 @@ class CustomerReminders extends Command
                 Mail::to($customer->customers_email_address)
                     ->queue(new PartialSignupAlert($customer));
 
-                $reminder->increment('count');
-                $reminder->update(['last_sent_at' => now()]);
+                $reminder->increment('reminder_count');
                 $sent++;
             } catch (\Exception $e) {
                 Log::channel('email')->error('Failed to send partial signup reminder', [
@@ -145,11 +143,11 @@ class CustomerReminders extends Command
         $sent = 0;
         foreach ($customers as $customer) {
             $reminder = CustomerReminder::firstOrCreate(
-                ['customers_id' => $customer->customers_id, 'type' => 'expired_card'],
-                ['count' => 0]
+                ['customers_id' => $customer->customers_id, 'reminder_type' => 'expired_card'],
+                ['reminder_count' => 0]
             );
 
-            if ($reminder->count >= $maxToSend) {
+            if ($reminder->reminder_count >= $maxToSend) {
                 continue;
             }
 
@@ -162,8 +160,7 @@ class CustomerReminders extends Command
             try {
                 Mail::to($customer->customers_email_address)->queue($mailable);
 
-                $reminder->increment('count');
-                $reminder->update(['last_sent_at' => now()]);
+                $reminder->increment('reminder_count');
                 $sent++;
 
                 if ($delay > 0) {
@@ -187,7 +184,7 @@ class CustomerReminders extends Command
         $cutoff = now()->subWeeks($weeks);
 
         $count = Customer::partialSignups()
-            ->where('created_at', '<', $cutoff)
+            ->where('created', '<', $cutoff)
             ->delete();
 
         $this->info("Purged {$count} expired partial signups.");

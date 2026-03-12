@@ -7,17 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 class CustomerReminder extends Model
 {
     protected $table = 'customer_reminders';
+    protected $primaryKey = 'customer_reminder_id';
     public $timestamps = true;
+
+    const CREATED_AT = 'created';
+    const UPDATED_AT = 'modified';
 
     protected $fillable = [
         'customers_id',
-        'type',
-        'sent_at',
-        'notes',
+        'orders_id',
+        'reminder_type',
+        'reminder_count',
     ];
 
     protected $casts = [
-        'sent_at' => 'datetime',
+        'orders_id' => 'integer',
+        'reminder_count' => 'integer',
+        'created' => 'datetime',
+        'modified' => 'datetime',
     ];
 
     /**
@@ -42,13 +49,18 @@ class CustomerReminder extends Model
         return $this->belongsTo(Customer::class, 'customers_id', 'customers_id');
     }
 
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'orders_id', 'orders_id');
+    }
+
     // ---------------------------------------------------------------
     // Scopes
     // ---------------------------------------------------------------
 
     public function scopeOfType($query, string $type)
     {
-        return $query->where('type', $type);
+        return $query->where('reminder_type', $type);
     }
 
     public function scopeAwaitingPayment($query)

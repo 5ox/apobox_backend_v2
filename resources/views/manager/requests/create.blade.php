@@ -5,11 +5,10 @@
 <h2>New Request for {{ $customer->full_name }}</h2>
 <form method="POST" action="/{{ $prefix }}/customer/{{ $customer->customers_id }}/request/add">
     @csrf
-    <div class="mb-3"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3" required>{{ old('description') }}</textarea></div>
-    <div class="mb-3"><label class="form-label">Instructions</label><textarea name="instructions" class="form-control" rows="3">{{ old('instructions') }}</textarea></div>
+    <div class="mb-3"><label class="form-label">Instructions</label><textarea name="instructions" class="form-control" rows="3" required>{{ old('instructions') }}</textarea></div>
     <div class="mb-3">
         <label class="form-label">Status</label>
-        <select name="status" class="form-select">
+        <select name="package_status" class="form-select">
             @foreach($packageStatuses as $id => $name)
                 <option value="{{ $id }}">{{ $name }}</option>
             @endforeach

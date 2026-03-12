@@ -18,21 +18,21 @@
 @if($requests->isNotEmpty())
     <div class="table-responsive">
         <table class="table table-sm table-striped">
-            <thead><tr><th>Date</th><th>Customer</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Date</th><th>Customer</th><th>Instructions</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
                 @foreach($requests as $req)
                     <tr>
-                        <td>{{ $req->request_date?->format('m/d/Y') }}</td>
+                        <td>{{ $req->order_add_date?->format('m/d/Y') }}</td>
                         <td>
                             @if($req->customer)
                                 <a href="/{{ $prefix }}/customers/view/{{ $req->customer->customers_id }}">{{ $req->customer->full_name }}</a>
                             @endif
                         </td>
-                        <td>{{ Str::limit($req->description, 60) }}</td>
-                        <td>{{ $statusFilterOptions[$req->status] ?? $req->status }}</td>
+                        <td>{{ Str::limit($req->instructions, 60) }}</td>
+                        <td>{{ $statusFilterOptions[$req->package_status] ?? $req->package_status }}</td>
                         <td>
-                            <a href="/{{ $prefix }}/requests/edit/{{ $req->custom_package_requests_id }}">Edit</a> |
-                            <a href="/{{ $prefix }}/requests/delete/{{ $req->custom_package_requests_id }}" onclick="return confirm('Delete?')">Delete</a>
+                            <a href="/{{ $prefix }}/requests/edit/{{ $req->custom_orders_id }}">Edit</a> |
+                            <a href="/{{ $prefix }}/requests/delete/{{ $req->custom_orders_id }}" onclick="return confirm('Delete?')">Delete</a>
                         </td>
                     </tr>
                 @endforeach

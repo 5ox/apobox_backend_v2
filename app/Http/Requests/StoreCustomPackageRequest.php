@@ -21,20 +21,8 @@ class StoreCustomPackageRequest extends FormRequest
     {
         return [
             'orders_id' => ['nullable', 'integer', 'exists:orders,orders_id'],
-            'description' => ['required', 'string', 'max:1000'],
             'instructions' => ['nullable', 'string', 'max:2000'],
-            'admin_notes' => ['nullable', 'string', 'max:2000'],
-            'status' => ['nullable', 'string', 'in:pending,approved,completed,denied'],
-        ];
-    }
-
-    /**
-     * Get custom messages for validation errors.
-     */
-    public function messages(): array
-    {
-        return [
-            'description.required' => 'A description of the request is required.',
+            'package_status' => ['nullable', 'integer', 'in:1,2,3,4'],
         ];
     }
 }

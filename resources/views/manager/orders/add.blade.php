@@ -34,7 +34,7 @@
             <select name="custom_package_request_id" class="form-select">
                 <option value="">-- None --</option>
                 @foreach($requests as $req)
-                    <option value="{{ $req->custom_package_requests_id }}">{{ $req->description }}</option>
+                    <option value="{{ $req->custom_orders_id }}">{{ $req->instructions }}</option>
                 @endforeach
             </select>
         </div>

@@ -20,7 +20,7 @@ class CustomPackageRequestController extends Controller
 
         $requests = CustomPackageRequest::where('customers_id', $customer->customers_id)
             ->with('order.status')
-            ->orderByDesc('request_date')
+            ->orderByDesc('order_add_date')
             ->paginate(20);
 
         return view('customer.requests.index', compact('requests'));
@@ -43,8 +43,7 @@ class CustomPackageRequestController extends Controller
 
         $data = $request->validated();
         $data['customers_id'] = $customer->customers_id;
-        $data['status'] = 'pending';
-        $data['request_date'] = now();
+        $data['package_status'] = 1;
 
         $packageRequest = CustomPackageRequest::create($data);
 
@@ -134,7 +133,6 @@ class CustomPackageRequestController extends Controller
         }
 
         return [
-            'description',
             'instructions',
         ];
     }

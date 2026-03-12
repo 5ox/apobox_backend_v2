@@ -77,13 +77,13 @@
 @if($customRequests->isNotEmpty())
     <h4>Custom Requests</h4>
     <table class="table table-sm">
-        <thead><tr><th>Date</th><th>Description</th><th>Status</th></tr></thead>
+        <thead><tr><th>Date</th><th>Instructions</th><th>Status</th></tr></thead>
         <tbody>
             @foreach($customRequests as $req)
                 <tr>
-                    <td>{{ $req->request_date?->format('m/d/Y') }}</td>
-                    <td>{{ $req->description }}</td>
-                    <td>{{ $req->status }}</td>
+                    <td>{{ $req->order_add_date?->format('m/d/Y') }}</td>
+                    <td>{{ $req->instructions }}</td>
+                    <td>{{ $req->status_label }}</td>
                 </tr>
             @endforeach
         </tbody>

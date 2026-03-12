@@ -22,7 +22,7 @@ class RebuildSearchIndex extends Command
 
         foreach ($customers as $customer) {
             SearchIndex::updateOrCreate(
-                ['model' => 'Customer', 'foreign_key' => $customer->customers_id],
+                ['model' => 'Customer', 'association_key' => $customer->customers_id],
                 ['data' => $customer->indexData()]
             );
             $bar->advance();

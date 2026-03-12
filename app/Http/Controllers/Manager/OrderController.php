@@ -163,7 +163,7 @@ class OrderController extends Controller
         $orderStatuses = OrderStatus::pluck('orders_status_name', 'orders_status_id');
 
         $requests = \App\Models\CustomPackageRequest::where('customers_id', $customerId)
-            ->where('status', 'pending')
+            ->where('package_status', 1)
             ->get();
 
         $customerIsReadonly = true;
@@ -507,7 +507,7 @@ class OrderController extends Controller
     public function deleteLabel(int $id): RedirectResponse
     {
         $deleted = OrderData::where('orders_id', $id)
-            ->where('data_key', 'fedex-zpl')
+            ->where('data_type', 'fedex-zpl')
             ->delete();
 
         if ($deleted) {

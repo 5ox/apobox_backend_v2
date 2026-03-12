@@ -55,7 +55,6 @@ class GoogleLoginController extends Controller
 
         // Look up the admin by email
         $admin = Admin::where('email', $googleUser->getEmail())
-            ->where('is_active', true)
             ->first();
 
         if ($admin) {

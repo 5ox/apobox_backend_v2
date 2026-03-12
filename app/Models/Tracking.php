@@ -14,25 +14,16 @@ class Tracking extends Model
 
     protected $fillable = [
         'tracking_id',
-        'orders_id',
-        'carrier',
-        'tracking_number',
-        'status',
-        'date_added',
-        'date_updated',
+        'warehouse',
+        'comments',
+        'shipped',
+        'created',
+        'modified',
     ];
 
     protected $casts = [
-        'date_added' => 'datetime',
-        'date_updated' => 'datetime',
+        'timestamp' => 'datetime',
+        'created' => 'datetime',
+        'modified' => 'datetime',
     ];
-
-    // ---------------------------------------------------------------
-    // Relationships
-    // ---------------------------------------------------------------
-
-    public function order()
-    {
-        return $this->belongsTo(Order::class, 'orders_id', 'orders_id');
-    }
 }

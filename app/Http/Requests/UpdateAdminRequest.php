@@ -30,7 +30,6 @@ class UpdateAdminRequest extends FormRequest
             ],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', 'in:manager,employee,api'],
-            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

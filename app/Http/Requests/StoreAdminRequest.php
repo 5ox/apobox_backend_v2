@@ -24,7 +24,6 @@ class StoreAdminRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', 'string', 'in:manager,employee,api'],
-            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -15,6 +15,9 @@ class Customer extends Authenticatable
     protected $primaryKey = 'customers_id';
     public $timestamps = true;
 
+    const CREATED_AT = 'created';
+    const UPDATED_AT = null;
+
     protected $fillable = [
         'billing_id',
         'customers_gender',

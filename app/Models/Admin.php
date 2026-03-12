@@ -13,32 +13,24 @@ class Admin extends Authenticatable
     protected $primaryKey = 'id';
     public $timestamps = true;
 
+    const CREATED_AT = 'created';
+    const UPDATED_AT = 'modified';
+
     protected $fillable = [
-        'name',
         'email',
         'password',
         'role',
-        'is_active',
+        'token',
     ];
 
     protected $hidden = [
         'password',
-        'remember_token',
-    ];
-
-    protected $casts = [
-        'is_active' => 'boolean',
-        'email_verified_at' => 'datetime',
+        'token',
     ];
 
     // ---------------------------------------------------------------
     // Scopes
     // ---------------------------------------------------------------
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
 
     public function scopeManagers($query)
     {
