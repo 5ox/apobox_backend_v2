@@ -1,51 +1,54 @@
 @extends('layouts.default')
 @section('title', 'Add Address - APO Box')
 @section('content')
-<h2>Add Address</h2>
-<form method="POST" action="{{ url('/addresses') }}">
-    @csrf
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label">First Name</label>
-            <input type="text" name="entry_firstname" class="form-control" value="{{ old('entry_firstname') }}" required>
+<x-page-header title="Add Address" />
+
+<x-form-section>
+    <form method="POST" action="{{ url('/addresses') }}">
+        @csrf
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">First Name</label>
+                <input type="text" name="entry_firstname" class="form-control" value="{{ old('entry_firstname') }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Last Name</label>
+                <input type="text" name="entry_lastname" class="form-control" value="{{ old('entry_lastname') }}" required>
+            </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Last Name</label>
-            <input type="text" name="entry_lastname" class="form-control" value="{{ old('entry_lastname') }}" required>
+        <div class="mb-3">
+            <label class="form-label">Company</label>
+            <input type="text" name="entry_company" class="form-control" value="{{ old('entry_company') }}">
         </div>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Company</label>
-        <input type="text" name="entry_company" class="form-control" value="{{ old('entry_company') }}">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Street Address</label>
-        <input type="text" name="entry_street_address" class="form-control" value="{{ old('entry_street_address') }}" required>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Address Line 2</label>
-        <input type="text" name="entry_suburb" class="form-control" value="{{ old('entry_suburb') }}">
-    </div>
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <label class="form-label">City</label>
-            <input type="text" name="entry_city" class="form-control" value="{{ old('entry_city') }}" required>
+        <div class="mb-3">
+            <label class="form-label">Street Address</label>
+            <input type="text" name="entry_street_address" class="form-control" value="{{ old('entry_street_address') }}" required>
         </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label">State</label>
-            <select name="entry_zone_id" class="form-select" required>
-                <option value="">-- Select --</option>
-                @foreach($zones as $id => $name)
-                    <option value="{{ $id }}" @selected(old('entry_zone_id') == $id)>{{ $name }}</option>
-                @endforeach
-            </select>
+        <div class="mb-3">
+            <label class="form-label">Address Line 2</label>
+            <input type="text" name="entry_suburb" class="form-control" value="{{ old('entry_suburb') }}">
         </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label">Zip Code</label>
-            <input type="text" name="entry_postcode" class="form-control" value="{{ old('entry_postcode') }}" required>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">City</label>
+                <input type="text" name="entry_city" class="form-control" value="{{ old('entry_city') }}" required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">State</label>
+                <select name="entry_zone_id" class="form-select" required>
+                    <option value="">-- Select --</option>
+                    @foreach($zones as $id => $name)
+                        <option value="{{ $id }}" @selected(old('entry_zone_id') == $id)>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Zip Code</label>
+                <input type="text" name="entry_postcode" class="form-control" value="{{ old('entry_postcode') }}" required>
+            </div>
         </div>
-    </div>
-    <button type="submit" class="btn btn-primary">Save Address</button>
-    <a href="{{ url('/account') }}" class="btn btn-secondary">Cancel</a>
-</form>
+        <button type="submit" class="btn btn-primary">Save Address</button>
+        <a href="{{ url('/account') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</x-form-section>
 @endsection

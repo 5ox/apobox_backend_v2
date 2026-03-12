@@ -1,0 +1,40 @@
+.table-modern {
+    --bs-table-bg: var(--apo-surface);
+    border-collapse: separate;
+    border-spacing: 0;
+
+    thead th {
+        background-color: #f8fafc;
+        border-bottom: 2px solid var(--apo-border);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--apo-text-muted);
+        white-space: nowrap;
+        padding: 0.75rem 1rem;
+    }
+
+    tbody tr {
+        transition: background-color var(--apo-transition-fast);
+
+        &:hover {
+            background-color: var(--apo-surface-hover);
+        }
+
+        td {
+            vertical-align: middle;
+            border-bottom: 1px solid var(--apo-border-light);
+            padding: 0.75rem 1rem;
+        }
+
+        &:last-child td {
+            border-bottom: none;
+        }
+    }
+
+    // Clickable rows
+    &--clickable tbody tr {
+        cursor: pointer;
+    }
+}

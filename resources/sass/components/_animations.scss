@@ -1,0 +1,43 @@
+// Fade-in for page content
+.fade-in {
+    animation: fadeIn var(--apo-transition-slow) ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+// Button hover lift
+.btn {
+    transition: all var(--apo-transition-fast);
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: var(--apo-shadow-sm);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+}
+
+// Alert slide down
+.alert {
+    animation: slideDown var(--apo-transition-slow) ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+// Card hover
+.card-hover {
+    transition: transform var(--apo-transition), box-shadow var(--apo-transition);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--apo-shadow-md);
+    }
+}

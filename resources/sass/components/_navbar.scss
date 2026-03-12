@@ -1,0 +1,60 @@
+// Customer navbar
+.navbar-apobox {
+    background: linear-gradient(135deg, #0f2b5b 0%, #153d7a 100%);
+    box-shadow: var(--apo-shadow);
+    padding: 0.5rem 0;
+
+    .navbar-brand {
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-link {
+        font-weight: 500;
+        font-size: 0.8125rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: background-color var(--apo-transition-fast);
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    }
+}
+
+// Admin navbar
+.navbar-admin {
+    background: #0f2b5b;
+    box-shadow: var(--apo-shadow);
+
+    .navbar-brand {
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-link {
+        font-weight: 500;
+        font-size: 0.8125rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    .settings-dropdown .dropdown-menu {
+        box-shadow: var(--apo-shadow-lg);
+        border: 1px solid var(--apo-border);
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        min-width: 280px;
+    }
+}

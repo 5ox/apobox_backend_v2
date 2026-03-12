@@ -1,27 +1,33 @@
 @extends('layouts.manager')
 @section('title', 'Reports - APO Box Admin')
 @section('content')
-<h2>Reports</h2>
+
+<x-page-header title="Reports" />
+
 <div class="row">
     <div class="col-md-6">
-        <h4>Sales (Last 7 Months)</h4>
-        <canvas id="salesChart" height="200"></canvas>
+        <x-detail-card title="Sales (Last 7 Months)">
+            <canvas id="salesChart" height="200"></canvas>
+        </x-detail-card>
     </div>
     <div class="col-md-6">
-        <h4>Signups (Last 7 Months)</h4>
-        <canvas id="signupChart" height="200"></canvas>
+        <x-detail-card title="Signups (Last 7 Months)">
+            <canvas id="signupChart" height="200"></canvas>
+        </x-detail-card>
     </div>
 </div>
+
 <div class="row mt-4">
     <div class="col-md-6">
-        <h4>Order Status Counts</h4>
-        <table class="table table-sm">
-            <tbody>
-                @foreach($statusCounts as $statusId => $count)
-                    <tr><td>Status {{ $statusId }}</td><td>{{ $count }}</td></tr>
-                @endforeach
-            </tbody>
-        </table>
+        <x-table-card title="Order Status Counts">
+            <table class="table-modern">
+                <tbody>
+                    @foreach($statusCounts as $statusId => $count)
+                        <tr><td>Status {{ $statusId }}</td><td>{{ $count }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </x-table-card>
     </div>
 </div>
 @endsection
@@ -47,4 +53,3 @@
     });
 </script>
 @endpush
-@endsection

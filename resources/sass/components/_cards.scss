@@ -1,0 +1,146 @@
+// Enhanced card component
+.card {
+    box-shadow: var(--apo-shadow-sm);
+    border: 1px solid var(--apo-border);
+    transition: box-shadow var(--apo-transition);
+}
+
+// Stat card for dashboard
+.stat-card {
+    text-align: center;
+    padding: 1.5rem;
+
+    &__icon {
+        margin-bottom: 0.75rem;
+        color: var(--apo-text-muted);
+    }
+
+    &__number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0f2b5b;
+        line-height: 1.2;
+    }
+
+    &__label {
+        font-size: 0.8125rem;
+        color: var(--apo-text-muted);
+        font-weight: 500;
+        margin-top: 0.25rem;
+    }
+}
+
+// Address card
+.address-card {
+    border: 1px solid var(--apo-border);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--apo-surface);
+    transition: border-color var(--apo-transition-fast), box-shadow var(--apo-transition-fast);
+
+    &:hover {
+        border-color: rgba(26, 95, 180, 0.3);
+        box-shadow: var(--apo-shadow);
+    }
+
+    &__label {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        color: var(--apo-text-muted);
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    address {
+        font-style: normal;
+        line-height: 1.6;
+        color: var(--apo-text-primary);
+        margin-bottom: 0;
+    }
+}
+
+// Detail card (info display)
+.detail-card {
+    background: var(--apo-surface);
+    border: 1px solid var(--apo-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+
+    &__header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--apo-border-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h4, h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+    }
+
+    &__body {
+        padding: 1.25rem 1.5rem;
+    }
+
+    &__row {
+        display: flex;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--apo-border-light);
+
+        &:last-child { border-bottom: none; }
+    }
+
+    &__label {
+        width: 160px;
+        flex-shrink: 0;
+        font-weight: 500;
+        font-size: 0.8125rem;
+        color: var(--apo-text-muted);
+    }
+
+    &__value {
+        color: var(--apo-text-primary);
+    }
+}
+
+// Table card wrapper
+.table-card {
+    background: var(--apo-surface);
+    border: 1px solid var(--apo-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: var(--apo-shadow-sm);
+    margin-bottom: 1.5rem;
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    &__header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--apo-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h4, h5 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+    }
+
+    &__footer {
+        padding: 0.75rem 1.5rem;
+        border-top: 1px solid var(--apo-border-light);
+        background: #f8fafc;
+    }
+}

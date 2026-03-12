@@ -1,0 +1,67 @@
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50rem;
+    white-space: nowrap;
+
+    &::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    // Status variants
+    &--warehouse {
+        background-color: rgba(13, 148, 136, 0.1);
+        color: #0a7a72;
+        &::before { background-color: #0d9488; }
+    }
+
+    &--awaiting-payment {
+        background-color: rgba(229, 165, 10, 0.1);
+        color: #92610a;
+        &::before { background-color: #e5a50a; }
+    }
+
+    &--shipped {
+        background-color: rgba(38, 162, 105, 0.1);
+        color: #1a7a4f;
+        &::before { background-color: #26a269; }
+    }
+
+    &--paid {
+        background-color: rgba(26, 95, 180, 0.1);
+        color: #15478a;
+        &::before { background-color: #1a5fb4; }
+    }
+
+    &--returned {
+        background-color: rgba(192, 28, 40, 0.1);
+        color: #8c1520;
+        &::before { background-color: #c01c28; }
+    }
+
+    &--awaiting-package {
+        background-color: rgba(229, 165, 10, 0.1);
+        color: #92610a;
+        &::before { background-color: #e5a50a; }
+    }
+
+    // Filter badges (sidebar)
+    &--filter {
+        cursor: pointer;
+        transition: all var(--apo-transition-fast);
+        text-decoration: none;
+
+        &:hover {
+            filter: brightness(0.95);
+            transform: translateY(-1px);
+        }
+    }
+}

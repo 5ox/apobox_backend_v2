@@ -1,38 +1,90 @@
-// APO Box Account - Public/Customer Styles
+@import "components/navbar";
+@import "components/cards";
+@import "components/tables";
+@import "components/badges";
+@import "components/forms";
+@import "components/animations";
 
-// Navbar
-.navbar-apobox {
-    background-color: #1a4b8c;
-}
+// Customer-specific styles
 
-// Account page
 .account-section {
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
 
     h3 {
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--apo-text-primary);
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+        border-bottom: 2px solid var(--apo-border);
     }
 }
 
-// Order list
 .order-row {
     &:hover {
-        background-color: #f8f9fa;
+        background-color: var(--apo-surface-hover);
     }
 }
 
-// Address cards
-.address-card {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 15px;
-}
-
-// Registration form
 .registration-form {
     max-width: 600px;
     margin: 0 auto;
+}
+
+// Page header
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--apo-border);
+
+    h2 {
+        margin-bottom: 0.25rem;
+    }
+
+    &__subtitle {
+        color: var(--apo-text-muted);
+        font-size: 0.8125rem;
+    }
+}
+
+// Enhanced tab styling
+.nav-tabs {
+    border-bottom: 2px solid var(--apo-border);
+    gap: 0;
+
+    .nav-link {
+        font-weight: 500;
+        font-size: 0.8125rem;
+        color: var(--apo-text-muted);
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        padding: 0.75rem 1.25rem;
+        transition: all var(--apo-transition-fast);
+        border-radius: 0;
+
+        &:hover {
+            color: var(--apo-text-primary);
+            border-color: transparent;
+            background: transparent;
+        }
+
+        &.active {
+            color: #1a5fb4;
+            border-bottom-color: #1a5fb4;
+            font-weight: 600;
+            background: transparent;
+        }
+    }
+}
+
+// Login form
+.form-signin {
+    max-width: 420px;
+    margin: 3rem auto;
+    padding: 2.5rem;
+    background: var(--apo-surface);
+    border: 1px solid var(--apo-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--apo-shadow-md);
 }

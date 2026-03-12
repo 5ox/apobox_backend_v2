@@ -1,0 +1,51 @@
+.form-section {
+    background: var(--apo-surface);
+    border: 1px solid var(--apo-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+
+    &__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f2b5b;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--apo-border-light);
+    }
+}
+
+// Enhanced form controls
+.form-control, .form-select {
+    transition: border-color var(--apo-transition-fast), box-shadow var(--apo-transition-fast);
+}
+
+// Search bar with icon
+.search-bar {
+    position: relative;
+
+    .form-control {
+        padding-left: 2.5rem;
+        background: var(--apo-surface);
+        border: 1px solid var(--apo-border);
+
+        &:focus {
+            border-color: #1a5fb4;
+        }
+    }
+
+    &__icon {
+        position: absolute;
+        left: 0.875rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--apo-text-muted);
+        pointer-events: none;
+    }
+}
+
+.inline-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+}

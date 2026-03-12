@@ -1,15 +1,19 @@
 /**
  * APO Box Account - Main JS Entry Point
- *
- * This is the Vite entry point for the application JavaScript.
- * Individual page modules are loaded on-demand via dynamic imports.
  */
 
 // Import Bootstrap JS
 import 'bootstrap';
 
-// Auto-initialize page-specific modules based on data attributes
+// Import Lucide Icons
+import { createIcons, icons } from 'lucide';
+
+// Initialize everything on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Lucide icons
+    createIcons({ icons });
+
+    // Auto-initialize page-specific modules based on data attributes
     const pageModule = document.body.dataset.module;
     if (pageModule) {
         import(`./modules/${pageModule}.js`).catch(() => {

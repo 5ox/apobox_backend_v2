@@ -1,31 +1,143 @@
-// APO Box Account - Global Styles
-// Shared across all layouts (customer + admin)
+// ==========================================================================
+// APO Box Design System
+// ==========================================================================
 
-// Variables
-$apobox-blue: #1a4b8c;
-$apobox-blue-light: #2a6cb8;
-$apobox-gray: #f5f5f5;
+// --------------------------------------------------------------------------
+// 1. Custom Variables (BEFORE Bootstrap import)
+// --------------------------------------------------------------------------
 
-// Base overrides
+// Brand Colors
+$apobox-navy:        #0f2b5b;
+$apobox-blue:        #1a5fb4;
+$apobox-blue-light:  #3584e4;
+$apobox-sky:         #99c1f1;
+$apobox-slate:       #4a5568;
+$apobox-red:         #c01c28;
+$apobox-amber:       #e5a50a;
+$apobox-green:       #26a269;
+$apobox-teal:        #0d9488;
+
+// Bootstrap Theme Overrides
+$primary:       $apobox-blue;
+$secondary:     #64748b;
+$success:       $apobox-green;
+$info:          $apobox-teal;
+$warning:       $apobox-amber;
+$danger:        $apobox-red;
+$light:         #f8fafc;
+$dark:          $apobox-navy;
+
+// Typography
+$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+$font-size-base:  0.9375rem;
+$font-size-sm:    0.8125rem;
+$font-size-lg:    1.125rem;
+$line-height-base: 1.6;
+$headings-font-weight: 600;
+$headings-color: $apobox-navy;
+
+// Spacing & Border Radius
+$border-radius:    0.5rem;
+$border-radius-sm: 0.375rem;
+$border-radius-lg: 0.75rem;
+
+// Cards
+$card-border-color:    rgba(0, 0, 0, 0.06);
+$card-border-radius:   $border-radius-lg;
+$card-cap-bg:          transparent;
+$card-spacer-y:        1.25rem;
+$card-spacer-x:        1.5rem;
+
+// Tables
+$table-striped-bg:     rgba(0, 0, 0, 0.02);
+$table-hover-bg:       rgba(26, 95, 180, 0.04);
+$table-cell-padding-y: 0.75rem;
+$table-cell-padding-x: 1rem;
+
+// Buttons
+$btn-border-radius:    $border-radius;
+$btn-padding-y:        0.5rem;
+$btn-padding-x:        1.25rem;
+$btn-font-weight:      500;
+
+// Forms
+$input-border-radius:    $border-radius;
+$input-focus-border-color: $apobox-blue;
+$input-focus-box-shadow:   0 0 0 0.2rem rgba(26, 95, 180, 0.15);
+$form-label-font-weight:   500;
+$form-label-color:         $apobox-slate;
+
+// Badges
+$badge-font-weight:  500;
+$badge-padding-y:    0.375em;
+$badge-padding-x:    0.75em;
+$badge-border-radius: 50rem;
+
+// --------------------------------------------------------------------------
+// 2. Bootstrap Import
+// --------------------------------------------------------------------------
+@import "bootstrap/scss/bootstrap";
+
+// --------------------------------------------------------------------------
+// 3. CSS Custom Properties (Design Tokens)
+// --------------------------------------------------------------------------
+:root {
+    --apo-page-bg:         #f1f5f9;
+    --apo-surface:         #ffffff;
+    --apo-surface-hover:   #f8fafc;
+    --apo-border:          #e2e8f0;
+    --apo-border-light:    #f1f5f9;
+    --apo-text-primary:    #0f172a;
+    --apo-text-secondary:  #475569;
+    --apo-text-muted:      #94a3b8;
+
+    --apo-status-warehouse:   #{$apobox-teal};
+    --apo-status-awaiting:    #{$apobox-amber};
+    --apo-status-shipped:     #{$apobox-green};
+    --apo-status-paid:        #{$apobox-blue};
+    --apo-status-returned:    #{$apobox-red};
+
+    --apo-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
+    --apo-shadow:      0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --apo-shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --apo-shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+    --apo-transition-fast:  150ms ease;
+    --apo-transition:       200ms ease;
+    --apo-transition-slow:  300ms ease;
+}
+
+// --------------------------------------------------------------------------
+// 4. Base Styles
+// --------------------------------------------------------------------------
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px;
+    background-color: var(--apo-page-bg);
+    color: var(--apo-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-// Flash messages
+a {
+    transition: color var(--apo-transition-fast);
+}
+
 .flash-message {
-    margin-top: 15px;
+    margin-top: 1rem;
 }
 
-// Utility classes
-.cursor-pointer {
-    cursor: pointer;
-}
+// Utilities
+.cursor-pointer { cursor: pointer; }
+.text-apobox    { color: $apobox-blue; }
+.bg-apobox      { background-color: $apobox-blue; }
 
-.text-apobox {
-    color: $apobox-blue;
-}
+// Icon sizing (for Lucide icons)
+.icon {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: -0.125em;
+    stroke-width: 2;
 
-.bg-apobox {
-    background-color: $apobox-blue;
+    &--sm { width: 0.875rem; height: 0.875rem; }
+    &--lg { width: 1.25rem; height: 1.25rem; }
+    &--xl { width: 1.5rem; height: 1.5rem; }
 }

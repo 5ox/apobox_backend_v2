@@ -1,6 +1,7 @@
 @extends('layouts.error')
 @section('title', '403 Forbidden')
 @section('content')
-<h1 class="display-1 text-muted">403</h1>
-<p class="lead">Access denied.</p>
+<div class="error-code">403</div>
+<h2 class="error-title">Access denied</h2>
+<p class="error-message">You don't have permission to access this page.</p>
 @endsection

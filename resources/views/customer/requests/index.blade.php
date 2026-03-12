@@ -1,28 +1,37 @@
 @extends('layouts.default')
 @section('title', 'My Requests - APO Box')
 @section('content')
-<h2>My Custom Package Requests <small><a href="{{ url('/requests/add') }}" class="btn btn-sm btn-primary">New Request</a></small></h2>
+<x-page-header title="Custom Package Requests">
+    <x-slot:actions>
+        <a href="{{ url('/requests/add') }}" class="btn btn-sm btn-primary"><i data-lucide="plus" class="icon--sm"></i> New Request</a>
+    </x-slot:actions>
+</x-page-header>
+
 @if($requests->isEmpty())
-    <p>You have no custom package requests.</p>
+    <p class="text-muted">You have no custom package requests.</p>
 @else
-    <div class="table-responsive">
-        <table class="table table-sm table-striped">
-            <thead><tr><th>Date</th><th>Instructions</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-                @foreach($requests as $request)
-                    <tr>
-                        <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
-                        <td>{{ $request->instructions }}</td>
-                        <td>{{ $request->status_label ?? $request->package_status }}</td>
-                        <td>
-                            <a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a> |
-                            <a href="{{ url('/requests/delete/' . $request->custom_orders_id) }}" onclick="return confirm('Are you sure?')">Delete</a>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    {{ $requests->links() }}
+    <x-table-card>
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead><tr><th>Date</th><th>Instructions</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                    @foreach($requests as $request)
+                        <tr>
+                            <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                            <td>{{ $request->instructions }}</td>
+                            <td>{{ $request->status_label ?? $request->package_status }}</td>
+                            <td>
+                                <a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a> |
+                                <a href="{{ url('/requests/delete/' . $request->custom_orders_id) }}" onclick="return confirm('Are you sure?')">Delete</a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <x-slot:footer>
+            {{ $requests->links() }}
+        </x-slot:footer>
+    </x-table-card>
 @endif
 @endsection
