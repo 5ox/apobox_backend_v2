@@ -132,7 +132,7 @@ class UspsService
                 continue;
             }
 
-            $payload = [
+            $basePayload = [
                 'originZIPCode' => $originZip,
                 'destinationZIPCode' => $this->prepareZip($params['zip'] ?? ''),
                 'weight' => $weightLbs,
@@ -143,35 +143,44 @@ class UspsService
                 'processingCategory' => 'MACHINABLE',
                 'destinationEntryFacilityType' => 'NONE',
                 'rateIndicator' => 'DR',
-                'priceType' => 'COMMERCIAL',
-                'accountType' => 'EPS',
-                'accountNumber' => $this->accountNumber,
             ];
 
             try {
-                $response = Http::withToken($token)
-                    ->post($url, $payload);
+                // --- Commercial (our discounted) rate ---
+                $commercialPayload = $basePayload + [
+                    'priceType' => 'COMMERCIAL',
+                    'accountType' => 'EPS',
+                    'accountNumber' => $this->accountNumber,
+                ];
 
+                $response = Http::withToken($token)->post($url, $commercialPayload);
                 $body = $response->json();
+
+                $commercialRate = $this->extractPrice($body);
+
+                // --- Retail rate ---
+                $retailPayload = $basePayload + [
+                    'priceType' => 'RETAIL',
+                ];
+
+                $retailRate = null;
+                try {
+                    $retailResponse = Http::withToken($token)->post($url, $retailPayload);
+                    $retailBody = $retailResponse->json();
+                    $retailRate = $this->extractPrice($retailBody);
+                } catch (\Exception $e) {
+                    // Retail lookup is non-critical; log and continue
+                    Log::channel('shipping')->info("USPS retail rate unavailable for {$mailClass}: " . $e->getMessage());
+                }
 
                 $classRates = [];
 
-                if (!empty($body['rates'])) {
-                    // Multiple rates returned
-                    foreach ($body['rates'] as $rate) {
-                        $classRates[] = [
-                            'class_id' => $classId,
-                            'service' => $rate['mailClass'] ?? $mailClass,
-                            'rate' => (float) ($rate['price'] ?? $rate['totalPrice'] ?? 0),
-                            'description' => $rate['description'] ?? '',
-                        ];
-                    }
-                } elseif (!empty($body['totalPrice'])) {
-                    // Single rate response
+                if ($commercialRate !== null) {
                     $classRates[] = [
                         'class_id' => $classId,
                         'service' => $mailClass,
-                        'rate' => (float) $body['totalPrice'],
+                        'rate' => $commercialRate,
+                        'retail_rate' => $retailRate,
                         'description' => $body['description'] ?? '',
                     ];
                 }
@@ -185,6 +194,24 @@ class UspsService
         }
 
         return $rates;
+    }
+
+    /**
+     * Extract the price from a USPS v3 rate response body.
+     */
+    protected function extractPrice(array $body): ?float
+    {
+        if (!empty($body['rates'])) {
+            // Use the first rate entry
+            $rate = $body['rates'][0];
+            return (float) ($rate['price'] ?? $rate['totalPrice'] ?? 0);
+        }
+
+        if (!empty($body['totalPrice'])) {
+            return (float) $body['totalPrice'];
+        }
+
+        return null;
     }
 
     /**

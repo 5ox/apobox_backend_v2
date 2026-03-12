@@ -33,12 +33,25 @@
         @if(!empty($uspsRates) && !isset($uspsRates['error']))
             <x-detail-card title="USPS Rate Lookup">
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>Service</th><th class="text-end">Rate</th></tr></thead>
+                    <thead><tr><th>Service</th><th class="text-end">Our Rate</th><th class="text-end">Retail</th><th class="text-end">Savings</th></tr></thead>
                     <tbody>
                         @foreach($uspsRates as $rate)
+                            @php
+                                $ourRate = $rate['rate'];
+                                $retailRate = $rate['retail_rate'] ?? null;
+                                $savings = ($retailRate && $retailRate > $ourRate) ? $retailRate - $ourRate : null;
+                            @endphp
                             <tr @if($autoRate && ($rate['class_id'] ?? '') === ($autoRate['class_id'] ?? '')) class="table-success" @endif>
                                 <td>{{ $rate['description'] ?: $rate['service'] }}</td>
-                                <td class="text-end">${{ number_format($rate['rate'], 2) }}</td>
+                                <td class="text-end">${{ number_format($ourRate, 2) }}</td>
+                                <td class="text-end text-muted">{{ $retailRate ? '$' . number_format($retailRate, 2) : '—' }}</td>
+                                <td class="text-end">
+                                    @if($savings)
+                                        <span class="text-success">-${{ number_format($savings, 2) }}</span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
