@@ -51,7 +51,7 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install dependencies (generates lock file if missing)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
