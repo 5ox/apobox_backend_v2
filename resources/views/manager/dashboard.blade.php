@@ -30,6 +30,48 @@
                 <span class="text-muted small">No packages processed yet today</span>
             @endif
         </div>
+
+        {{-- Last 10 Days Table --}}
+        @if($dailyStats->sum('total') > 0)
+        <hr class="my-3">
+        <div class="table-responsive">
+            <table class="table table-sm table-borderless mb-0 small align-middle">
+                <thead>
+                    <tr class="text-muted">
+                        <th class="fw-semibold">Day</th>
+                        @foreach($employeeNames as $name)
+                            <th class="text-center fw-semibold">{{ $name }}</th>
+                        @endforeach
+                        <th class="text-center fw-semibold">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($dailyStats->reverse() as $day)
+                        <tr @if($day['date']->isToday()) class="table-active fw-semibold" @endif>
+                            <td class="text-nowrap">{{ $day['label'] }}</td>
+                            @foreach($employeeNames as $id => $name)
+                                @php $cnt = $day['byEmployee'][$id] ?? 0; @endphp
+                                <td class="text-center">
+                                    @if($cnt > 0)
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">{{ $cnt }}</span>
+                                    @else
+                                        <span class="text-muted">&mdash;</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                            <td class="text-center">
+                                @if($day['total'] > 0)
+                                    <span class="badge bg-dark rounded-pill">{{ $day['total'] }}</span>
+                                @else
+                                    <span class="text-muted">&mdash;</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
     </div>
 </div>
 
