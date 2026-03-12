@@ -30,10 +30,17 @@ if ($_SERVER['REQUEST_URI'] === '/health') {
         http_response_code(503);
         $result = ['status' => 'degraded', 'database' => 'error', 'error' => $e->getMessage()];
     }
-    // Append last 30 lines of Laravel log for debugging
-    $logFile = __DIR__ . '/../storage/logs/laravel.log';
-    if (file_exists($logFile)) {
-        $lines = file($logFile);
+    // Read last captured error (written by try-catch wrapper below)
+    $errFile = __DIR__ . '/../storage/logs/last_error.json';
+    if (file_exists($errFile)) {
+        $result['last_error'] = json_decode(file_get_contents($errFile), true);
+    }
+    // Check for log files (daily format or standard)
+    $logDir = __DIR__ . '/../storage/logs/';
+    $logFiles = glob($logDir . 'laravel*.log');
+    if ($logFiles) {
+        $latest = end($logFiles);
+        $lines = file($latest);
         $result['log_tail'] = array_values(array_slice($lines, -30));
     } else {
         $result['log_tail'] = ['No log file found'];
@@ -55,5 +62,17 @@ if (file_exists($maintenance = __DIR__ . '/../storage/framework/maintenance.php'
 require __DIR__ . '/../vendor/autoload.php';
 
 // Bootstrap Laravel and handle the request...
-(require_once __DIR__ . '/../bootstrap/app.php')
-    ->handleRequest(Request::capture());
+// Temporary: catch fatal errors and dump them for debugging
+try {
+    (require_once __DIR__ . '/../bootstrap/app.php')
+        ->handleRequest(Request::capture());
+} catch (Throwable $e) {
+    // Write error to a file the /health endpoint can read
+    $errFile = __DIR__ . '/../storage/logs/last_error.json';
+    file_put_contents($errFile, json_encode([
+        'error' => $e->getMessage(),
+        'file' => $e->getFile() . ':' . $e->getLine(),
+        'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 15),
+    ], JSON_PRETTY_PRINT));
+    throw $e; // Re-throw so Laravel's error handler still runs
+}
