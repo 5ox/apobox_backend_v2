@@ -23,12 +23,11 @@ class UpdateAdminRequest extends FormRequest
         $adminId = $this->route('id');
 
         return [
-            'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required', 'email', 'max:255',
                 Rule::unique('admins', 'email')->ignore($adminId),
             ],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password' => ['nullable', 'string', 'min:8'],
             'role' => ['required', 'string', 'in:manager,employee,api'],
         ];
     }

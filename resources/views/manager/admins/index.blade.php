@@ -16,8 +16,8 @@
                     <td>{{ $admin->email }}</td>
                     <td>{{ ucfirst($admin->role) }}</td>
                     <td>
-                        <a href="/{{ $prefix }}/admins/edit/{{ $admin->admin_id }}">Edit</a> |
-                        <a href="/{{ $prefix }}/admins/delete/{{ $admin->admin_id }}" onclick="return confirm('Delete?')">Delete</a>
+                        <a href="/{{ $prefix }}/admins/edit/{{ $admin->id }}">Edit</a> |
+                        <a href="/{{ $prefix }}/admins/delete/{{ $admin->id }}" onclick="return confirm('Delete?')">Delete</a>
                     </td>
                 </tr>
             @endforeach

@@ -8,6 +8,7 @@
 <x-form-section title="Create Admin">
     <form method="POST" action="/{{ $prefix }}/admins/add">
         @csrf
+        @if($errors->any())<div class="alert alert-danger mb-3"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
         <div class="mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ old('email') }}" required></div>
         <div class="mb-3"><label class="form-label">Password</label><input type="password" name="password" class="form-control" required></div>
         <div class="mb-3">
