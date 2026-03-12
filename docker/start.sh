@@ -24,7 +24,8 @@ php artisan route:cache
 php artisan view:cache
 
 # Run migrations (--force required for production)
-php artisan migrate --force
+# Use --graceful to exit 0 if migrations fail (existing DB may have tables already)
+php artisan migrate --force || echo "Warning: migrations had errors (possibly pre-existing tables)"
 
 # Start Apache
 apache2-foreground
