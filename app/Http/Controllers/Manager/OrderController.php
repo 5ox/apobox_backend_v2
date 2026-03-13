@@ -247,12 +247,17 @@ class OrderController extends Controller
 
         $customerIsReadonly = true;
 
+        $mailClasses = config('apobox.postal_classes', []);
+        $defaultMailClass = $customer->default_postal_type ?? 'priority_mail';
+
         return view('manager.orders.add', compact(
             'customer',
             'customersAddresses',
             'orderStatuses',
             'requests',
-            'customerIsReadonly'
+            'customerIsReadonly',
+            'mailClasses',
+            'defaultMailClass'
         ));
     }
 
@@ -278,33 +283,38 @@ class OrderController extends Controller
         $data['postage_id'] = '';
         $data['trans_id'] = '';
 
-        // Map inbound tracking
+        // Map inbound tracking — detect carrier and assign to correct column
         if (!empty($validated['inbound_tracking'])) {
-            $data['usps_track_num_in'] = $validated['inbound_tracking'];
-        }
+            $tracking = trim($validated['inbound_tracking']);
+            $data['usps_track_num_in'] = $tracking; // always store as inbound
 
-        // Parse dimensions string (LxWxH) into individual fields
-        if (!empty($validated['dimensions'])) {
-            $parts = preg_split('/[xX×]/', $validated['dimensions']);
-            if (count($parts) >= 3) {
-                $data['length'] = (float) trim($parts[0]);
-                $data['width'] = (float) trim($parts[1]);
-                $data['depth'] = (float) trim($parts[2]);
+            $carrierColumn = $this->detectCarrierColumn($tracking);
+            if ($carrierColumn) {
+                $data[$carrierColumn] = $tracking;
             }
         }
 
-        // Convert weight from pounds to ounces
-        if (!empty($validated['weight'])) {
-            $data['weight_oz'] = (float) $validated['weight'] * 16;
+        // Dimensions
+        if (!empty($validated['length'])) $data['length'] = (float) $validated['length'];
+        if (!empty($validated['width'])) $data['width'] = (float) $validated['width'];
+        if (!empty($validated['depth'])) $data['depth'] = (float) $validated['depth'];
+
+        // Convert weight (lb + oz) to total ounces
+        $totalOz = ((int) ($validated['weight_lb'] ?? 0)) * 16 + (float) ($validated['weight_oz'] ?? 0);
+        if ($totalOz > 0) {
+            $data['weight_oz'] = $totalOz;
         }
 
-        // Set insurance coverage from customer defaults
-        $data['insurance_coverage'] = $customer->insurance_amount ?? 0;
-
-        // Set mail class from customer default
-        if (!empty($customer->default_postal_type)) {
-            $data['mail_class'] = strtoupper($customer->default_postal_type);
+        // Customs description
+        if (!empty($validated['customs_description'])) {
+            $data['customs_description'] = $validated['customs_description'];
         }
+
+        // Insurance coverage
+        $data['insurance_coverage'] = (float) ($validated['insurance_coverage'] ?? $customer->insurance_amount ?? 0);
+
+        // Mail class
+        $data['mail_class'] = strtoupper($validated['mail_class'] ?? $customer->default_postal_type ?? 'priority_mail');
 
         // Default package type
         $data['package_type'] = 'YOUR_PACKAGING';
@@ -341,9 +351,16 @@ class OrderController extends Controller
             $data['billing_status'] = 5;
         }
 
-        // Link custom package request if selected
+        // Comments
+        $commentParts = [];
         if (!empty($validated['custom_package_request_id'])) {
-            $data['comments'] = 'Custom request #' . $validated['custom_package_request_id'];
+            $commentParts[] = 'Custom request #' . $validated['custom_package_request_id'];
+        }
+        if (!empty($validated['comments'])) {
+            $commentParts[] = $validated['comments'];
+        }
+        if ($commentParts) {
+            $data['comments'] = implode(' | ', $commentParts);
         }
 
         try {
@@ -974,6 +991,24 @@ class OrderController extends Controller
     // ---------------------------------------------------------------
     // Private Helpers
     // ---------------------------------------------------------------
+
+    /**
+     * Detect the carrier from a tracking number and return the DB column name.
+     */
+    protected function detectCarrierColumn(string $tracking): ?string
+    {
+        return match (true) {
+            (bool) preg_match('/^1Z[A-Z0-9]{16}$/i', $tracking) => 'ups_track_num',
+            (bool) preg_match('/^\d{12}$/', $tracking),
+            (bool) preg_match('/^\d{15}$/', $tracking),
+            (bool) preg_match('/^\d{20,22}$/', $tracking) => 'fedex_track_num',
+            (bool) preg_match('/^TBA/i', $tracking) => 'amazon_track_num',
+            (bool) preg_match('/^\d{10}$/', $tracking),
+            (bool) preg_match('/^[A-Z]{3}\d{7,}$/i', $tracking) => 'dhl_track_num',
+            (bool) preg_match('/^(9[0-9]{15,21}|[A-Z]{2}\d{9}US)$/i', $tracking) => 'usps_track_num',
+            default => null,
+        };
+    }
 
     /**
      * Check if a customer is an invoice customer.
