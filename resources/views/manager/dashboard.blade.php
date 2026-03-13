@@ -132,18 +132,21 @@
                         <td>{{ $order->mail_class }}</td>
                         <td class="small text-nowrap">
                             @if($inboundTrack)
-                                <a href="#" class="text-decoration-none track-link"
-                                   data-bs-toggle="modal" data-bs-target="#trackingModal"
-                                   data-tracking="{{ $inboundTrack }}"
-                                   data-carrier="{{ $inboundCarrier }}"
-                                   data-carrier-url="{{ $inboundUrl }}">
+                                <a href="{{ $inboundUrl }}" target="_blank" class="text-decoration-none" title="{{ $inboundTrack }}">
                                     <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>...{{ substr($inboundTrack, -7) }}
                                 </a>
                             @endif
                         </td>
                         <td>
                             @if(!empty($order->comments))
-                                <i data-lucide="message-square" class="icon--sm text-warning" title="{{ Str::limit($order->comments, 80) }}"></i>
+                                <a href="#" class="text-warning comment-pop"
+                                   tabindex="0" role="button"
+                                   data-bs-toggle="popover"
+                                   data-bs-trigger="focus"
+                                   data-bs-placement="left"
+                                   data-bs-content="{{ e($order->comments) }}">
+                                    <i data-lucide="message-square" class="icon--sm"></i>
+                                </a>
                             @endif
                         </td>
                         <td class="small text-nowrap">
@@ -173,89 +176,14 @@
     </div>
 @endif
 
-{{-- Tracking Modal --}}
-<div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title d-flex align-items-center gap-2">
-                    <i data-lucide="package" style="width:18px;height:18px"></i>
-                    <span id="trackingModalCarrier"></span> Tracking
-                </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0" style="position:relative;height:550px;">
-                <div id="trackingSpinner" class="d-flex flex-column justify-content-center align-items-center h-100">
-                    <div class="spinner-border text-primary mb-2"></div>
-                    <span class="text-muted small">Loading tracking info...</span>
-                </div>
-                <iframe id="trackingFrame" src="about:blank" style="width:100%;height:100%;border:0;position:absolute;top:0;left:0;opacity:0;transition:opacity .3s;"></iframe>
-            </div>
-            <div class="modal-footer py-2 justify-content-between">
-                <code id="trackingModalNumber" class="text-muted small"></code>
-                <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
-                    Open on carrier site <i data-lucide="external-link" style="width:14px;height:14px;vertical-align:-2px"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('trackingModal');
-    if (!modal) return;
-
-    const frame = document.getElementById('trackingFrame');
-    const spinner = document.getElementById('trackingSpinner');
-    const carrierLabel = document.getElementById('trackingModalCarrier');
-    const trackNumEl = document.getElementById('trackingModalNumber');
-    const carrierLink = document.getElementById('trackingCarrierLink');
-
-    // When iframe loads, hide spinner and show content
-    frame.addEventListener('load', function() {
-        if (frame.src && frame.src !== 'about:blank') {
-            spinner.style.display = 'none';
-            frame.style.opacity = '1';
-        }
-    });
-
-    modal.addEventListener('show.bs.modal', function(e) {
-        const btn = e.relatedTarget;
-        if (!btn) return;
-
-        const trackNum = btn.dataset.tracking;
-        const carrier = btn.dataset.carrier;
-        const carrierUrl = btn.dataset.carrierUrl;
-
-        carrierLabel.textContent = carrier;
-        trackNumEl.textContent = trackNum;
-        carrierLink.href = carrierUrl;
-
-        // Reset state
-        spinner.style.display = 'flex';
-        frame.style.opacity = '0';
-        frame.src = 'https://parcelsapp.com/en/tracking/' + encodeURIComponent(trackNum);
-
-        // Fallback: if iframe is blocked, show carrier link after timeout
-        setTimeout(function() {
-            if (spinner.style.display !== 'none') {
-                spinner.innerHTML = '<i data-lucide="external-link" style="width:32px;height:32px" class="text-muted mb-3"></i>'
-                    + '<a href="' + carrierUrl + '" target="_blank" class="btn btn-primary">View on ' + carrier + '</a>'
-                    + '<span class="text-muted small mt-2">' + trackNum + '</span>';
-                if (window.lucide) lucide.createIcons();
-            }
-        }, 5000);
-    });
-
-    modal.addEventListener('hidden.bs.modal', function() {
-        frame.src = 'about:blank';
-        frame.style.opacity = '0';
-        spinner.style.display = 'flex';
-        spinner.innerHTML = '<div class="spinner-border text-primary mb-2"></div>'
-            + '<span class="text-muted small">Loading tracking info...</span>';
+    // Initialize comment popovers
+    document.querySelectorAll('.comment-pop').forEach(function(el) {
+        new bootstrap.Popover(el, { html: false, sanitize: true });
     });
 });
 </script>
