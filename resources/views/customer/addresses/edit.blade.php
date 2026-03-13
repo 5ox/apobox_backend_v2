@@ -47,6 +47,7 @@
                 <input type="text" name="entry_postcode" class="form-control" value="{{ old('entry_postcode', $address->entry_postcode) }}" required>
             </div>
         </div>
+        <input type="hidden" name="entry_country_id" value="{{ $address->entry_country_id ?: 223 }}">
         <button type="submit" class="btn btn-primary">Save Changes</button>
         <a href="{{ url('/account') }}" class="btn btn-secondary">Cancel</a>
     </form>
