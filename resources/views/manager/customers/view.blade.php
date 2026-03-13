@@ -5,7 +5,7 @@
 {{-- Customer Header --}}
 <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
     @if($customer->billing_id)
-        <span class="badge rounded-pill bg-primary fs-5 px-4 py-2">{{ $customer->billing_id }}</span>
+        <span class="badge bg-primary fs-5 px-4 py-2" style="border-radius:12px">{{ $customer->billing_id }}</span>
     @endif
     <h2 class="mb-0">{{ $customer->full_name }}</h2>
     @if($closed)
@@ -44,17 +44,9 @@
     </div>
     {{-- Right: Addresses --}}
     <div class="col-lg-7">
-        <div class="row g-3">
-            <div class="col-sm-6">
-                <x-address-card label="Billing Address">{{ $customer->defaultAddress?->full ?? '' }}</x-address-card>
-            </div>
-            <div class="col-sm-6">
-                <x-address-card label="Shipping Address">{{ $customer->shippingAddress?->full ?? '' }}</x-address-card>
-            </div>
-            <div class="col-sm-6">
-                <x-address-card label="Emergency Address">{{ $customer->emergencyAddress?->full ?? '' }}</x-address-card>
-            </div>
-        </div>
+        <x-address-card label="Billing Address">{{ $customer->defaultAddress?->full ?? '' }}</x-address-card>
+        <x-address-card label="Shipping Address">{{ $customer->shippingAddress?->full ?? '' }}</x-address-card>
+        <x-address-card label="Emergency Address">{{ $customer->emergencyAddress?->full ?? '' }}</x-address-card>
     </div>
 </div>
 
