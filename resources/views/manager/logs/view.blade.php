@@ -6,13 +6,17 @@
 <x-page-header title="Application Logs" />
 
 <x-form-section>
-    <div class="mb-3">
-        <a href="/{{ $prefix }}/logs/view/email" class="btn btn-sm btn-outline-secondary @if($log === 'email') active @endif"><i data-lucide="mail" class="icon-sm me-1"></i>Email</a>
-        <a href="/{{ $prefix }}/logs/view/laravel" class="btn btn-sm btn-outline-secondary @if($log === 'laravel') active @endif"><i data-lucide="file-text" class="icon-sm me-1"></i>Laravel</a>
+    <div class="mb-3 d-flex flex-wrap gap-2">
+        @foreach($channels as $key => $ch)
+            <a href="/{{ $prefix }}/logs/view/{{ $key }}"
+               class="btn btn-sm btn-outline-secondary @if($log === $key) active @endif">
+                <i data-lucide="{{ $ch['icon'] }}" class="icon-sm me-1"></i>{{ $ch['label'] }}
+            </a>
+        @endforeach
     </div>
 </x-form-section>
 
-<x-detail-card title="{{ ucfirst($log) }} Log">
+<x-detail-card title="{{ $channels[$log]['label'] ?? ucfirst($log) }} Log">
     <div class="log-viewer">
         <pre>{{ $logFile }}</pre>
     </div>

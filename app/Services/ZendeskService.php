@@ -23,6 +23,14 @@ class ZendeskService
     }
 
     /**
+     * Get the Zendesk log channel.
+     */
+    protected function log(): \Psr\Log\LoggerInterface
+    {
+        return Log::channel('zendesk');
+    }
+
+    /**
      * Check if Zendesk credentials are configured.
      */
     public function isConfigured(): bool
@@ -66,7 +74,7 @@ class ZendeskService
         $customerEmail = $customer?->customers_email_address;
 
         if (empty($customerEmail)) {
-            Log::warning('Zendesk: cannot create ticket — no customer email', [
+            $this->log()->warning('Zendesk: cannot create ticket — no customer email', [
                 'orders_id' => $order->orders_id,
             ]);
             return null;
@@ -109,7 +117,7 @@ class ZendeskService
                 $ticket = $response->json('ticket');
                 $ticketId = $ticket['id'] ?? null;
 
-                Log::info('Zendesk: ticket created', [
+                $this->log()->info('Zendesk: ticket created', [
                     'orders_id' => $order->orders_id,
                     'ticket_id' => $ticketId,
                 ]);
@@ -122,7 +130,7 @@ class ZendeskService
 
             $errorBody = $response->json();
             $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? json_encode($errorBody);
-            Log::error('Zendesk: ticket creation failed', [
+            $this->log()->error('Zendesk: ticket creation failed', [
                 'orders_id' => $order->orders_id,
                 'status' => $response->status(),
                 'body' => $errorBody,
@@ -130,7 +138,7 @@ class ZendeskService
 
             return ['error' => "Zendesk API {$response->status()}: {$errorMsg}"];
         } catch (Exception $e) {
-            Log::error('Zendesk: ticket creation exception', [
+            $this->log()->error('Zendesk: ticket creation exception', [
                 'orders_id' => $order->orders_id,
                 'error' => $e->getMessage(),
             ]);
@@ -152,7 +160,7 @@ class ZendeskService
         $customerEmail = $customer->customers_email_address;
 
         if (empty($customerEmail)) {
-            Log::warning('Zendesk: cannot create ticket — no customer email', [
+            $this->log()->warning('Zendesk: cannot create ticket — no customer email', [
                 'customers_id' => $customer->customers_id,
             ]);
             return null;
@@ -187,7 +195,7 @@ class ZendeskService
                 $ticket = $response->json('ticket');
                 $ticketId = $ticket['id'] ?? null;
 
-                Log::info('Zendesk: customer ticket created', [
+                $this->log()->info('Zendesk: customer ticket created', [
                     'customers_id' => $customer->customers_id,
                     'ticket_id' => $ticketId,
                 ]);
@@ -200,7 +208,7 @@ class ZendeskService
 
             $errorBody = $response->json();
             $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? json_encode($errorBody);
-            Log::error('Zendesk: customer ticket creation failed', [
+            $this->log()->error('Zendesk: customer ticket creation failed', [
                 'customers_id' => $customer->customers_id,
                 'status' => $response->status(),
                 'body' => $errorBody,
@@ -208,7 +216,7 @@ class ZendeskService
 
             return ['error' => "Zendesk API {$response->status()}: {$errorMsg}"];
         } catch (Exception $e) {
-            Log::error('Zendesk: customer ticket creation exception', [
+            $this->log()->error('Zendesk: customer ticket creation exception', [
                 'customers_id' => $customer->customers_id,
                 'error' => $e->getMessage(),
             ]);
@@ -234,7 +242,7 @@ class ZendeskService
             ]);
 
             if (!$response->successful()) {
-                Log::warning('Zendesk: search failed', [
+                $this->log()->warning('Zendesk: search failed', [
                     'email' => $email,
                     'status' => $response->status(),
                 ]);
@@ -253,7 +261,7 @@ class ZendeskService
                 'url' => "https://{$this->subdomain}.zendesk.com/agent/tickets/{$t['id']}",
             ])->all();
         } catch (Exception $e) {
-            Log::error('Zendesk: search exception', [
+            $this->log()->error('Zendesk: search exception', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
@@ -289,7 +297,7 @@ class ZendeskService
                 'url' => "https://{$this->subdomain}.zendesk.com/agent/tickets/{$t['id']}",
             ];
         } catch (Exception $e) {
-            Log::error('Zendesk: getTicket exception', [
+            $this->log()->error('Zendesk: getTicket exception', [
                 'ticket_id' => $ticketId,
                 'error' => $e->getMessage(),
             ]);

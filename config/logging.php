@@ -14,7 +14,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'daily,stderr')),
+            'channels' => array_unique(array_merge(['daily'], explode(',', env('LOG_STACK', 'stderr')))),
             'ignore_exceptions' => false,
         ],
         'single' => [
@@ -61,6 +61,13 @@ return [
             'path' => storage_path('logs/email.log'),
             'level' => 'info',
             'days' => 14,
+            'replace_placeholders' => true,
+        ],
+        'zendesk' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/zendesk.log'),
+            'level' => 'debug',
+            'days' => 30,
             'replace_placeholders' => true,
         ],
         'stderr' => [
