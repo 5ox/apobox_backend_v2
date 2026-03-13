@@ -52,8 +52,8 @@
                 </div>
             </div>
         </div>
-        {{-- Period breakdown table --}}
-        @if($periodStats->sum('total') > 0)
+        {{-- Period breakdown table (hidden for daily/7D, shown for weekly/monthly) --}}
+        @if($statsRange !== '7d' && $periodStats->sum('total') > 0)
             <hr class="my-2">
             <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
                 <table class="table table-sm table-borderless mb-0 small align-middle">
