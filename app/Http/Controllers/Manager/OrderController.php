@@ -351,6 +351,13 @@ class OrderController extends Controller
             if (!empty($validated['custom_package_request_id'])) {
                 \App\Models\CustomPackageRequest::where('custom_orders_id', $validated['custom_package_request_id'])
                     ->update(['orders_id' => $order->orders_id]);
+            } elseif (!empty($data['usps_track_num_in'])) {
+                // Auto-match: find a pending custom request with the same inbound tracking
+                \App\Models\CustomPackageRequest::where('customers_id', $customerId)
+                    ->where('tracking_id', $data['usps_track_num_in'])
+                    ->where(fn($q) => $q->where('orders_id', '0')->orWhere('orders_id', ''))
+                    ->first()
+                    ?->update(['orders_id' => $order->orders_id]);
             }
 
             // Create default line items for the order

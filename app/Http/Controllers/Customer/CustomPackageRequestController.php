@@ -45,11 +45,11 @@ class CustomPackageRequestController extends Controller
         $data['customers_id'] = $customer->customers_id;
         $data['package_status'] = 1;
         $data['billing_id'] = $customer->billing_id ?? '';
-        $data['tracking_id'] = '';
+        $data['tracking_id'] = $request->input('tracking_id', '');
         $data['orders_id'] = '0';
-        $data['package_repack'] = '';
+        $data['package_repack'] = $request->input('package_repack', '');
         $data['insurance_fee'] = '';
-        $data['insurance_coverage'] = '';
+        $data['insurance_coverage'] = $request->input('insurance_coverage', '');
         $data['mail_class'] = $customer->default_postal_type ?? '';
 
         $packageRequest = CustomPackageRequest::create($data);
@@ -134,13 +134,16 @@ class CustomPackageRequestController extends Controller
      */
     protected function getAllowedFields(CustomPackageRequest $packageRequest): array
     {
-        // If linked to an order, customers can only edit instructions
-        if (! empty($packageRequest->orders_id)) {
-            return ['instructions'];
+        // If linked to an order, customers can only edit instructions and tracking
+        if (! empty($packageRequest->orders_id) && $packageRequest->orders_id !== '0') {
+            return ['instructions', 'tracking_id'];
         }
 
         return [
             'instructions',
+            'tracking_id',
+            'package_repack',
+            'insurance_coverage',
         ];
     }
 }
