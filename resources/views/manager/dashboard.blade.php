@@ -3,6 +3,22 @@
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
 
+{{-- Search & Quick Order --}}
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <form action="/{{ $prefix }}" method="GET" class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Search for Orders or Customers or Scan" autofocus>
+            <button type="submit" class="btn btn-outline-primary fw-semibold px-4">SEARCH</button>
+        </form>
+    </div>
+    <div class="col-md-6">
+        <form action="{{ route($prefix . '.customers.quick-order') }}" method="GET" class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Quick Order Entry by Customer ID">
+            <button type="submit" class="btn btn-outline-primary fw-semibold px-4">ADD</button>
+        </form>
+    </div>
+</div>
+
 {{-- Employee Activity --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-2">
