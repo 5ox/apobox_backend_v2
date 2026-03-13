@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Edit Payment Info - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <x-page-header title="Edit Payment Info - {{ $customer->full_name }}" />
 

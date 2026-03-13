@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', $customer->full_name . ' - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 {{-- Customer Header --}}
 <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
     @if($customer->billing_id)
@@ -59,6 +59,12 @@
         <a href="/{{ $prefix }}/customer/{{ $customer->customers_id }}/request/add" class="btn btn-sm btn-outline-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Request</a>
         @if($zendeskConfigured)
             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#newTicketModal"><i data-lucide="message-circle" class="icon--sm me-1"></i>New Ticket</button>
+        @endif
+        @if($userIsSysadmin)
+            <form method="POST" action="/{{ $prefix }}/customers/{{ $customer->customers_id }}/reset-password" class="d-inline" onsubmit="return confirm('Send a password reset email to {{ $customer->customers_email_address }}?')">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-warning"><i data-lucide="key" class="icon--sm me-1"></i>Reset Password</button>
+            </form>
         @endif
         <a href="/{{ $prefix }}/customers/{{ $customer->customers_id }}/close-account" class="btn btn-sm btn-outline-danger" onclick="return confirm('Close this account?')"><i data-lucide="x-circle" class="icon--sm me-1"></i>Close Account</a>
     </div>

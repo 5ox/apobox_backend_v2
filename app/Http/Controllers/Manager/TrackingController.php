@@ -80,7 +80,7 @@ class TrackingController extends Controller
 
         $results = $query->orderBy('timestamp', 'desc')->paginate(25);
 
-        $userIsManager = auth('admin')->user()?->role === 'manager';
+        $userIsManager = in_array(auth('admin')->user()?->role, ['manager', 'sysadmin']);
 
         return view('manager.tracking.search', compact(
             'search',

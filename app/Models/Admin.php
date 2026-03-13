@@ -47,9 +47,19 @@ class Admin extends Authenticatable
         return $query->where('role', 'api');
     }
 
+    public function scopeSysadmins($query)
+    {
+        return $query->where('role', 'sysadmin');
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    public function isSysadmin(): bool
+    {
+        return $this->role === 'sysadmin';
+    }
 
     public function isManager(): bool
     {
@@ -64,5 +74,13 @@ class Admin extends Authenticatable
     public function isApiUser(): bool
     {
         return $this->role === 'api';
+    }
+
+    /**
+     * Get the URL prefix for this admin's role.
+     */
+    public function routePrefix(): string
+    {
+        return $this->role;
     }
 }

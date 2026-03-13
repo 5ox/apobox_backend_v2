@@ -38,7 +38,6 @@ class AdminController extends Controller
             'email' => $request->input('email'),
             'password' => bcrypt($request->input('password')),
             'role' => $request->input('role', 'employee'),
-            'token' => $request->input('token'),
         ]);
 
         session()->flash('message', 'The admin has been saved.');
@@ -66,7 +65,6 @@ class AdminController extends Controller
         $data = [
             'email' => $request->input('email'),
             'role' => $request->input('role'),
-            'token' => $request->input('token'),
         ];
 
         if ($request->filled('password')) {

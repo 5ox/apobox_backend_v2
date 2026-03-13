@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Dashboard - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 {{-- Quick Order Add --}}
 <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, var(--bs-primary) 0%, #4a6cf7 100%);">

@@ -28,7 +28,7 @@ class UpdateAdminRequest extends FormRequest
                 Rule::unique('admins', 'email')->ignore($adminId),
             ],
             'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['required', 'string', 'in:manager,employee,api'],
+            'role' => ['required', 'string', 'in:sysadmin,manager,employee,api'],
         ];
     }
 }

@@ -1,6 +1,6 @@
 @php
-    $prefix = auth('admin')->user()?->role === 'manager' ? 'manager' : 'employee';
-    $isManager = auth('admin')->user()?->role === 'manager';
+    $prefix = auth('admin')->user()?->routePrefix() ?? 'employee';
+    $isManagerOrAbove = in_array(auth('admin')->user()?->role, ['manager', 'sysadmin']);
     $orderStatuses = $orderStatuses ?? \App\Models\OrderStatus::all();
 
     // Shipped count for last 24 hours (cached 5 min)
@@ -70,7 +70,7 @@
         </nav>
     </div>
 
-    @if($isManager)
+    @if($isManagerOrAbove)
         <div class="sidebar-section">
             <div class="sidebar-section-title">Management</div>
             <nav class="nav flex-column">

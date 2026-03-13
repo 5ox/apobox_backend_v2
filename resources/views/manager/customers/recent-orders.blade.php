@@ -9,7 +9,7 @@
         <thead><tr><th>Order #</th><th>Status</th><th>Date</th></tr></thead>
         <tbody>
             @foreach($orders as $order)
-                @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+                @php $prefix = auth('admin')->user()->routePrefix(); @endphp
                 <tr>
                     <td><a href="/{{ $prefix }}/orders/{{ $order->orders_id }}">{{ $order->orders_id }}</a></td>
                     <td><x-status-badge :status="$order->status?->orders_status_name" /></td>

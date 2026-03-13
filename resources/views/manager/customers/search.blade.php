@@ -3,7 +3,7 @@
 @section('module', 'search')
 @section('content')
 @php
-    $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee';
+    $prefix = auth('admin')->user()->routePrefix();
     $sortCol = $sortCol ?? 'customers_lastname';
     $sortDir = $sortDir ?? 'asc';
     $nextDir = $sortDir === 'asc' ? 'desc' : 'asc';

@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'New Order - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 {{-- Customer Header (matches customer/view design) --}}
 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">

@@ -2,7 +2,7 @@
 @section('title', 'Orders - APO Box Admin')
 @section('module', 'search')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
     <h1 class="h4 fw-bold mb-0">Orders</h1>

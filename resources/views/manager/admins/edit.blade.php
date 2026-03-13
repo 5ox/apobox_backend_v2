@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Edit Admin - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <x-page-header title="Edit Admin" />
 
@@ -16,6 +16,9 @@
             <select name="role" class="form-select">
                 <option value="employee" @selected($admin->role === 'employee')>Employee</option>
                 <option value="manager" @selected($admin->role === 'manager')>Manager</option>
+                @if(auth('admin')->user()->isSysadmin())
+                    <option value="sysadmin" @selected($admin->role === 'sysadmin')>Sys Admin</option>
+                @endif
             </select>
         </div>
         <button type="submit" class="btn btn-primary">Save</button>

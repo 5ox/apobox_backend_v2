@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Affiliate Links - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <x-page-header title="Affiliate Links">
     <a href="/{{ $prefix }}/affiliate-links/add" class="btn btn-sm btn-primary"><i data-lucide="plus"></i> Add</a>

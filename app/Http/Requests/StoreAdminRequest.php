@@ -22,7 +22,7 @@ class StoreAdminRequest extends FormRequest
         return [
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
             'password' => ['required', 'string', 'min:8'],
-            'role' => ['required', 'string', 'in:manager,employee,api'],
+            'role' => ['required', 'string', 'in:sysadmin,manager,employee,api'],
         ];
     }
 }

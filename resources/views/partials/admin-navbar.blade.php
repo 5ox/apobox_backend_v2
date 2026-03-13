@@ -1,4 +1,4 @@
-@php $prefix = auth('admin')->user()?->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()?->routePrefix() ?? 'employee'; @endphp
 <nav class="navbar navbar-expand-lg navbar-dark navbar-admin">
     <div class="container-fluid">
         <a class="navbar-brand" href="/{{ $prefix }}">

@@ -2,7 +2,7 @@
 @section('title', 'Order #' . $order->orders_id . ' - APO Box Admin')
 @section('content')
 @php
-    $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee';
+    $prefix = auth('admin')->user()->routePrefix();
     $lbs = intdiv((int)($order->weight_oz ?? 0), 16);
     $oz = (int)($order->weight_oz ?? 0) % 16;
     $dims = collect([$order->length, $order->width, $order->depth])

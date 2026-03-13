@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Manager;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdatePaymentInfoRequest;
 use App\Http\Requests\UpdateContactInfoRequest;
+use App\Mail\ForgotPassword;
 use App\Models\Address;
 use App\Models\Customer;
 use App\Models\CustomersInfo;
 use App\Models\Order;
+use App\Models\PasswordRequest;
 use App\Models\SearchIndex;
 use App\Models\ShippingAddress;
 use App\Services\CreditCardService;
@@ -16,6 +18,8 @@ use App\Services\ZendeskService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -43,9 +47,7 @@ class CustomerController extends Controller
                 ->paginate(20)
                 ->appends($request->query());
 
-            $userIsManager = auth('admin')->user()->isManager();
-
-            return view('manager.customers.search', compact('search', 'results', 'userIsManager', 'sortCol', 'sortDir'));
+            return view('manager.customers.search', compact('search', 'results', 'sortCol', 'sortDir'));
         }
 
         if ($search !== '') {
@@ -145,11 +147,10 @@ class CustomerController extends Controller
             ]);
         }
 
-        $userIsManager = auth('admin')->user()->isManager();
         $sortCol = 'customers_lastname';
         $sortDir = 'asc';
 
-        return view('manager.customers.search', compact('search', 'results', 'userIsManager', 'sortCol', 'sortDir'));
+        return view('manager.customers.search', compact('search', 'results', 'sortCol', 'sortDir'));
     }
 
     /**
@@ -181,7 +182,9 @@ class CustomerController extends Controller
             }
         }
 
-        $userIsManager = auth('admin')->user()->isManager();
+        $admin = auth('admin')->user();
+        $userIsManager = $admin->isManager() || $admin->isSysadmin();
+        $userIsSysadmin = $admin->isSysadmin();
         $partialSignup = empty($customer->billing_id);
         $customRequests = $customer->orders()
             ->with('customPackageRequests')
@@ -207,6 +210,7 @@ class CustomerController extends Controller
             'customer',
             'orders',
             'userIsManager',
+            'userIsSysadmin',
             'partialSignup',
             'customRequests',
             'closed',
@@ -490,6 +494,41 @@ class CustomerController extends Controller
         }
 
         return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $customerId]);
+    }
+
+    /**
+     * Send a password reset email to a customer (sysadmin only).
+     */
+    public function sendPasswordReset(int $id): RedirectResponse
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+
+        $customer = Customer::findOrFail($id);
+
+        if (!$customer->customers_email_address) {
+            session()->flash('message', 'This customer has no email address on file.');
+            return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
+        }
+
+        $passwordRequest = PasswordRequest::create([
+            'customer_id' => $customer->customers_id,
+            'admin_id' => auth('admin')->id(),
+        ]);
+
+        $resetUrl = url('/reset-password/' . $passwordRequest->id);
+
+        try {
+            Mail::to($customer->customers_email_address)
+                ->send(new ForgotPassword($customer->full_name, $resetUrl));
+        } catch (\Exception $e) {
+            Log::error('Admin password reset email failed: ' . $e->getMessage());
+            $passwordRequest->delete();
+            session()->flash('message', 'Failed to send password reset email.');
+            return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
+        }
+
+        session()->flash('message', 'Password reset email sent to ' . $customer->customers_email_address);
+        return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
     }
 
     /**

@@ -40,6 +40,7 @@ $adminRoutes = function () {
     Route::get('/customers/{id}/edit/default-addresses', [Manager\CustomerController::class, 'editDefaultAddresses'])->name('customers.edit-addresses');
     Route::post('/customers/{id}/edit/default-addresses', [Manager\CustomerController::class, 'updateDefaultAddresses'])->name('customers.update-addresses');
     Route::get('/customers/{customerId}/close-account', [Manager\CustomerController::class, 'closeAccount'])->name('customers.close');
+    Route::post('/customers/{id}/reset-password', [Manager\CustomerController::class, 'sendPasswordReset'])->name('customers.reset-password');
     Route::post('/customers/{customerId}/zendesk-ticket', [Manager\CustomerController::class, 'createZendeskTicket'])->name('customers.zendesk-ticket');
     Route::get('/customers/quick-order', [Manager\CustomerController::class, 'quickOrder'])->name('customers.quick-order');
     Route::post('/customers/quick-order', [Manager\CustomerController::class, 'processQuickOrder'])->name('customers.quick-order.process');
@@ -104,6 +105,8 @@ $adminRoutes = function () {
 
     Route::get('/tools', [Manager\ToolController::class, 'index'])->name('tools.index');
     Route::post('/tools/run/{command}', [Manager\ToolController::class, 'run'])->name('tools.run');
+    Route::get('/tools/gmail-oauth', [Manager\ToolController::class, 'gmailOAuthStart'])->name('tools.gmail-oauth');
+    Route::get('/tools/gmail-oauth/callback', [Manager\ToolController::class, 'gmailOAuthCallback'])->name('tools.gmail-oauth-callback');
 
     Route::get('/logs/view/{file?}', [Manager\LogController::class, 'view'])->name('logs.view');
 
@@ -114,6 +117,11 @@ $adminRoutes = function () {
     Route::post('/affiliate-links/edit/{id}', [Manager\AffiliateLinkController::class, 'update'])->name('affiliate-links.update');
     Route::get('/affiliate-links/delete/{id}', [Manager\AffiliateLinkController::class, 'destroy'])->name('affiliate-links.delete');
 };
+
+Route::prefix('sysadmin')
+    ->name('sysadmin.')
+    ->middleware(['auth:admin', 'warehouse.ip', 'role:sysadmin', 'admin.layout'])
+    ->group($adminRoutes);
 
 Route::prefix('manager')
     ->name('manager.')

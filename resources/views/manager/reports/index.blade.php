@@ -2,7 +2,7 @@
 @section('title', 'Reports - APO Box Admin')
 @section('module', 'reports')
 @section('content')
-@php $isManager = auth('admin')->user()?->role === 'manager'; @endphp
+@php $isManager = in_array(auth('admin')->user()?->role, ['manager', 'sysadmin']); @endphp
 
 <x-page-header title="Reports">
     @if($isManager)

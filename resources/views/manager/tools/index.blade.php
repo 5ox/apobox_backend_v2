@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Tools - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <x-page-header title="Tools" subtitle="Run maintenance commands" />
 
@@ -47,5 +47,55 @@
             </div>
         </div>
     @endforeach
+
+    @if(auth('admin')->user()->isSysadmin())
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-start mb-2">
+                        <div class="rounded-2 bg-primary bg-opacity-10 p-2 me-3">
+                            <i data-lucide="mail" class="text-primary" style="width:24px;height:24px;"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-title mb-1">Gmail OAuth</h6>
+                            <p class="text-muted small mb-0">Connect Gmail for sending emails via OAuth2.</p>
+                            @if(config('mail.mailers.gmail-oauth.refresh_token'))
+                                <span class="badge bg-success-subtle text-success mt-1">Connected</span>
+                            @else
+                                <span class="badge bg-warning-subtle text-warning mt-1">Not configured</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-3">
+                        <a href="{{ route($prefix . '.tools.gmail-oauth') }}" class="btn btn-sm btn-primary w-100">
+                            <i data-lucide="log-in" class="icon"></i> Connect Gmail
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
+
+@if(session('gmail_refresh_token'))
+    <div class="card mt-4 border-success">
+        <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">
+            <strong><i data-lucide="check-circle" class="icon"></i> Gmail OAuth Refresh Token</strong>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="this.closest('.card').remove()">
+                <i data-lucide="x" class="icon"></i> Dismiss
+            </button>
+        </div>
+        <div class="card-body">
+            <p class="mb-2">Set this environment variable in Railway:</p>
+            <div class="input-group">
+                <span class="input-group-text font-monospace small">GOOGLE_MAIL_REFRESH_TOKEN</span>
+                <input type="text" class="form-control font-monospace small" value="{{ session('gmail_refresh_token') }}" readonly id="refresh-token-value">
+                <button class="btn btn-outline-primary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('refresh-token-value').value); this.textContent='Copied!'">
+                    <i data-lucide="copy" class="icon"></i> Copy
+                </button>
+            </div>
+            <p class="text-muted small mt-2 mb-0">Keep this token secure — it provides Gmail access to the account.</p>
+        </div>
+    </div>
+@endif
 @endsection

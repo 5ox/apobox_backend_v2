@@ -1,7 +1,7 @@
 @extends('layouts.manager')
 @section('title', 'Logs - APO Box Admin')
 @section('content')
-@php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
+@php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
 <x-page-header title="Application Logs" />
 
