@@ -152,6 +152,13 @@ class OrderController extends Controller
             $billingState = $address->zone ? $address->zone->zone_code : '';
         }
 
+        // Re-check status fresh from DB to guard against race conditions
+        $freshStatus = Order::where('orders_id', $order->orders_id)->value('orders_status');
+        if ($freshStatus != 2) {
+            session()->flash('message', 'This order is no longer available for payment.');
+            return redirect()->route('customer.account');
+        }
+
         // Attempt to charge the card
         $total = $order->total ? $order->total->value : 0;
 

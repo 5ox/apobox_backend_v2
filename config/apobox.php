@@ -62,6 +62,10 @@ return [
         'payment_reminders' => 3,
         'default_customs_description' => 'Household & Personal Goods',
         'minimum_label_value' => '1.00',
+        'storage' => [
+            'daily_rate' => 2.00,
+            'grace_days' => 14,
+        ],
     ],
 
     /*
