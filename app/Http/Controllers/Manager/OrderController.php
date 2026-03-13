@@ -19,6 +19,7 @@ use App\Services\PaymentService;
 use App\Services\ZendeskService;
 use App\Services\Shipping\EndiciaService;
 use App\Services\Shipping\FedexService;
+use App\Services\Shipping\UpsService;
 use App\Services\Shipping\UspsService;
 use App\Services\Shipping\ZebraLabelService;
 use App\Mail\OrderStatusUpdate;
@@ -173,23 +174,35 @@ class OrderController extends Controller
 
         $invoiceCustomer = $this->checkForInvoiceCustomer($order->customer);
 
-        // Determine label printing details
-        $action = 'Print';
-        if ($order->mail_class !== 'FEDEX') {
-            $mailClass = 'usps';
-            $url = '#';
-            $reprint = false;
-            $xml = null;
-        } else {
+        // Determine label printing details per carrier
+        $role = auth('admin')->user()->role;
+        $normalizedClass = strtoupper(trim($order->mail_class ?? ''));
+
+        if ($normalizedClass === 'FEDEX') {
             $mailClass = 'fedex';
-            $url = route(auth('admin')->user()->role . '.orders.print-fedex', ['id' => $order->orders_id]);
+            $labelAction = 'Print';
+            $labelUrl = route($role . '.orders.print-fedex', ['id' => $order->orders_id]);
             $reprint = OrderData::getValue($id, 'fedex-zpl') !== null;
             if ($reprint) {
-                $url = route(auth('admin')->user()->role . '.orders.print-fedex', ['id' => $order->orders_id, 'reprint' => 'reprint']);
-                $action = 'Reprint';
+                $labelUrl = route($role . '.orders.print-fedex-reprint', ['id' => $order->orders_id, 'reprint' => 'reprint']);
+                $labelAction = 'Reprint';
             }
-            $xml = null;
+        } elseif ($normalizedClass === 'UPS') {
+            $mailClass = 'ups';
+            $labelAction = 'Print';
+            $labelUrl = route($role . '.orders.print-ups', ['id' => $order->orders_id]);
+            $reprint = OrderData::getValue($id, 'ups-zpl') !== null;
+            if ($reprint) {
+                $labelUrl = route($role . '.orders.print-ups-reprint', ['id' => $order->orders_id, 'reprint' => 'reprint']);
+                $labelAction = 'Reprint';
+            }
+        } else {
+            $mailClass = 'usps';
+            $labelAction = 'Print';
+            $labelUrl = '#';
+            $reprint = false;
         }
+        $xml = null;
 
         return view('manager.orders.view', compact(
             'order',
@@ -201,9 +214,9 @@ class OrderController extends Controller
             'invoiceCustomer',
             'xml',
             'mailClass',
-            'url',
-            'reprint',
-            'action'
+            'labelUrl',
+            'labelAction',
+            'reprint'
         ));
     }
 
@@ -795,18 +808,85 @@ class OrderController extends Controller
     }
 
     /**
-     * Delete a shipping label for an order (remove stored FedEx ZPL data).
+     * Print UPS label for an order.
+     */
+    public function printUps(Request $request, int $id, UpsService $ups, ?string $reprint = null): Response|RedirectResponse
+    {
+        $order = Order::with('customer')->findOrFail($id);
+        $role = auth('admin')->user()->role;
+
+        if ($reprint || $request->query('reprint')) {
+            $label = OrderData::getValue($id, 'ups-zpl');
+            if ($label) {
+                if ($request->ajax()) {
+                    return response($label, 200)->header('Content-Type', 'text/plain');
+                }
+                session()->flash('message', 'UPS label reprinted.');
+                return redirect()->route($role . '.orders.view', ['id' => $id]);
+            }
+        }
+
+        $recipient = [
+            'AddressLine' => [$order->delivery_street_address],
+            'City' => $order->delivery_city,
+            'StateProvinceCode' => $order->delivery_state,
+            'PostalCode' => $order->delivery_postcode,
+            'CountryCode' => $order->delivery_country ?: 'US',
+        ];
+        $weightLbs = max(($order->weight_oz ?? 16) / 16, 0.1);
+        $options = [
+            'contact' => [
+                'PersonName' => $order->delivery_name ?? '',
+                'PhoneNumber' => $order->customers_telephone ?? '',
+            ],
+        ];
+
+        $result = $ups->printLabel($recipient, $weightLbs, $options);
+
+        if (!empty($result['success']) && !empty($result['label_data'])) {
+            $label = $result['label_data'];
+
+            // If ZPL label is base64-encoded, decode it
+            if (!str_starts_with($label, '^XA') && base64_decode($label, true) !== false) {
+                $label = base64_decode($label);
+            }
+
+            if (!empty($result['tracking_number'])) {
+                $order->update(['ups_track_num' => $result['tracking_number']]);
+            }
+
+            OrderData::setValue($id, 'ups-zpl', $label);
+
+            if ($request->ajax()) {
+                return response($label, 200)->header('Content-Type', 'text/plain');
+            }
+
+            session()->flash('message', 'UPS label created. Tracking: ' . ($result['tracking_number'] ?? 'N/A'));
+        } else {
+            $error = $result['error'] ?? 'Unknown error creating UPS label';
+            Log::channel('shipping')->error('UPS label failed', [
+                'order_id' => $id,
+                'error' => $error,
+            ]);
+            session()->flash('error', 'UPS label failed: ' . $error);
+        }
+
+        return redirect()->route($role . '.orders.view', ['id' => $id]);
+    }
+
+    /**
+     * Delete a shipping label for an order (remove stored FedEx/UPS ZPL data).
      */
     public function deleteLabel(int $id): RedirectResponse
     {
         $deleted = OrderData::where('orders_id', $id)
-            ->where('data_type', 'fedex-zpl')
+            ->whereIn('data_type', ['fedex-zpl', 'ups-zpl'])
             ->delete();
 
         if ($deleted) {
-            session()->flash('message', 'The FedEx label has been removed.');
+            session()->flash('message', 'The shipping label has been removed.');
         } else {
-            session()->flash('message', 'The FedEx label could not be removed.');
+            session()->flash('message', 'No shipping label found to remove.');
         }
 
         return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);

@@ -134,6 +134,8 @@ $adminRoutes = function () {
     Route::get('/orders/{id}/print_label', [Manager\OrderController::class, 'printLabel'])->name('orders.print-label');
     Route::get('/orders/{id}/print_fedex', [Manager\OrderController::class, 'printFedex'])->name('orders.print-fedex');
     Route::get('/orders/{id}/print_fedex/{reprint}', [Manager\OrderController::class, 'printFedex'])->name('orders.print-fedex-reprint');
+    Route::get('/orders/{id}/print_ups', [Manager\OrderController::class, 'printUps'])->name('orders.print-ups');
+    Route::get('/orders/{id}/print_ups/{reprint}', [Manager\OrderController::class, 'printUps'])->name('orders.print-ups-reprint');
     Route::get('/orders/{id}/delete_label', [Manager\OrderController::class, 'deleteLabel'])->name('orders.delete-label');
     Route::get('/orders/delete/{id}', [Manager\OrderController::class, 'deleteOrder'])->name('orders.delete');
     Route::post('/orders/{id}/zendesk-ticket', [Manager\OrderController::class, 'createZendeskTicket'])->name('orders.zendesk-ticket');

@@ -189,13 +189,22 @@
                     <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/print_label" class="btn btn-sm btn-outline-secondary">
                         <i data-lucide="printer" class="icon--sm me-1"></i>Print USPS Postage
                     </a>
-                @else
-                    <a href="{{ $url }}" class="btn btn-sm btn-outline-secondary">
-                        <i data-lucide="printer" class="icon--sm me-1"></i>{{ ucfirst($action) }} FedEx Label
+                @elseif($mailClass === 'fedex')
+                    <a href="{{ $labelUrl }}" class="btn btn-sm btn-outline-secondary">
+                        <i data-lucide="printer" class="icon--sm me-1"></i>{{ $labelAction }} FedEx Label
+                    </a>
+                @elseif($mailClass === 'ups')
+                    <a href="{{ $labelUrl }}" class="btn btn-sm btn-outline-secondary">
+                        <i data-lucide="printer" class="icon--sm me-1"></i>{{ $labelAction }} UPS Label
+                    </a>
+                @endif
+                @if($mailClass !== 'usps' && $reprint)
+                    <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/delete_label" class="btn btn-sm btn-outline-warning" onclick="return confirm('Delete label?')">
+                        <i data-lucide="x" class="icon--sm me-1"></i>Delete Label
                     </a>
                 @endif
                 <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/print_label" class="btn btn-sm btn-outline-secondary">
-                    <i data-lucide="tag" class="icon--sm me-1"></i>Print Label
+                    <i data-lucide="tag" class="icon--sm me-1"></i>Print Zebra Label
                 </a>
                 <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" class="btn btn-sm btn-outline-success">
                     <i data-lucide="credit-card" class="icon--sm me-1"></i>Charge / Edit Totals

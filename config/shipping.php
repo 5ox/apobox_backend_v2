@@ -60,6 +60,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | UPS
+    |--------------------------------------------------------------------------
+    */
+    'ups' => [
+        'client_id' => env('UPS_CLIENT_ID', ''),
+        'client_secret' => env('UPS_CLIENT_SECRET', ''),
+        'account_number' => env('UPS_ACCOUNT_NUMBER', ''),
+        'shipper' => [
+            'Name' => 'APO Box',
+            'AttentionName' => 'APO Box',
+            'Phone' => ['Number' => '8004096013'],
+            'ShipperNumber' => env('UPS_ACCOUNT_NUMBER', ''),
+            'Address' => [
+                'AddressLine' => ['1911 Western Avenue'],
+                'City' => 'Plymouth',
+                'StateProvinceCode' => 'IN',
+                'PostalCode' => '46563',
+                'CountryCode' => 'US',
+            ],
+        ],
+        'label' => [
+            'type' => 'ZPL', // ZPL, EPL, GIF, PNG
+        ],
+        'tracking_url' => 'https://www.ups.com/track?tracknum=',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Endicia
     |--------------------------------------------------------------------------
     */
