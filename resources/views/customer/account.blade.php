@@ -21,28 +21,36 @@
         <div class="tab-pane active" id="account-tab">
             <div class="row">
                 <div class="col-sm-6">
-                    <div class="address-card border-primary bg-primary bg-opacity-10">
+                    <div class="address-card border-primary bg-primary bg-opacity-10 h-100">
                         <div class="address-card__label text-primary">
                             <span><i data-lucide="warehouse" class="icon--sm me-1"></i> You Ship Packages Here</span>
                         </div>
-                        <address class="mb-0">
+                        <address class="mb-0 fw-semibold">
                             {{ $customer->customers_firstname }} {{ $customer->customers_lastname }}<br>
                             {{ $customer->billing_id }}<br>
                             {{ config('apobox.address.line1') }}<br>
                             {{ config('apobox.address.city') }}, {{ config('apobox.address.state') }} {{ config('apobox.address.zip') }}
                         </address>
+                        <div class="form-text mt-2">Ship your packages to this address. Include your Billing ID so we can identify them when they arrive.</div>
                     </div>
                 </div>
                 <div class="col-sm-6">
-                    <div class="address-card border-success bg-success bg-opacity-10">
+                    <div class="address-card border-success bg-success bg-opacity-10 h-100">
                         <div class="address-card__label text-success">
                             <span><i data-lucide="truck" class="icon--sm me-1"></i> We Forward Them Here</span>
                         </div>
                         @if($customer->shippingAddress)
-                            <address class="mb-0">{{ $customer->shippingAddress->full }}</address>
+                            <address class="mb-0 fw-semibold">
+                                {{ $customer->shippingAddress->entry_firstname }} {{ $customer->shippingAddress->entry_lastname }}<br>
+                                @if($customer->shippingAddress->entry_company){{ $customer->shippingAddress->entry_company }}<br>@endif
+                                {{ $customer->shippingAddress->entry_street_address }}<br>
+                                @if($customer->shippingAddress->entry_suburb){{ $customer->shippingAddress->entry_suburb }}<br>@endif
+                                {{ $customer->shippingAddress->entry_city }}, {{ $customer->shippingAddress->zone?->zone_code ?? $customer->shippingAddress->entry_state }} {{ $customer->shippingAddress->entry_postcode }}
+                            </address>
                         @else
                             <p class="text-muted mb-0 small">Not set</p>
                         @endif
+                        <div class="form-text mt-2">This is where we forward your packages after processing.</div>
                     </div>
                 </div>
             </div>
