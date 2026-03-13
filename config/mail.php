@@ -1,8 +1,17 @@
 <?php
 
 return [
-    'default' => env('MAIL_MAILER', 'smtp'),
+    'default' => env('MAIL_MAILER', 'gmail-oauth'),
     'mailers' => [
+        'gmail-oauth' => [
+            'transport' => 'gmail-oauth',
+            'host' => env('MAIL_HOST', 'smtp.gmail.com'),
+            'port' => env('MAIL_PORT', 465),
+            'username' => env('MAIL_USERNAME', 'admin@apobox.com'),
+            'client_id' => env('GOOGLE_CLIENT_ID'),
+            'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+            'refresh_token' => env('GOOGLE_MAIL_REFRESH_TOKEN'),
+        ],
         'smtp' => [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
@@ -22,5 +31,6 @@ return [
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'no-reply@apobox.com'),
         'name' => env('MAIL_FROM_NAME', 'APO Box'),
+        'support' => env('MAIL_SUPPORT_ADDRESS', 'support@apobox.com'),
     ],
 ];

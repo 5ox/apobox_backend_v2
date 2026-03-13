@@ -69,8 +69,7 @@ class CustomerController extends Controller
         $validated = $request->validated();
 
         try {
-            // Hash the password using the configured hasher
-            $validated['customers_password'] = Hash::make($validated['customers_password']);
+            // Observer handles hashing via CustomerObserver::saving()
 
             // Generate a unique billing ID from customer initials + random digits
             $validated['billing_id'] = Customer::newBillingId(
@@ -140,7 +139,7 @@ class CustomerController extends Controller
 
         // Rehash to bcrypt if still using legacy MD5+salt format
         if (Hash::needsRehash($customer->customers_password)) {
-            $customer->customers_password = Hash::make($request->input('customers_password'));
+            $customer->customers_password = $request->input('customers_password');
             $customer->save();
         }
 

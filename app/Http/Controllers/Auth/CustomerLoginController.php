@@ -40,6 +40,15 @@ class CustomerLoginController extends Controller
             ->where('is_active', 1)
             ->first();
 
+        // TEMP DEBUG — remove after login is confirmed working
+        Log::debug('Login attempt', [
+            'email' => $request->input('customers_email_address'),
+            'customer_found' => (bool) $customer,
+            'hash_prefix' => $customer ? substr($customer->customers_password, 0, 10) : null,
+            'hash_length' => $customer ? strlen($customer->customers_password) : null,
+            'hash_check' => $customer ? Hash::check($request->input('customers_password'), $customer->customers_password) : null,
+        ]);
+
         if ($customer && Hash::check($request->input('customers_password'), $customer->customers_password)) {
             Auth::guard('customer')->login($customer);
 
@@ -164,7 +173,7 @@ class CustomerLoginController extends Controller
         }
 
         $customer = Customer::findOrFail($passwordRequest->customer_id);
-        $customer->customers_password = Hash::make($request->input('new_password'));
+        $customer->customers_password = $request->input('new_password');
         $customer->save();
 
         // Delete the password request after use
@@ -194,7 +203,7 @@ class CustomerLoginController extends Controller
             'customers_firstname' => $request->input('customers_firstname'),
             'customers_lastname' => $request->input('customers_lastname'),
             'customers_email_address' => $request->input('customers_email_address'),
-            'customers_password' => Hash::make($request->input('customers_password')),
+            'customers_password' => $request->input('customers_password'),
             'is_active' => true,
         ]);
 

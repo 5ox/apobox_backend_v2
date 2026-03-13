@@ -326,7 +326,7 @@ class CustomerController extends Controller
             return redirect()->back();
         }
 
-        $customer->customers_password = Hash::make($request->input('new_password'));
+        $customer->customers_password = $request->input('new_password');
 
         if ($customer->save()) {
             // Re-authenticate with new password

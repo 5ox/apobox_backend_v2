@@ -5,7 +5,10 @@ namespace App\Providers;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use App\Auth\ApoboxPasswordHasher;
+use App\Mail\Auth\GmailOAuthAuthenticator;
+use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
 use App\Models\Customer;
 use App\Models\OrderLineItems\OrderShipping;
 use App\Models\OrderLineItems\OrderInsurance;
@@ -57,6 +60,28 @@ class AppServiceProvider extends ServiceProvider
 
         Hash::extend('apobox', function () {
             return new ApoboxPasswordHasher();
+        });
+
+        Mail::extend('gmail-oauth', function (array $config = []) {
+            $authenticator = new GmailOAuthAuthenticator(
+                clientId: $config['client_id'],
+                clientSecret: $config['client_secret'],
+                refreshToken: $config['refresh_token'],
+                username: $config['username'],
+            );
+
+            $transport = new EsmtpTransport(
+                host: $config['host'] ?? 'smtp.gmail.com',
+                port: (int) ($config['port'] ?? 465),
+                tls: true,
+                authenticators: [$authenticator],
+            );
+
+            $transport->setUsername($config['username']);
+            // Must be non-empty or EsmtpTransport skips authentication
+            $transport->setPassword('oauth2');
+
+            return $transport;
         });
 
         Customer::observe(CustomerObserver::class);
