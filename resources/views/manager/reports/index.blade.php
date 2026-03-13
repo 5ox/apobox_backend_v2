@@ -2,18 +2,22 @@
 @section('title', 'Reports - APO Box Admin')
 @section('module', 'reports')
 @section('content')
+@php $isManager = auth('admin')->user()?->role === 'manager'; @endphp
 
 <x-page-header title="Reports">
-    <x-slot:actions>
-        <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-outline-primary" data-range="7d">7D</button>
-            <button type="button" class="btn btn-outline-primary active" data-range="30d">30D</button>
-            <button type="button" class="btn btn-outline-primary" data-range="90d">90D</button>
-            <button type="button" class="btn btn-outline-primary" data-range="12m">12M</button>
-        </div>
-    </x-slot:actions>
+    @if($isManager)
+        <x-slot:actions>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary" data-range="7d">7D</button>
+                <button type="button" class="btn btn-outline-primary active" data-range="30d">30D</button>
+                <button type="button" class="btn btn-outline-primary" data-range="90d">90D</button>
+                <button type="button" class="btn btn-outline-primary" data-range="12m">12M</button>
+            </div>
+        </x-slot:actions>
+    @endif
 </x-page-header>
 
+@if($isManager)
 {{-- ============================================================ --}}
 {{-- KPI Cards --}}
 {{-- ============================================================ --}}
@@ -48,6 +52,7 @@
         </div>
     </div>
 </div>
+@endif
 
 {{-- ============================================================ --}}
 {{-- Section A: Package Volume Trends --}}
@@ -84,28 +89,32 @@
 {{-- Section B + C: Size Distribution / Customer Growth / Top Customers --}}
 {{-- ============================================================ --}}
 <div class="row mb-4">
-    <div class="col-lg-4">
+    <div class="{{ $isManager ? 'col-lg-4' : 'col-lg-6' }}">
         <x-detail-card title="Package Size Distribution">
             <div style="height: 280px; position: relative;">
                 <canvas id="sizeDonutChart"></canvas>
             </div>
-            <p class="text-muted small mt-2 mb-0 text-center">Click a segment to filter the table below</p>
+            @if($isManager)
+                <p class="text-muted small mt-2 mb-0 text-center">Click a segment to filter the table below</p>
+            @endif
         </x-detail-card>
     </div>
-    <div class="col-lg-4">
-        <x-detail-card title="Customer Growth">
-            <div style="height: 280px; position: relative;">
-                <canvas id="customerGrowthChart"></canvas>
-            </div>
-        </x-detail-card>
-    </div>
-    <div class="col-lg-4">
-        <x-detail-card title="Top 10 Customers (This Period)">
-            <div style="height: 280px; position: relative;">
-                <canvas id="topCustomersChart"></canvas>
-            </div>
-        </x-detail-card>
-    </div>
+    @if($isManager)
+        <div class="col-lg-4">
+            <x-detail-card title="Customer Growth">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="customerGrowthChart"></canvas>
+                </div>
+            </x-detail-card>
+        </div>
+        <div class="col-lg-4">
+            <x-detail-card title="Top 10 Customers (This Period)">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="topCustomersChart"></canvas>
+                </div>
+            </x-detail-card>
+        </div>
+    @endif
 </div>
 
 {{-- ============================================================ --}}
@@ -180,6 +189,7 @@
     </div>
 </div>
 
+@if($isManager)
 {{-- ============================================================ --}}
 {{-- Section D: Sortable, Filterable Orders Table --}}
 {{-- ============================================================ --}}
@@ -259,5 +269,6 @@
         </div>
     </div>
 </div>
+@endif
 
 @endsection

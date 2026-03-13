@@ -45,8 +45,11 @@ class CustomPackageRequestController extends Controller
             }
         }
 
-        if (!empty($fromThePast)) {
-            $query->where('order_add_date', '>=', $fromThePast);
+        if (!empty($fromThePast) && $fromThePast !== 'all') {
+            $fromDate = date_create($fromThePast);
+            if ($fromDate) {
+                $query->where('order_add_date', '>=', $fromDate->format('Y-m-d H:i:s'));
+            }
         }
 
         if (!empty($showStatus)) {
