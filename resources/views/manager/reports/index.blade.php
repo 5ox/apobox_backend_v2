@@ -129,7 +129,7 @@
 {{-- ============================================================ --}}
 <div class="row mb-4">
     <div class="col-lg-6">
-        <x-detail-card title="Average Weight Shipped (oz)">
+        <x-detail-card title="Average Weight Shipped (lbs)">
             <div style="height: 280px; position: relative;">
                 <canvas id="avgWeightChart"></canvas>
             </div>

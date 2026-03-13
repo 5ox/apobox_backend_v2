@@ -193,8 +193,8 @@ function renderAvgWeight(data) {
         data: {
             labels: data.map(d => d.period),
             datasets: [{
-                label: 'Avg Weight (oz)',
-                data: data.map(d => d.avg_weight_oz),
+                label: 'Avg Weight (lbs)',
+                data: data.map(d => Math.ceil(d.avg_weight_oz / 16)),
                 borderColor: COLORS.amber,
                 backgroundColor: hexToRgba(COLORS.amber, 0.08),
                 fill: true,
@@ -211,12 +211,12 @@ function renderAvgWeight(data) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: (ctx) => ` ${ctx.raw} oz (${(ctx.raw / 16).toFixed(1)} lb)`,
+                        label: (ctx) => ` ${ctx.raw} lbs`,
                     },
                 },
             },
             scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Ounces' } },
+                y: { beginAtZero: true, title: { display: true, text: 'Pounds' } },
                 x: { grid: { display: false } },
             },
         },
