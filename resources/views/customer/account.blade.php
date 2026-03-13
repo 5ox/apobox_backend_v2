@@ -79,25 +79,59 @@
                 </x-table-card>
             @endif
 
-            @if($requests->isNotEmpty())
-                <x-table-card title="Custom Package Requests" class="mt-4">
+            <x-table-card title="Custom Package Requests" class="mt-4"
+                          action="New Request" :action-url="url('/requests/add')">
+                @if($requests->isEmpty())
+                    <p class="px-3 py-3 text-muted mb-0">No active custom package requests.</p>
+                @else
                     <div class="table-responsive">
                         <table class="table table-modern">
-                            <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Tracking #</th>
+                                    <th>Services</th>
+                                    <th>Instructions</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 @foreach($requests as $request)
                                     <tr>
-                                        <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
-                                        <td>{{ $request->instructions }}</td>
-                                        <td>{{ $request->status_label }}</td>
-                                        <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
+                                        <td class="text-nowrap">{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                                        <td>
+                                            @if($request->tracking_id && $request->tracking_id !== '0')
+                                                <code>{{ $request->tracking_id }}</code>
+                                            @else
+                                                <span class="text-muted">&mdash;</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($request->package_repack === 'yes')
+                                                <span class="badge bg-info-subtle text-info">Repack</span>
+                                            @endif
+                                            @if($request->insurance_coverage)
+                                                <span class="badge bg-warning-subtle text-warning">${{ $request->insurance_coverage }} Ins.</span>
+                                            @endif
+                                            @if($request->package_repack !== 'yes' && !$request->insurance_coverage)
+                                                <span class="text-muted">&mdash;</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ Str::limit($request->instructions, 60) }}</td>
+                                        <td><x-status-badge :status="$request->status_label ?? 'Unknown'" /></td>
+                                        <td class="text-nowrap">
+                                            <a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i data-lucide="pencil" class="icon--sm"></i> Edit
+                                            </a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                </x-table-card>
-            @endif
+                @endif
+            </x-table-card>
 
             <x-table-card title="My Orders" class="mt-4" :action="$showViewAllLink ? 'View All' : null" :action-url="$showViewAllLink ? url('/orders') : null">
                 @if($orders->isEmpty())

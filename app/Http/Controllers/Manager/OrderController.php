@@ -170,8 +170,10 @@ class OrderController extends Controller
             ->get();
         $ordersStatuses = OrderStatus::pluck('orders_status_name', 'orders_status_id');
 
-        // Build order charges from line items
-        $orderCharges = $order->lineItems;
+        // Build order charges from line items (hide $0 lines except subtotal/total)
+        $orderCharges = $order->lineItems->filter(function ($item) {
+            return $item->value != 0 || in_array($item->class, ['ot_subtotal', 'ot_total']);
+        });
 
         $invoiceCustomer = $this->checkForInvoiceCustomer($order->customer);
 

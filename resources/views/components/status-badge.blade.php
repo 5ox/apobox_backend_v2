@@ -8,6 +8,10 @@
         'Returned'          => 'returned',
         'Problem'           => 'problem',
         'Awaiting Package'  => 'awaiting-package',
+        'New'               => 'new',
+        'Processing'        => 'processing',
+        'Completed'         => 'completed',
+        'Cancelled'         => 'cancelled',
     ];
     $slug = $statusMap[$status] ?? \Illuminate\Support\Str::slug($status ?? 'unknown');
 @endphp
