@@ -21,19 +21,29 @@
         <div class="tab-pane active" id="account-tab">
             <div class="row">
                 <div class="col-sm-6">
-                    <x-address-card label="You Ship Packages Here:">
-                        {{ $customer->customers_firstname }} {{ $customer->customers_lastname }}<br>
-                        {{ $customer->billing_id }}<br>
-                        {{ config('apobox.address.line1') }}<br>
-                        {{ config('apobox.address.city') }}, {{ config('apobox.address.state') }} {{ config('apobox.address.zip') }}
-                    </x-address-card>
+                    <div class="address-card border-primary bg-primary bg-opacity-10">
+                        <div class="address-card__label text-primary">
+                            <span><i data-lucide="warehouse" class="icon--sm me-1"></i> You Ship Packages Here</span>
+                        </div>
+                        <address class="mb-0">
+                            {{ $customer->customers_firstname }} {{ $customer->customers_lastname }}<br>
+                            {{ $customer->billing_id }}<br>
+                            {{ config('apobox.address.line1') }}<br>
+                            {{ config('apobox.address.city') }}, {{ config('apobox.address.state') }} {{ config('apobox.address.zip') }}
+                        </address>
+                    </div>
                 </div>
                 <div class="col-sm-6">
-                    <x-address-card label="We Forward Them Here:">
+                    <div class="address-card border-success bg-success bg-opacity-10">
+                        <div class="address-card__label text-success">
+                            <span><i data-lucide="truck" class="icon--sm me-1"></i> We Forward Them Here</span>
+                        </div>
                         @if($customer->shippingAddress)
-                            {{ $customer->shippingAddress->full }}
+                            <address class="mb-0">{{ $customer->shippingAddress->full }}</address>
+                        @else
+                            <p class="text-muted mb-0 small">Not set</p>
                         @endif
-                    </x-address-card>
+                    </div>
                 </div>
             </div>
         </div>
