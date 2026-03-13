@@ -114,8 +114,7 @@
                         <th>Dimensions</th>
                         <th>Weight</th>
                         <th>Class</th>
-                        <th>Inbound</th>
-                        <th>Outbound</th>
+                        <th>Inbound Tracking</th>
                         <th title="Comments"><i data-lucide="message-square" class="icon--sm"></i></th>
                         <th>Modified</th>
                         <th>Processed</th>
@@ -131,8 +130,27 @@
                             ->map(fn($v) => rtrim(rtrim(number_format((float)$v, 2), '0'), '.'));
                         $lbs = intdiv((int)($order->weight_oz ?? 0), 16);
                         $oz = (int)($order->weight_oz ?? 0) % 16;
-                        $inbound = $order->usps_track_num_in ?: $order->ups_track_num ?: $order->fedex_track_num ?: $order->dhl_track_num ?: '';
-                        $outbound = $order->usps_track_num ?: '';
+                        // Determine inbound tracking number and carrier
+                        $inboundTrack = '';
+                        $inboundCarrier = '';
+                        $inboundUrl = '';
+                        if ($order->usps_track_num_in) {
+                            $inboundTrack = $order->usps_track_num_in;
+                            $inboundCarrier = 'USPS';
+                            $inboundUrl = 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $inboundTrack;
+                        } elseif ($order->ups_track_num) {
+                            $inboundTrack = $order->ups_track_num;
+                            $inboundCarrier = 'UPS';
+                            $inboundUrl = 'https://www.ups.com/track?tracknum=' . $inboundTrack;
+                        } elseif ($order->fedex_track_num) {
+                            $inboundTrack = $order->fedex_track_num;
+                            $inboundCarrier = 'FedEx';
+                            $inboundUrl = 'https://www.fedex.com/fedextrack/?trknbr=' . $inboundTrack;
+                        } elseif ($order->dhl_track_num) {
+                            $inboundTrack = $order->dhl_track_num;
+                            $inboundCarrier = 'DHL';
+                            $inboundUrl = 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inboundTrack;
+                        }
                     @endphp
                     <tr>
                         <td>
@@ -153,14 +171,11 @@
                         </td>
                         <td class="text-nowrap small">{{ $lbs }} lb, {{ $oz }} oz</td>
                         <td>{{ $order->mail_class }}</td>
-                        <td class="small text-truncate" style="max-width:120px;" title="{{ $inbound }}">
-                            @if($inbound)
-                                <span class="text-muted">...{{ substr($inbound, -7) }}</span>
-                            @endif
-                        </td>
-                        <td class="small text-truncate" style="max-width:120px;" title="{{ $outbound }}">
-                            @if($outbound)
-                                <span class="text-muted">...{{ substr($outbound, -7) }}</span>
+                        <td class="small text-nowrap" title="{{ $inboundTrack }}">
+                            @if($inboundTrack)
+                                <a href="{{ $inboundUrl }}" target="_blank" class="text-decoration-none">
+                                    <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>...{{ substr($inboundTrack, -7) }}
+                                </a>
                             @endif
                         </td>
                         <td>

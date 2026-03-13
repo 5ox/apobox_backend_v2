@@ -9,6 +9,20 @@
         ->filter()
         ->map(fn($v) => rtrim(rtrim(number_format((float)$v, 2), '0'), '.'));
     $inbound = $order->usps_track_num_in ?: $order->ups_track_num ?: $order->fedex_track_num ?: $order->dhl_track_num ?: '';
+    $inboundCarrier = match(true) {
+        !empty($order->usps_track_num_in) => 'USPS',
+        !empty($order->ups_track_num) => 'UPS',
+        !empty($order->fedex_track_num) => 'FedEx',
+        !empty($order->dhl_track_num) => 'DHL',
+        default => '',
+    };
+    $inboundUrl = match($inboundCarrier) {
+        'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $inbound,
+        'UPS' => 'https://www.ups.com/track?tracknum=' . $inbound,
+        'FedEx' => 'https://www.fedex.com/fedextrack/?trknbr=' . $inbound,
+        'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inbound,
+        default => '',
+    };
 @endphp
 
 {{-- Page Header --}}
@@ -39,7 +53,8 @@
         <x-detail-card title="Tracking">
             <x-detail-row label="Inbound">
                 @if($inbound)
-                    <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels={{ $inbound }}" target="_blank" class="text-decoration-none">{{ $inbound }}</a>
+                    <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>
+                    <a href="{{ $inboundUrl }}" target="_blank" class="text-decoration-none">{{ $inbound }}</a>
                 @else
                     <span class="text-muted">None</span>
                 @endif
