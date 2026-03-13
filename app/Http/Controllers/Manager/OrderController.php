@@ -652,8 +652,8 @@ class OrderController extends Controller
                 try {
                     $zendesk = app(ZendeskService::class);
                     if ($zendesk->isConfigured()) {
-                        $reason = $request->input('problem_reason', '');
-                        $result = $zendesk->createTicketForOrder($order, $reason, $request->input('status_history_comments', ''));
+                        $reason = $request->input('problem_reason') ?? '';
+                        $result = $zendesk->createTicketForOrder($order, $reason, $request->input('status_history_comments') ?? '');
                         if ($result) {
                             $order->update(['zendesk_ticket_id' => $result['ticket_id']]);
                         }
