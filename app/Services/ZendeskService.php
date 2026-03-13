@@ -120,20 +120,22 @@ class ZendeskService
                 ];
             }
 
+            $errorBody = $response->json();
+            $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? json_encode($errorBody);
             Log::error('Zendesk: ticket creation failed', [
                 'orders_id' => $order->orders_id,
                 'status' => $response->status(),
-                'body' => $response->json(),
+                'body' => $errorBody,
             ]);
 
-            return null;
+            return ['error' => "Zendesk API {$response->status()}: {$errorMsg}"];
         } catch (Exception $e) {
             Log::error('Zendesk: ticket creation exception', [
                 'orders_id' => $order->orders_id,
                 'error' => $e->getMessage(),
             ]);
             report($e);
-            return null;
+            return ['error' => $e->getMessage()];
         }
     }
 
@@ -196,20 +198,22 @@ class ZendeskService
                 ];
             }
 
+            $errorBody = $response->json();
+            $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? json_encode($errorBody);
             Log::error('Zendesk: customer ticket creation failed', [
                 'customers_id' => $customer->customers_id,
                 'status' => $response->status(),
-                'body' => $response->json(),
+                'body' => $errorBody,
             ]);
 
-            return null;
+            return ['error' => "Zendesk API {$response->status()}: {$errorMsg}"];
         } catch (Exception $e) {
             Log::error('Zendesk: customer ticket creation exception', [
                 'customers_id' => $customer->customers_id,
                 'error' => $e->getMessage(),
             ]);
             report($e);
-            return null;
+            return ['error' => $e->getMessage()];
         }
     }
 

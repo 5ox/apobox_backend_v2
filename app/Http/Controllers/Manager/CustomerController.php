@@ -533,10 +533,12 @@ class CustomerController extends Controller
             $request->input('description')
         );
 
-        if ($result) {
+        if ($result && !empty($result['ticket_id'])) {
             session()->flash('message', sprintf('Zendesk ticket #%d created.', $result['ticket_id']));
+        } elseif ($result && !empty($result['error'])) {
+            session()->flash('error', $result['error']);
         } else {
-            session()->flash('message', 'Failed to create Zendesk ticket. Check logs.');
+            session()->flash('error', 'Failed to create Zendesk ticket — no customer email on file.');
         }
 
         return redirect()->route($role . '.customers.view', ['id' => $customerId]);

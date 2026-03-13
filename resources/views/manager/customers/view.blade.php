@@ -57,6 +57,9 @@
         <a href="/{{ $prefix }}/customers/{{ $customer->customers_id }}/edit/default-addresses" class="btn btn-sm btn-outline-secondary"><i data-lucide="map-pin" class="icon--sm me-1"></i>Edit Addresses</a>
         <a href="/{{ $prefix }}/orders/add/{{ $customer->customers_id }}" class="btn btn-sm btn-outline-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Order</a>
         <a href="/{{ $prefix }}/customer/{{ $customer->customers_id }}/request/add" class="btn btn-sm btn-outline-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Request</a>
+        @if(app(\App\Services\ZendeskService::class)->isConfigured())
+            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#newTicketModal"><i data-lucide="message-circle" class="icon--sm me-1"></i>New Ticket</button>
+        @endif
         <a href="/{{ $prefix }}/customers/{{ $customer->customers_id }}/close-account" class="btn btn-sm btn-outline-danger" onclick="return confirm('Close this account?')"><i data-lucide="x-circle" class="icon--sm me-1"></i>Close Account</a>
     </div>
 @endif
@@ -163,14 +166,38 @@
         @else
             <p class="text-muted px-3 py-2">No tickets found.</p>
         @endif
-        <x-slot:footer>
-            <form method="POST" action="{{ route($prefix . '.customers.zendesk-ticket', $customer->customers_id) }}" class="row g-2 align-items-end">
-                @csrf
-                <div class="col-sm-4"><input type="text" name="subject" class="form-control form-control-sm" placeholder="Subject" required></div>
-                <div class="col"><input type="text" name="description" class="form-control form-control-sm" placeholder="Description" required></div>
-                <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Ticket</button></div>
-            </form>
-        </x-slot:footer>
     </x-table-card>
+@endif
+
+{{-- New Ticket Modal --}}
+@if(app(\App\Services\ZendeskService::class)->isConfigured())
+<div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ route($prefix . '.customers.zendesk-ticket', $customer->customers_id) }}">
+                @csrf
+                <div class="modal-header py-2">
+                    <h6 class="modal-title"><i data-lucide="message-circle" style="width:18px;height:18px" class="me-1"></i>New Support Ticket</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Subject</label>
+                        <input type="text" name="subject" class="form-control" placeholder="Brief description of the issue" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold small">Description</label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Full details..." required></textarea>
+                    </div>
+                    <div class="text-muted small mt-2">Ticket will be created for {{ $customer->customers_email_address }}</div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary"><i data-lucide="send" style="width:14px;height:14px" class="me-1"></i>Create Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endif
 @endsection
