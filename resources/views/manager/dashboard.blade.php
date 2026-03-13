@@ -5,15 +5,15 @@
 
 {{-- Search & Quick Order --}}
 <div class="row g-3 mb-4">
-    <div class="col-md-6">
+    <div class="col-md-8">
         <form action="/{{ $prefix }}" method="GET" class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Search for Orders or Customers or Scan" autofocus>
+            <input type="text" name="q" class="form-control" placeholder="Search by Order #, Customer, Billing ID, or Scan (S:...)" autofocus>
             <button type="submit" class="btn btn-outline-primary fw-semibold px-4">SEARCH</button>
         </form>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
         <form action="{{ route($prefix . '.customers.quick-order') }}" method="GET" class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Quick Order Entry by Customer ID">
+            <input type="text" name="q" class="form-control" placeholder="Quick Order by ID">
             <button type="submit" class="btn btn-outline-primary fw-semibold px-4">ADD</button>
         </form>
     </div>
