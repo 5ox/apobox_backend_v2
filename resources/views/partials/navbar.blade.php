@@ -10,12 +10,10 @@
             @auth('customer')
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ url('/account') }}"><i data-lucide="layout-dashboard" class="icon--sm"></i> My Account</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url('/orders') }}"><i data-lucide="package" class="icon--sm"></i> My Orders</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url('/requests/add') }}"><i data-lucide="plus-circle" class="icon--sm"></i> Custom Package Request</a></li>
                 </ul>
             @endauth
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="https://apobox.zendesk.com/hc/en-us" target="_blank"><i data-lucide="life-buoy" class="icon--sm"></i> Support</a></li>
                 @auth('customer')
                     <li class="nav-item"><a class="nav-link" href="{{ url('/logout') }}"><i data-lucide="log-out" class="icon--sm"></i> Logout</a></li>
                 @else
