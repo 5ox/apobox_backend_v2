@@ -15,6 +15,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderLineItems\OrderShipping;
 use App\Models\OrderLineItems\OrderTotal;
 use App\Services\PaymentService;
+use App\Services\ZendeskService;
 use App\Services\Shipping\EndiciaService;
 use App\Services\Shipping\FedexService;
 use App\Services\Shipping\UspsService;
@@ -624,6 +625,25 @@ class OrderController extends Controller
                 $this->sendOrderStatusEmail($order, $comments ?: null);
             }
 
+            // Auto-create Zendesk ticket for problem orders
+            if ($newStatus == 6) {
+                try {
+                    $zendesk = app(ZendeskService::class);
+                    if ($zendesk->isConfigured()) {
+                        $reason = $request->input('problem_reason', '');
+                        $result = $zendesk->createTicketForOrder($order, $reason, $request->input('status_history_comments', ''));
+                        if ($result) {
+                            $order->update(['zendesk_ticket_id' => $result['ticket_id']]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Zendesk ticket creation failed', [
+                        'orders_id' => $id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             session()->flash('message', sprintf('The status for order # %s has been updated.', $id));
 
             // If the new status is shipped, redirect to dashboard
@@ -1019,5 +1039,37 @@ class OrderController extends Controller
                 'content' => 'Charge failed on ' . date('m/d/Y') . ' for order #' . $order->orders_id,
             ],
         ];
+    }
+
+    /**
+     * Manually create a Zendesk ticket for an order.
+     */
+    public function createZendeskTicket(int $id): RedirectResponse
+    {
+        $order = Order::with('customer')->findOrFail($id);
+        $role = auth('admin')->user()->role;
+
+        $zendesk = app(ZendeskService::class);
+        if (!$zendesk->isConfigured()) {
+            session()->flash('message', 'Zendesk is not configured.');
+            return redirect()->route($role . '.orders.view', ['id' => $id]);
+        }
+
+        if ($order->zendesk_ticket_id) {
+            session()->flash('message', 'A Zendesk ticket already exists for this order.');
+            return redirect()->route($role . '.orders.view', ['id' => $id]);
+        }
+
+        $reason = $order->problem_reason ?? 'General Issue';
+        $result = $zendesk->createTicketForOrder($order, $reason, $order->comments ?? '');
+
+        if ($result) {
+            $order->update(['zendesk_ticket_id' => $result['ticket_id']]);
+            session()->flash('message', sprintf('Zendesk ticket #%d created.', $result['ticket_id']));
+        } else {
+            session()->flash('message', 'Failed to create Zendesk ticket. Check logs.');
+        }
+
+        return redirect()->route($role . '.orders.view', ['id' => $id]);
     }
 }

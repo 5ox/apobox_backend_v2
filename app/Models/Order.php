@@ -99,6 +99,7 @@ class Order extends Model
         'amazon_track_num',
         'customs_description',
         'problem_reason',
+        'zendesk_ticket_id',
     ];
 
     protected $casts = [

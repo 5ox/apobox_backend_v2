@@ -19,6 +19,11 @@
             @if($order->problem_reason)
                 <span class="badge bg-danger fs-6 px-3 py-2">{{ $order->problem_reason }}</span>
             @endif
+            @if($order->zendesk_ticket_id)
+                <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="badge bg-warning text-dark fs-6 px-3 py-2 text-decoration-none">
+                    <i data-lucide="message-circle" class="icon"></i> Ticket #{{ $order->zendesk_ticket_id }}
+                </a>
+            @endif
             @if($order->customer?->billing_id)
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="badge bg-primary fs-6 px-3 py-2 text-decoration-none">{{ $order->customer->billing_id }}</a>
             @endif
@@ -132,6 +137,28 @@
                     <i data-lucide="refresh-cw" class="icon--sm me-1"></i>Update Status
                 </button>
             </form>
+        </x-detail-card>
+
+        {{-- Support Ticket --}}
+        <x-detail-card title="Support Ticket">
+            @if($order->zendesk_ticket_id)
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-semibold">Ticket #{{ $order->zendesk_ticket_id }}</span>
+                    <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i data-lucide="external-link" class="icon--sm me-1"></i>Open in Zendesk
+                    </a>
+                </div>
+            @elseif($order->orders_status == 6)
+                <p class="text-muted small mb-2">No ticket linked to this order.</p>
+                <form method="POST" action="{{ route($prefix . '.orders.zendesk-ticket', $order->orders_id) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-warning w-100">
+                        <i data-lucide="plus" class="icon--sm me-1"></i>Create Zendesk Ticket
+                    </button>
+                </form>
+            @else
+                <p class="text-muted small mb-0">No ticket for this order.</p>
+            @endif
         </x-detail-card>
 
         {{-- Actions --}}

@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\SearchIndex;
 use App\Models\ShippingAddress;
 use App\Services\CreditCardService;
+use App\Services\ZendeskService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -169,13 +170,25 @@ class CustomerController extends Controller
             ->pluck('customPackageRequests')
             ->flatten();
 
+        // Fetch Zendesk tickets for this customer
+        $zendesk = app(ZendeskService::class);
+        $zendeskTickets = [];
+        if ($zendesk->isConfigured() && $customer->customers_email_address) {
+            try {
+                $zendeskTickets = $zendesk->getTicketsForEmail($customer->customers_email_address);
+            } catch (\Exception $e) {
+                // Silently fail — don't break the page
+            }
+        }
+
         return view('manager.customers.view', compact(
             'customer',
             'orders',
             'userIsManager',
             'partialSignup',
             'customRequests',
-            'closed'
+            'closed',
+            'zendeskTickets'
         ));
     }
 

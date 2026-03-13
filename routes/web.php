@@ -135,6 +135,7 @@ $adminRoutes = function () {
     Route::get('/orders/{id}/print_fedex/{reprint}', [Manager\OrderController::class, 'printFedex'])->name('orders.print-fedex-reprint');
     Route::get('/orders/{id}/delete_label', [Manager\OrderController::class, 'deleteLabel'])->name('orders.delete-label');
     Route::get('/orders/delete/{id}', [Manager\OrderController::class, 'deleteOrder'])->name('orders.delete');
+    Route::post('/orders/{id}/zendesk-ticket', [Manager\OrderController::class, 'createZendeskTicket'])->name('orders.zendesk-ticket');
     Route::get('/orders/recent', [Manager\CustomerController::class, 'recentOrders'])->name('orders.recent');
 
     // ---- Custom requests (admin) ----

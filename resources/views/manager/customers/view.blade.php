@@ -121,4 +121,35 @@
         </table>
     </x-table-card>
 @endif
+
+@if(!empty($zendeskTickets))
+    <x-table-card title="Support Tickets" class="mt-4">
+        <table class="table table-modern">
+            <thead>
+                <tr>
+                    <th>Ticket</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($zendeskTickets as $ticket)
+                    <tr>
+                        <td><a href="{{ $ticket['url'] }}" target="_blank">#{{ $ticket['id'] }}</a></td>
+                        <td>{{ $ticket['subject'] }}</td>
+                        <td>
+                            @php
+                                $statusColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
+                                $color = $statusColors[$ticket['status']] ?? 'secondary';
+                            @endphp
+                            <span class="badge bg-{{ $color }}">{{ ucfirst($ticket['status']) }}</span>
+                        </td>
+                        <td>{{ $ticket['updated_at'] ? \Carbon\Carbon::parse($ticket['updated_at'])->format('m/d/Y g:ia') : '' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-table-card>
+@endif
 @endsection

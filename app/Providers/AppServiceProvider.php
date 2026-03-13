@@ -24,6 +24,7 @@ use App\Observers\OrderLineItemObserver;
 use App\Observers\AuthorizedNameObserver;
 use App\Services\PaymentService;
 use App\Services\CreditCardService;
+use App\Services\ZendeskService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -39,6 +40,14 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CreditCardService::class, function ($app) {
             return new CreditCardService(config('apobox.credit_card.key'));
+        });
+
+        $this->app->singleton(ZendeskService::class, function ($app) {
+            return new ZendeskService(
+                config('apobox.zendesk.subdomain'),
+                config('apobox.zendesk.api_token'),
+                config('apobox.zendesk.agent_email'),
+            );
         });
     }
 
