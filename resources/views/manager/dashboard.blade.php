@@ -3,21 +3,26 @@
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
 
-{{-- Stats Bar --}}
+{{-- Employee Activity --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-2">
         <div class="d-flex flex-wrap align-items-center gap-3">
             <div class="d-flex align-items-center gap-2">
                 <i data-lucide="package" class="text-primary" style="width:18px;height:18px"></i>
-                <span class="fw-semibold" id="stats-label">Today</span>
-                <span class="badge bg-primary rounded-pill" id="stats-total">{{ $todayTotal }}</span>
+                <span class="fw-semibold">Employee Activity</span>
+                <span class="badge bg-primary rounded-pill">{{ $statsTotal }}</span>
             </div>
             <div class="vr d-none d-sm-block"></div>
-            {{-- Employee counts (today shown by default) --}}
-            <div class="d-flex flex-wrap align-items-center gap-2" id="stats-employees">
-                @if($todayStats->isNotEmpty())
-                    @foreach($todayStats as $i => $stat)
-                        <span class="small">{{ $stat['name'] }} <span class="badge {{ $i === 0 && $todayStats->count() > 1 ? 'bg-warning text-dark' : 'bg-secondary' }} rounded-pill">{{ $stat['count'] }}</span></span>
+            {{-- Per-employee totals --}}
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if($employeeTotals->isNotEmpty())
+                    @foreach($employeeTotals as $id => $total)
+                        @php $isTop = $loop->first && $employeeTotals->count() > 1; @endphp
+                        <span class="small {{ $isTop ? 'fw-semibold' : '' }}">
+                            @if($isTop)<i data-lucide="trophy" class="text-warning" style="width:14px;height:14px;vertical-align:-2px"></i>@endif
+                            {{ $employeeNames[$id] }}
+                            <span class="badge {{ $isTop ? 'bg-warning text-dark' : 'bg-secondary' }} rounded-pill">{{ $total }}</span>
+                        </span>
                     @endforeach
                 @else
                     <span class="text-muted small">No packages yet</span>
@@ -25,18 +30,18 @@
             </div>
             <div class="ms-auto">
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-secondary btn-sm active" id="stats-today-btn" onclick="toggleStats('today')">Today</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="stats-10d-btn" onclick="toggleStats('10d')">10 Days</button>
+                    @foreach(['7d' => '7D', '30d' => '30D', '90d' => '90D', '12m' => '12M'] as $val => $label)
+                        <a href="?stats={{ $val }}" class="btn btn-outline-primary btn-sm {{ $statsRange === $val ? 'active' : '' }}">{{ $label }}</a>
+                    @endforeach
                 </div>
             </div>
         </div>
-        {{-- 10-day table (hidden by default) --}}
-        <div id="stats-10d-panel" style="display:none">
-            @if($dailyStats->sum('total') > 0)
+        {{-- Daily breakdown table --}}
+        @if($dailyStats->sum('total') > 0)
             <hr class="my-2">
-            <div class="table-responsive">
+            <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
                 <table class="table table-sm table-borderless mb-0 small align-middle">
-                    <thead>
+                    <thead class="sticky-top bg-white">
                         <tr class="text-muted">
                             <th class="fw-semibold">Day</th>
                             @foreach($employeeNames as $name)
@@ -71,29 +76,9 @@
                     </tbody>
                 </table>
             </div>
-            @else
-                <hr class="my-2">
-                <p class="text-muted small mb-0">No packages in the last 10 days</p>
-            @endif
-        </div>
+        @endif
     </div>
 </div>
-<script>
-function toggleStats(view) {
-    const panel = document.getElementById('stats-10d-panel');
-    const todayBtn = document.getElementById('stats-today-btn');
-    const tenBtn = document.getElementById('stats-10d-btn');
-    if (view === '10d') {
-        panel.style.display = '';
-        tenBtn.classList.add('active');
-        todayBtn.classList.remove('active');
-    } else {
-        panel.style.display = 'none';
-        todayBtn.classList.add('active');
-        tenBtn.classList.remove('active');
-    }
-}
-</script>
 
 @foreach([
     ['label' => 'Paid', 'orders' => $paid, 'status' => 'paid'],

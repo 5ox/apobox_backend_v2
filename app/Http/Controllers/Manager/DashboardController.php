@@ -52,48 +52,39 @@ class DashboardController extends Controller
             ->limit(25)
             ->get();
 
-        // Today's package counts per employee
-        $todayStats = Order::select('creator_id', DB::raw('COUNT(*) as total'))
-            ->whereDate('date_purchased', today())
-            ->whereNotNull('creator_id')
-            ->groupBy('creator_id')
-            ->orderByDesc('total')
-            ->get()
-            ->map(function ($row) {
-                $admin = Admin::find($row->creator_id);
-                return [
-                    'name'  => $admin ? explode('@', $admin->email)[0] : 'Unknown',
-                    'email' => $admin->email ?? 'unknown',
-                    'count' => $row->total,
-                ];
-            });
+        // Employee activity stats
+        $statsRange = $request->query('stats', '7d');
+        $statsDays = match ($statsRange) {
+            '30d'  => 30,
+            '90d'  => 90,
+            '12m'  => 365,
+            default => 7,
+        };
+        $statsRange = in_array($statsRange, ['7d', '30d', '90d', '12m']) ? $statsRange : '7d';
 
-        $todayTotal = $todayStats->sum('count');
-
-        // Last 10 days: daily totals per employee
-        $tenDaysAgo = today()->subDays(9);
         $admins = Admin::whereIn('role', ['manager', 'employee'])->get()->keyBy('id');
+        $rangeStart = today()->subDays($statsDays - 1);
 
         $dailyRows = Order::select(
                 DB::raw('DATE(date_purchased) as day'),
                 'creator_id',
                 DB::raw('COUNT(*) as total')
             )
-            ->whereDate('date_purchased', '>=', $tenDaysAgo)
+            ->whereDate('date_purchased', '>=', $rangeStart)
             ->whereNotNull('creator_id')
             ->groupBy('day', 'creator_id')
             ->orderBy('day')
             ->get();
 
-        // Build a structured array: dates → employee counts
-        $dailyStats = collect();
         $employeeIds = $dailyRows->pluck('creator_id')->unique();
         $employeeNames = $employeeIds->mapWithKeys(function ($id) use ($admins) {
             $admin = $admins->get($id);
             return [$id => $admin ? explode('@', $admin->email)[0] : 'Unknown'];
         });
 
-        for ($i = 9; $i >= 0; $i--) {
+        // Build daily stats array
+        $dailyStats = collect();
+        for ($i = $statsDays - 1; $i >= 0; $i--) {
             $date = today()->subDays($i);
             $dateStr = $date->toDateString();
             $dayCounts = $dailyRows->where('day', $dateStr);
@@ -110,10 +101,17 @@ class DashboardController extends Controller
             ]);
         }
 
+        // Per-employee totals for the period
+        $employeeTotals = $employeeIds->mapWithKeys(function ($id) use ($dailyStats) {
+            return [$id => $dailyStats->sum(fn ($d) => $d['byEmployee'][$id] ?? 0)];
+        })->sortDesc();
+
+        $statsTotal = $dailyStats->sum('total');
+
         return view('manager.dashboard', compact(
             'paid', 'awaitingPayment', 'inWarehouse', 'problem',
-            'todayStats', 'todayTotal',
-            'dailyStats', 'employeeNames',
+            'dailyStats', 'employeeNames', 'employeeTotals',
+            'statsRange', 'statsTotal',
         ));
     }
 
