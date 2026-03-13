@@ -108,6 +108,7 @@ $adminRoutes = function () {
     Route::get('/customers/{id}/edit/default-addresses', [Manager\CustomerController::class, 'editDefaultAddresses'])->name('customers.edit-addresses');
     Route::post('/customers/{id}/edit/default-addresses', [Manager\CustomerController::class, 'updateDefaultAddresses'])->name('customers.update-addresses');
     Route::get('/customers/{customerId}/close-account', [Manager\CustomerController::class, 'closeAccount'])->name('customers.close');
+    Route::post('/customers/{customerId}/zendesk-ticket', [Manager\CustomerController::class, 'createZendeskTicket'])->name('customers.zendesk-ticket');
     Route::get('/customers/quick-order', [Manager\CustomerController::class, 'quickOrder'])->name('customers.quick-order');
     Route::post('/customers/quick-order', [Manager\CustomerController::class, 'processQuickOrder'])->name('customers.quick-order.process');
     Route::get('/customers/report', [Manager\CustomerInfoController::class, 'report'])->name('customers.report');

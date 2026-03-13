@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use App\Models\Order;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -129,6 +130,82 @@ class ZendeskService
         } catch (Exception $e) {
             Log::error('Zendesk: ticket creation exception', [
                 'orders_id' => $order->orders_id,
+                'error' => $e->getMessage(),
+            ]);
+            report($e);
+            return null;
+        }
+    }
+
+    /**
+     * Create a general Zendesk ticket for a customer (not order-specific).
+     */
+    public function createTicketForCustomer(Customer $customer, string $subject, string $description): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $customerName = trim(($customer->customers_firstname ?? '') . ' ' . ($customer->customers_lastname ?? ''));
+        $customerEmail = $customer->customers_email_address;
+
+        if (empty($customerEmail)) {
+            Log::warning('Zendesk: cannot create ticket — no customer email', [
+                'customers_id' => $customer->customers_id,
+            ]);
+            return null;
+        }
+
+        $billingId = $customer->billing_id ?? 'N/A';
+
+        $body = implode("\n", [
+            "Customer: {$customerName} ({$billingId})",
+            "Email: {$customerEmail}",
+            "",
+            $description,
+        ]);
+
+        $payload = [
+            'ticket' => [
+                'subject' => $subject,
+                'comment' => ['body' => $body],
+                'requester' => [
+                    'name' => $customerName ?: $billingId,
+                    'email' => $customerEmail,
+                ],
+                'priority' => 'normal',
+                'tags' => ['customer_support'],
+            ],
+        ];
+
+        try {
+            $response = $this->client()->post("{$this->baseUrl()}/tickets.json", $payload);
+
+            if ($response->successful()) {
+                $ticket = $response->json('ticket');
+                $ticketId = $ticket['id'] ?? null;
+
+                Log::info('Zendesk: customer ticket created', [
+                    'customers_id' => $customer->customers_id,
+                    'ticket_id' => $ticketId,
+                ]);
+
+                return [
+                    'ticket_id' => $ticketId,
+                    'ticket_url' => "https://{$this->subdomain}.zendesk.com/agent/tickets/{$ticketId}",
+                ];
+            }
+
+            Log::error('Zendesk: customer ticket creation failed', [
+                'customers_id' => $customer->customers_id,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return null;
+        } catch (Exception $e) {
+            Log::error('Zendesk: customer ticket creation exception', [
+                'customers_id' => $customer->customers_id,
                 'error' => $e->getMessage(),
             ]);
             report($e);

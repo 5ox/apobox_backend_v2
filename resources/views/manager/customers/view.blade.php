@@ -122,34 +122,47 @@
     </x-table-card>
 @endif
 
-@if(!empty($zendeskTickets))
+@php $zendeskConfigured = app(\App\Services\ZendeskService::class)->isConfigured(); @endphp
+@if($zendeskConfigured)
     <x-table-card title="Support Tickets" class="mt-4">
-        <table class="table table-modern">
-            <thead>
-                <tr>
-                    <th>Ticket</th>
-                    <th>Subject</th>
-                    <th>Status</th>
-                    <th>Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($zendeskTickets as $ticket)
+        @if(!empty($zendeskTickets))
+            <table class="table table-modern">
+                <thead>
                     <tr>
-                        <td><a href="{{ $ticket['url'] }}" target="_blank">#{{ $ticket['id'] }}</a></td>
-                        <td>{{ $ticket['subject'] }}</td>
-                        <td>
-                            @php
-                                $statusColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
-                                $color = $statusColors[$ticket['status']] ?? 'secondary';
-                            @endphp
-                            <span class="badge bg-{{ $color }}">{{ ucfirst($ticket['status']) }}</span>
-                        </td>
-                        <td>{{ $ticket['updated_at'] ? \Carbon\Carbon::parse($ticket['updated_at'])->format('m/d/Y g:ia') : '' }}</td>
+                        <th>Ticket</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Updated</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach($zendeskTickets as $ticket)
+                        <tr>
+                            <td><a href="{{ $ticket['url'] }}" target="_blank">#{{ $ticket['id'] }}</a></td>
+                            <td>{{ $ticket['subject'] }}</td>
+                            <td>
+                                @php
+                                    $statusColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
+                                    $color = $statusColors[$ticket['status']] ?? 'secondary';
+                                @endphp
+                                <span class="badge bg-{{ $color }}">{{ ucfirst($ticket['status']) }}</span>
+                            </td>
+                            <td>{{ $ticket['updated_at'] ? \Carbon\Carbon::parse($ticket['updated_at'])->format('m/d/Y g:ia') : '' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p class="text-muted px-3 py-2">No tickets found.</p>
+        @endif
+        <x-slot:footer>
+            <form method="POST" action="{{ route($prefix . '.customers.zendesk-ticket', $customer->customers_id) }}" class="row g-2 align-items-end">
+                @csrf
+                <div class="col-sm-4"><input type="text" name="subject" class="form-control form-control-sm" placeholder="Subject" required></div>
+                <div class="col"><input type="text" name="description" class="form-control form-control-sm" placeholder="Description" required></div>
+                <div class="col-auto"><button type="submit" class="btn btn-sm btn-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Ticket</button></div>
+            </form>
+        </x-slot:footer>
     </x-table-card>
 @endif
 @endsection

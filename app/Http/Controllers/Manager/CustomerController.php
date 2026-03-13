@@ -508,6 +508,40 @@ class CustomerController extends Controller
         return view('manager.customers.demographics', compact('options', 'data', 'reportFields'));
     }
 
+    /**
+     * Create a Zendesk ticket for a customer.
+     */
+    public function createZendeskTicket(Request $request, int $customerId): RedirectResponse
+    {
+        $customer = Customer::findOrFail($customerId);
+        $role = auth('admin')->user()->role;
+
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'description' => 'required|string|max:2000',
+        ]);
+
+        $zendesk = app(ZendeskService::class);
+        if (!$zendesk->isConfigured()) {
+            session()->flash('message', 'Zendesk is not configured.');
+            return redirect()->route($role . '.customers.view', ['id' => $customerId]);
+        }
+
+        $result = $zendesk->createTicketForCustomer(
+            $customer,
+            $request->input('subject'),
+            $request->input('description')
+        );
+
+        if ($result) {
+            session()->flash('message', sprintf('Zendesk ticket #%d created.', $result['ticket_id']));
+        } else {
+            session()->flash('message', 'Failed to create Zendesk ticket. Check logs.');
+        }
+
+        return redirect()->route($role . '.customers.view', ['id' => $customerId]);
+    }
+
     protected function escapeLike(string $value): string
     {
         return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
