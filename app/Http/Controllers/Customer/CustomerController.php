@@ -12,6 +12,8 @@ use App\Models\CustomPackageRequest;
 use App\Models\Insurance;
 use App\Models\Zone;
 use App\Services\CreditCardService;
+use App\Services\ZendeskService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -66,14 +68,87 @@ class CustomerController extends Controller
             ->with('total')
             ->get();
 
+        // Zendesk support tickets
+        $zendesk = app(ZendeskService::class);
+        $zendeskConfigured = $zendesk->isConfigured();
+        $zendeskTickets = [];
+        $zendeskError = null;
+
+        if ($zendeskConfigured) {
+            try {
+                $zendeskTickets = $zendesk->getTicketsForEmail($customer->customers_email_address);
+            } catch (\Exception $e) {
+                $zendeskError = $e->getMessage();
+            }
+        }
+
         return view('customer.account', compact(
             'customer',
             'insuranceFee',
             'orders',
             'requests',
             'showViewAllLink',
-            'awaitingPayments'
+            'awaitingPayments',
+            'zendeskConfigured',
+            'zendeskTickets',
+            'zendeskError'
         ));
+    }
+
+    /**
+     * Create a new Zendesk support ticket for the customer.
+     */
+    public function createTicket(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'subject' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $customer = Auth::guard('customer')->user();
+        $zendesk = app(ZendeskService::class);
+
+        $result = $zendesk->createTicketForCustomer($customer, $request->input('subject'), $request->input('description'));
+
+        if ($result && !empty($result['ticket_id'])) {
+            session()->flash('message', 'Your support ticket has been created.');
+        } else {
+            session()->flash('message', $result['error'] ?? 'There was a problem creating your ticket. Please try again.');
+        }
+
+        return redirect(route('customer.account') . '#support');
+    }
+
+    /**
+     * Get comments for a Zendesk ticket (JSON).
+     */
+    public function ticketComments(int $id): JsonResponse
+    {
+        $zendesk = app(ZendeskService::class);
+        $comments = $zendesk->getTicketComments($id);
+
+        return response()->json(['comments' => $comments]);
+    }
+
+    /**
+     * Add a reply to a Zendesk ticket (JSON).
+     */
+    public function replyToTicket(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $customer = Auth::guard('customer')->user();
+        $zendesk = app(ZendeskService::class);
+
+        $result = $zendesk->addCommentToTicket($id, $request->input('body'), $customer->customers_email_address);
+
+        if ($result && !empty($result['success'])) {
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['error' => $result['error'] ?? 'Failed to send reply.'], 422);
     }
 
     /**

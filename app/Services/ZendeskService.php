@@ -307,4 +307,94 @@ class ZendeskService
             return null;
         }
     }
+
+    /**
+     * Get public comments for a ticket.
+     */
+    public function getTicketComments(int $ticketId): array
+    {
+        if (!$this->isConfigured()) {
+            return [];
+        }
+
+        try {
+            $response = $this->client()->get("{$this->baseUrl()}/tickets/{$ticketId}/comments.json");
+
+            if (!$response->successful()) {
+                $this->log()->warning('Zendesk: fetch comments failed', [
+                    'ticket_id' => $ticketId,
+                    'status' => $response->status(),
+                ]);
+                return [];
+            }
+
+            $comments = $response->json('comments', []);
+
+            return collect($comments)
+                ->filter(fn($c) => ($c['public'] ?? true))
+                ->map(fn($c) => [
+                    'id' => $c['id'],
+                    'body' => $c['plain_body'] ?? $c['body'] ?? '',
+                    'author_id' => $c['author_id'] ?? null,
+                    'created_at' => $c['created_at'] ?? null,
+                ])
+                ->values()
+                ->all();
+        } catch (Exception $e) {
+            $this->log()->error('Zendesk: getTicketComments exception', [
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Add a public comment (reply) to a ticket.
+     */
+    public function addCommentToTicket(int $ticketId, string $body, string $requesterEmail): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $payload = [
+            'ticket' => [
+                'comment' => [
+                    'body' => $body,
+                    'public' => true,
+                ],
+            ],
+        ];
+
+        try {
+            $response = $this->client()->put("{$this->baseUrl()}/tickets/{$ticketId}.json", $payload);
+
+            if ($response->successful()) {
+                $this->log()->info('Zendesk: comment added to ticket', [
+                    'ticket_id' => $ticketId,
+                    'requester' => $requesterEmail,
+                ]);
+
+                return ['success' => true];
+            }
+
+            $errorBody = $response->json();
+            $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? "HTTP {$response->status()}";
+            $this->log()->error('Zendesk: add comment failed', [
+                'ticket_id' => $ticketId,
+                'status' => $response->status(),
+                'body' => $errorBody,
+            ]);
+
+            return ['error' => "Zendesk API {$response->status()}: {$errorMsg}"];
+        } catch (Exception $e) {
+            $this->log()->error('Zendesk: addCommentToTicket exception', [
+                'ticket_id' => $ticketId,
+                'error' => $e->getMessage(),
+            ]);
+            report($e);
+            return ['error' => $e->getMessage()];
+        }
+    }
 }

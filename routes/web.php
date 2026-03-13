@@ -75,6 +75,11 @@ Route::middleware(['auth:customer'])->group(function () {
     Route::post('/authorized_names/{id}/edit', [Customer\AuthorizedNameController::class, 'update']);
     Route::get('/authorized_names/{id}/delete', [Customer\AuthorizedNameController::class, 'destroy']);
 
+    // Support Tickets
+    Route::post('/support/tickets', [Customer\CustomerController::class, 'createTicket']);
+    Route::get('/support/tickets/{id}/comments', [Customer\CustomerController::class, 'ticketComments'])->where('id', '[0-9]+');
+    Route::post('/support/tickets/{id}/reply', [Customer\CustomerController::class, 'replyToTicket'])->where('id', '[0-9]+');
+
     // Custom Requests
     Route::get('/requests', [Customer\CustomPackageRequestController::class, 'index']);
     Route::get('/requests/add', [Customer\CustomPackageRequestController::class, 'create']);
@@ -136,6 +141,7 @@ $adminRoutes = function () {
     Route::get('/orders/{id}/print_fedex/{reprint}', [Manager\OrderController::class, 'printFedex'])->name('orders.print-fedex-reprint');
     Route::get('/orders/{id}/print_ups', [Manager\OrderController::class, 'printUps'])->name('orders.print-ups');
     Route::get('/orders/{id}/print_ups/{reprint}', [Manager\OrderController::class, 'printUps'])->name('orders.print-ups-reprint');
+    Route::get('/tracking/{carrier}/{trackingNumber}', [Manager\OrderController::class, 'trackPackage'])->name('tracking.lookup');
     Route::get('/orders/{id}/delete_label', [Manager\OrderController::class, 'deleteLabel'])->name('orders.delete-label');
     Route::get('/orders/delete/{id}', [Manager\OrderController::class, 'deleteOrder'])->name('orders.delete');
     Route::post('/orders/{id}/zendesk-ticket', [Manager\OrderController::class, 'createZendeskTicket'])->name('orders.zendesk-ticket');
