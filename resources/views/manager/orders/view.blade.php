@@ -113,7 +113,7 @@
                 <div class="mb-2" id="problemReasonWrap" style="display: none;">
                     <select name="problem_reason" id="problemReason" class="form-select form-select-sm">
                         <option value="">Select reason...</option>
-                        @foreach(['Lithium', 'Overweight', 'Oversize', 'Mis Insured', 'Prohibited Items', 'Return'] as $reason)
+                        @foreach(['Prohibited Item', 'Unidentified', 'Returned', 'Error Code', 'Oversized/Overweight', 'Damaged', 'Account Closed', 'Invalid Zip Code', 'Hold For Quote'] as $reason)
                             <option value="{{ $reason }}" @selected($order->problem_reason === $reason)>{{ $reason }}</option>
                         @endforeach
                     </select>
