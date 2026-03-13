@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
-use App\Models\CustomersInfo;
 use App\Models\Order;
 use App\Models\OrderStatus;
 use Illuminate\Http\Request;
@@ -23,7 +22,24 @@ class ReportController extends Controller
             OrderStatus::pluck('orders_status_name', 'orders_status_id')->toArray()
         );
 
-        // Employee activity: last 30 days, daily counts per employee
+        // Employee activity: last 30 days, daily counts per employee (cached 15 min)
+        [$employeeActivity, $employeeNames, $employeeTotals] = Cache::remember(
+            'reports:employee_activity',
+            900,
+            fn () => $this->buildEmployeeActivity()
+        );
+
+        return view('manager.reports.index', compact(
+            'statuses', 'employeeActivity', 'employeeNames', 'employeeTotals',
+        ));
+    }
+
+    /**
+     * Build employee activity data for the last 30 days.
+     * Uses a single efficient GROUP BY query instead of loading all orders.
+     */
+    private function buildEmployeeActivity(): array
+    {
         $thirtyDaysAgo = today()->subDays(29);
         $admins = Admin::whereIn('role', ['manager', 'employee'])->get()->keyBy('id');
 
@@ -62,13 +78,10 @@ class ReportController extends Controller
             ]);
         }
 
-        // Per-employee totals for the 30-day period
         $employeeTotals = $employeeIds->mapWithKeys(function ($id) use ($employeeActivity) {
             return [$id => $employeeActivity->sum(fn ($d) => $d['byEmployee'][$id] ?? 0)];
         })->sortDesc();
 
-        return view('manager.reports.index', compact(
-            'statuses', 'employeeActivity', 'employeeNames', 'employeeTotals',
-        ));
+        return [$employeeActivity, $employeeNames, $employeeTotals];
     }
 }

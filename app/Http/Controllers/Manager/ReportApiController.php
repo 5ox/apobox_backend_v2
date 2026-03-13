@@ -25,7 +25,7 @@ class ReportApiController extends Controller
         $range = $request->input('range', '30d');
         $cacheKey = "reports:summary:{$range}";
 
-        $data = Cache::remember($cacheKey, 600, function () use ($range) {
+        $data = Cache::remember($cacheKey, 1800, function () use ($range) {
             [$from, $to, $prevFrom, $prevTo] = $this->rangeToDates($range);
 
             // Current period totals
@@ -54,8 +54,9 @@ class ReportApiController extends Controller
                 'percent' => round($row['count'] / $totalForPercent * 100, 1),
             ]);
 
-            // Status breakdown
+            // Status breakdown (scoped to selected period)
             $statusCounts = Order::select('orders_status', DB::raw('COUNT(*) as count'))
+                ->whereBetween('date_purchased', [$from, $to])
                 ->groupBy('orders_status')
                 ->get()
                 ->pluck('count', 'orders_status');
@@ -111,7 +112,7 @@ class ReportApiController extends Controller
 
         $cacheKey = "reports:trends:{$metric}:{$interval}:{$from}:{$to}";
 
-        $data = Cache::remember($cacheKey, 900, function () use ($interval, $from, $to, $metric) {
+        $data = Cache::remember($cacheKey, 3600, function () use ($interval, $from, $to, $metric) {
             $groupFormat = match ($interval) {
                 'day' => '%Y-%m-%d',
                 'week' => '%x-W%v',
