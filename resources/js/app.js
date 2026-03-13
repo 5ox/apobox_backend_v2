@@ -2,11 +2,13 @@
  * APO Box Account - Main JS Entry Point
  */
 
-// Import Bootstrap JS
-import 'bootstrap';
+// Import Bootstrap JS (expose globally for inline scripts)
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
 
-// Import Lucide Icons
+// Import Lucide Icons (expose globally for inline scripts)
 import { createIcons, icons } from 'lucide';
+window.lucide = { createIcons, icons };
 
 // Initialize everything on DOM ready
 document.addEventListener('DOMContentLoaded', () => {

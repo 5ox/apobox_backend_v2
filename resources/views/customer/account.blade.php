@@ -331,7 +331,7 @@
 
                 @if(!empty($zendeskTickets))
                     <div class="table-responsive">
-                        <table class="table table-modern">
+                        <table class="table table-modern table-modern--clickable">
                             <thead>
                                 <tr><th>Ticket</th><th>Subject</th><th>Status</th><th>Updated</th></tr>
                             </thead>
