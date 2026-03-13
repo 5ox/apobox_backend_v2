@@ -10,7 +10,7 @@
         <div class="collapse navbar-collapse" id="adminNavbar">
             @auth('admin')
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}"><i data-lucide="layout-dashboard" class="icon--sm"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/dashboard"><i data-lucide="layout-dashboard" class="icon--sm"></i> Dashboard</a></li>
                     @if(auth('admin')->user()->role === 'manager')
                         <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/reports/index"><i data-lucide="bar-chart-3" class="icon--sm"></i> Reports</a></li>
                         <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/logs/view"><i data-lucide="file-text" class="icon--sm"></i> Logs</a></li>

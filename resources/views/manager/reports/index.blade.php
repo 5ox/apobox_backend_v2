@@ -53,9 +53,9 @@
     </div>
     <div class="card card-hover kpi-card">
         <div class="stat-card">
-            <div class="stat-card__icon"><i data-lucide="truck" class="icon--lg"></i></div>
+            <div class="stat-card__icon"><i data-lucide="package" class="icon--lg"></i></div>
             <div class="stat-card__number" id="kpi-lifetime-shipped">--</div>
-            <div class="stat-card__label">Lifetime Shipped</div>
+            <div class="stat-card__label">Lifetime Orders</div>
         </div>
     </div>
 </div>

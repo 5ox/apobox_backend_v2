@@ -72,8 +72,8 @@ class ReportApiController extends Controller
             // Total customers
             $totalCustomers = Customer::where('is_active', true)->count();
 
-            // Lifetime shipped packages (all time, status 3 = shipped)
-            $lifetimeShipped = Order::where('orders_status', 3)->count();
+            // Lifetime total orders (all time)
+            $lifetimeShipped = Order::count();
 
             // Avg packages per customer
             $avgPerCustomer = $activeCustomers > 0

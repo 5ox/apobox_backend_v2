@@ -13,7 +13,14 @@
 @endphp
 <aside class="admin-sidebar d-none d-md-block">
     <div class="sidebar-section">
-        <div class="sidebar-section-title">Navigation</div>
+        <div class="sidebar-section-title">Quick Actions</div>
+        <nav class="nav flex-column">
+            <a class="nav-link sidebar-link--primary" href="/{{ $prefix }}/orders/new"><i data-lucide="plus-circle" class="icon"></i> New Order</a>
+        </nav>
+    </div>
+
+    <div class="sidebar-section">
+    <div class="sidebar-section-title">Navigation</div>
         <nav class="nav flex-column">
             <a class="nav-link" href="/{{ $prefix }}/customers"><i data-lucide="users" class="icon"></i> All Customers</a>
             <a class="nav-link" href="/{{ $prefix }}/orders"><i data-lucide="package" class="icon"></i> All Orders</a>

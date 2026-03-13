@@ -31,26 +31,17 @@ class DashboardController extends Controller
         $paid = Order::with($eagerLoad)
             ->where('orders_status', 4)
             ->orderByDesc('last_modified')
-            ->limit(25)
-            ->get();
-
-        $awaitingPayment = Order::with($eagerLoad)
-            ->where('orders_status', 2)
-            ->orderByDesc('last_modified')
-            ->limit(25)
-            ->get();
+            ->paginate(5, ['*'], 'paid_page');
 
         $inWarehouse = Order::with($eagerLoad)
             ->where('orders_status', 1)
             ->orderByDesc('last_modified')
-            ->limit(25)
-            ->get();
+            ->paginate(5, ['*'], 'warehouse_page');
 
         $problem = Order::with($eagerLoad)
             ->where('orders_status', 6)
             ->orderByDesc('last_modified')
-            ->limit(25)
-            ->get();
+            ->paginate(5, ['*'], 'problem_page');
 
         // Employee activity stats
         $statsRange = $request->query('stats', '7d');
@@ -176,7 +167,7 @@ class DashboardController extends Controller
         };
 
         return view('manager.dashboard', compact(
-            'paid', 'awaitingPayment', 'inWarehouse', 'problem',
+            'paid', 'inWarehouse', 'problem',
             'periodStats', 'employeeNames', 'employeeTotals',
             'statsRange', 'statsTotal', 'periodLabel',
         ));

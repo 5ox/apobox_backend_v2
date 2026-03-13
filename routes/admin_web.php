@@ -20,7 +20,8 @@ Route::prefix('admin')->group(function () {
 Route::redirect('/admin', '/admin/login');
 
 $adminRoutes = function () {
-    Route::get('/', [Manager\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', [Manager\OrderController::class, 'create'])->name('dashboard');
+    Route::get('/dashboard', [Manager\DashboardController::class, 'index'])->name('dashboard.orders');
 
     Route::get('/pages/{page?}', [PageController::class, 'display']);
 
@@ -54,6 +55,7 @@ $adminRoutes = function () {
     Route::get('/orders', [Manager\OrderController::class, 'search'])->name('orders.search');
     Route::get('/orders/statustotals', [Manager\OrderController::class, 'statusTotals'])->name('orders.status-totals');
     Route::get('/orders/report', [Manager\OrderController::class, 'report'])->name('orders.report');
+    Route::get('/orders/new', [Manager\OrderController::class, 'create'])->name('orders.create');
     Route::get('/orders/add/{customerId}', [Manager\OrderController::class, 'add'])->where('customerId', '[0-9]+')->name('orders.add');
     Route::post('/orders/add/{customerId}', [Manager\OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/{id}', [Manager\OrderController::class, 'view'])->where('id', '[0-9]+')->name('orders.view');

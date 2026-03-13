@@ -224,6 +224,31 @@ class OrderController extends Controller
     }
 
     /**
+     * Show the dedicated order creation screen with customer lookup.
+     */
+    public function create(Request $request): View|RedirectResponse
+    {
+        $prefix = auth('admin')->user()->role;
+        $search = trim((string) $request->query('q', ''));
+        $customer = null;
+        $error = null;
+
+        if ($search !== '') {
+            $customer = Customer::whereRaw('LOWER(billing_id) = ?', [mb_strtolower($search)])
+                ->where('is_active', true)
+                ->first();
+
+            if ($customer) {
+                return redirect()->route($prefix . '.orders.add', ['customerId' => $customer->customers_id]);
+            }
+
+            $error = 'No active customer found with Billing ID "' . $search . '"';
+        }
+
+        return view('manager.orders.create', compact('error'));
+    }
+
+    /**
      * Show the add order form for a customer.
      */
     public function add(int $customerId): View|RedirectResponse
@@ -708,9 +733,9 @@ class OrderController extends Controller
 
             session()->flash('message', sprintf('The status for order # %s has been updated.', $id));
 
-            // If the new status is shipped, redirect to dashboard
+            // If the new status is shipped, redirect to order dashboard
             if ($newStatus == 3) {
-                return redirect()->route(auth('admin')->user()->role . '.dashboard');
+                return redirect()->route(auth('admin')->user()->role . '.dashboard.orders');
             }
 
             return redirect()->route(auth('admin')->user()->role . '.orders.view', ['id' => $id]);

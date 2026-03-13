@@ -3,20 +3,28 @@
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
 
-{{-- Search & Quick Order --}}
-<div class="row g-3 mb-4">
-    <div class="col-md-8">
-        <form action="/{{ $prefix }}" method="GET" class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Search by Order #, Customer, Billing ID, or Scan (S:...)" autofocus>
-            <button type="submit" class="btn btn-outline-primary fw-semibold px-4">SEARCH</button>
+{{-- Quick Order Add --}}
+<div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, var(--bs-primary) 0%, #4a6cf7 100%);">
+    <div class="card-body py-3">
+        <form action="{{ route($prefix . '.customers.quick-order') }}" method="GET" class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 text-white flex-shrink-0">
+                <i data-lucide="plus-circle" style="width:22px;height:22px"></i>
+                <span class="fw-semibold">Quick Order</span>
+            </div>
+            <div class="input-group">
+                <input type="text" name="q" class="form-control form-control-lg" placeholder="Scan or type Billing ID..." autofocus>
+                <button type="submit" class="btn btn-light fw-semibold px-4">ADD ORDER</button>
+            </div>
         </form>
     </div>
-    <div class="col-md-4">
-        <form action="{{ route($prefix . '.customers.quick-order') }}" method="GET" class="input-group">
-            <input type="text" name="q" class="form-control" placeholder="Quick Order by ID">
-            <button type="submit" class="btn btn-outline-primary fw-semibold px-4">ADD</button>
-        </form>
-    </div>
+</div>
+
+{{-- Search --}}
+<div class="mb-4">
+    <form action="/{{ $prefix }}/dashboard" method="GET" class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Search by Order #, Customer, Billing ID, or Tracking #">
+        <button type="submit" class="btn btn-outline-primary fw-semibold px-4">SEARCH</button>
+    </form>
 </div>
 
 {{-- Employee Activity --}}
@@ -57,13 +65,15 @@
 
 @foreach([
     ['label' => 'Paid', 'orders' => $paid, 'status' => 'paid'],
-    ['label' => 'Awaiting Payment', 'orders' => $awaitingPayment, 'status' => 'awaiting-payment'],
     ['label' => 'Warehouse', 'orders' => $inWarehouse, 'status' => 'warehouse'],
     ['label' => 'Problem', 'orders' => $problem, 'status' => 'problem'],
 ] as $section)
     @if($section['orders']->isNotEmpty())
     <div class="mb-4">
-        <h2 class="mb-3"><x-status-badge :status="$section['label']" class="fs-6 px-3 py-2" /></h2>
+        <h2 class="mb-3 d-flex align-items-center gap-2">
+            <x-status-badge :status="$section['label']" class="fs-6 px-3 py-2" />
+            <span class="badge bg-secondary rounded-pill fs-6">{{ $section['orders']->total() }}</span>
+        </h2>
         <div class="table-responsive">
             <table class="table table-modern table-sm align-middle">
                 <thead>
@@ -169,11 +179,16 @@
                 </tbody>
             </table>
         </div>
+        @if($section['orders']->hasPages())
+            <div class="d-flex justify-content-center mt-2">
+                {{ $section['orders']->appends(request()->except($section['orders']->getPageName()))->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
     </div>
     @endif
 @endforeach
 
-@if($paid->isEmpty() && $awaitingPayment->isEmpty() && $inWarehouse->isEmpty() && $problem->isEmpty())
+@if($paid->isEmpty() && $inWarehouse->isEmpty() && $problem->isEmpty())
     <div class="text-center py-5 text-muted">
         <i data-lucide="inbox" style="width:48px;height:48px" class="mb-3 opacity-50"></i>
         <p>No active orders</p>
