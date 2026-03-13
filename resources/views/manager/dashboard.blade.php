@@ -143,14 +143,14 @@
                         </td>
                         <td>
                             @if(!empty($order->comments))
-                                <a href="#" class="text-warning comment-pop"
-                                   tabindex="0" role="button"
+                                <button type="button" class="btn btn-link text-warning p-0 comment-pop"
+                                   tabindex="0"
                                    data-bs-toggle="popover"
-                                   data-bs-trigger="focus"
+                                   data-bs-trigger="click"
                                    data-bs-placement="left"
                                    data-bs-content="{{ e($order->comments) }}">
                                     <i data-lucide="message-square" class="icon--sm"></i>
-                                </a>
+                                </button>
                             @endif
                         </td>
                         <td class="small text-nowrap">
@@ -214,9 +214,15 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize comment popovers
+    // Initialize comment popovers — dismiss when clicking outside
+    var popovers = [];
     document.querySelectorAll('.comment-pop').forEach(function(el) {
-        new bootstrap.Popover(el, { html: false, sanitize: true });
+        popovers.push(new bootstrap.Popover(el, { html: false, sanitize: true }));
+    });
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.comment-pop') && !e.target.closest('.popover')) {
+            popovers.forEach(function(p) { p.hide(); });
+        }
     });
 
     // Tracking modal
