@@ -52,47 +52,6 @@
                 </div>
             </div>
         </div>
-        {{-- Period breakdown table (hidden for daily/7D, shown for weekly/monthly) --}}
-        @if($statsRange !== '7d' && $periodStats->sum('total') > 0)
-            <hr class="my-2">
-            <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                <table class="table table-sm table-borderless mb-0 small align-middle">
-                    <thead class="sticky-top bg-white">
-                        <tr class="text-muted">
-                            <th class="fw-semibold">{{ $periodLabel }}</th>
-                            @foreach($employeeNames as $name)
-                                <th class="text-center fw-semibold">{{ $name }}</th>
-                            @endforeach
-                            <th class="text-center fw-semibold">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($periodStats->reverse() as $period)
-                            <tr @if($period['isCurrent']) class="table-active fw-semibold" @endif>
-                                <td class="text-nowrap">{{ $period['label'] }}</td>
-                                @foreach($employeeNames as $id => $name)
-                                    @php $cnt = $period['byEmployee'][$id] ?? 0; @endphp
-                                    <td class="text-center">
-                                        @if($cnt > 0)
-                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">{{ $cnt }}</span>
-                                        @else
-                                            <span class="text-muted">&mdash;</span>
-                                        @endif
-                                    </td>
-                                @endforeach
-                                <td class="text-center">
-                                    @if($period['total'] > 0)
-                                        <span class="badge bg-dark rounded-pill">{{ $period['total'] }}</span>
-                                    @else
-                                        <span class="text-muted">&mdash;</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
     </div>
 </div>
 
