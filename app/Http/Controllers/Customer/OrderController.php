@@ -48,7 +48,9 @@ class OrderController extends Controller
 
         $this->authorize('view', $order);
 
-        $orderCharges = $order->lineItems;
+        $orderCharges = $order->lineItems->filter(function ($item) {
+            return $item->value != 0 || in_array($item->class, ['ot_subtotal', 'ot_total']);
+        });
 
         return view('customer.orders.show', compact('order', 'orderCharges'));
     }

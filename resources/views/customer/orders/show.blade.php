@@ -16,23 +16,31 @@
             <x-detail-row label="Weight">{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</x-detail-row>
         </x-detail-card>
     </div>
-</div>
-
-<x-table-card title="Order Charges" class="mt-3">
-    <div class="table-responsive">
-        <table class="table table-modern">
-            <thead><tr><th>Description</th><th class="text-end">Amount</th></tr></thead>
-            <tbody>
-                @foreach($orderCharges as $charge)
-                    <tr @if(in_array($charge->class, ['ot_subtotal', 'ot_total'])) class="fw-bold" @endif>
-                        <td>{{ $charge->title }}</td>
-                        <td class="text-end">${{ number_format($charge->value, 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+    <div class="col-md-6">
+        <x-detail-card title="Order Charges">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead><tr><th>Description</th><th class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                        @foreach($orderCharges as $charge)
+                            <tr @if(in_array($charge->class, ['ot_subtotal', 'ot_total'])) class="fw-bold" @endif>
+                                <td>{{ $charge->title }}</td>
+                                <td class="text-end">${{ number_format($charge->value, 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if($order->orders_status == 2)
+                <div class="mt-3">
+                    <a href="{{ url('/orders/' . $order->orders_id . '/pay') }}" class="btn btn-primary w-100">
+                        <i data-lucide="credit-card" class="icon--sm"></i> Pay Now
+                    </a>
+                </div>
+            @endif
+        </x-detail-card>
     </div>
-</x-table-card>
+</div>
 
 @if($order->statusHistory->isNotEmpty())
     <x-table-card title="Status History" class="mt-3">

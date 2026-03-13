@@ -54,6 +54,76 @@
                     </div>
                 </div>
             </div>
+
+            @if($awaitingPayments->isNotEmpty())
+                <x-table-card title="My Orders Awaiting Payment" class="mt-4">
+                    <p class="px-3 pt-2 text-muted small">The orders listed below were unable to be automatically paid. These orders will need to be paid manually before they can be shipped.</p>
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead><tr><th></th><th>Order #</th><th>Total</th><th>Tracking #</th><th>Dimensions</th><th>Weight</th><th>Date Received</th></tr></thead>
+                            <tbody>
+                                @foreach($awaitingPayments as $order)
+                                    <tr>
+                                        <td><a href="{{ url('/orders/' . $order->orders_id . '/pay') }}" class="btn btn-primary btn-sm">Pay</a></td>
+                                        <td><a href="{{ url('/orders/' . $order->orders_id) }}">{{ $order->orders_id }}</a></td>
+                                        <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
+                                        <td>{{ $order->inbound_tracking }}</td>
+                                        <td>{{ $order->dimensions }}</td>
+                                        <td>{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</td>
+                                        <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </x-table-card>
+            @endif
+
+            @if($requests->isNotEmpty())
+                <x-table-card title="Custom Package Requests" class="mt-4">
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                @foreach($requests as $request)
+                                    <tr>
+                                        <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                                        <td>{{ $request->instructions }}</td>
+                                        <td>{{ $request->status_label }}</td>
+                                        <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </x-table-card>
+            @endif
+
+            <x-table-card title="My Orders" class="mt-4" :action="$showViewAllLink ? 'View All' : null" :action-url="$showViewAllLink ? url('/orders') : null">
+                @if($orders->isEmpty())
+                    <p class="px-3 py-3 text-muted mb-0">You have no orders at this time.</p>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead><tr><th>Order #</th><th>Outbound Tracking</th><th>Inbound Tracking</th><th>Status</th><th>Postage Class</th><th>Date Shipped</th><th>Date Processed</th><th>Total</th></tr></thead>
+                            <tbody>
+                                @foreach($orders as $order)
+                                    <tr>
+                                        <td><a href="{{ url('/orders/' . $order->orders_id) }}">{{ $order->orders_id }}</a></td>
+                                        <td>{{ $order->usps_track_num }}</td>
+                                        <td>{{ $order->inbound_tracking }}</td>
+                                        <td><x-status-badge :status="$order->status?->orders_status_name" /></td>
+                                        <td>{{ $order->mail_class }}</td>
+                                        <td>{{ $order->date_shipped?->format('m/d/Y') }}</td>
+                                        <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
+                                        <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </x-table-card>
         </div>
 
         {{-- My Info Tab --}}
@@ -290,75 +360,6 @@
         @endif
     </div>
 
-    @if($awaitingPayments->isNotEmpty())
-        <x-table-card title="My Orders Awaiting Payment" class="mt-4">
-            <p class="px-3 pt-2 text-muted small">The orders listed below were unable to be automatically paid. These orders will need to be paid manually before they can be shipped.</p>
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead><tr><th></th><th>Order #</th><th>Total</th><th>Tracking #</th><th>Dimensions</th><th>Weight</th><th>Date Received</th></tr></thead>
-                    <tbody>
-                        @foreach($awaitingPayments as $order)
-                            <tr>
-                                <td><a href="{{ url('/orders/' . $order->orders_id . '/pay') }}" class="btn btn-primary btn-sm">Pay</a></td>
-                                <td><a href="{{ url('/orders/' . $order->orders_id) }}">{{ $order->orders_id }}</a></td>
-                                <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
-                                <td>{{ $order->inbound_tracking }}</td>
-                                <td>{{ $order->dimensions }}</td>
-                                <td>{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</td>
-                                <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </x-table-card>
-    @endif
-
-    @if($requests->isNotEmpty())
-        <x-table-card title="Custom Package Requests" class="mt-4">
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        @foreach($requests as $request)
-                            <tr>
-                                <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
-                                <td>{{ $request->instructions }}</td>
-                                <td>{{ $request->status_label }}</td>
-                                <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </x-table-card>
-    @endif
-
-    <x-table-card title="My Orders" class="mt-4" :action="$showViewAllLink ? 'View All' : null" :action-url="$showViewAllLink ? url('/orders') : null">
-        @if($orders->isEmpty())
-            <p class="px-3 py-3 text-muted mb-0">You have no orders at this time.</p>
-        @else
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead><tr><th>Order #</th><th>Outbound Tracking</th><th>Inbound Tracking</th><th>Status</th><th>Postage Class</th><th>Date Shipped</th><th>Date Processed</th><th>Total</th></tr></thead>
-                    <tbody>
-                        @foreach($orders as $order)
-                            <tr>
-                                <td><a href="{{ url('/orders/' . $order->orders_id) }}">{{ $order->orders_id }}</a></td>
-                                <td>{{ $order->usps_track_num }}</td>
-                                <td>{{ $order->inbound_tracking }}</td>
-                                <td><x-status-badge :status="$order->status?->orders_status_name" /></td>
-                                <td>{{ $order->mail_class }}</td>
-                                <td>{{ $order->date_shipped?->format('m/d/Y') }}</td>
-                                <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
-                                <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </x-table-card>
 </div>
 
 {{-- New Ticket Modal --}}

@@ -1,6 +1,11 @@
 <?php
 
-use Illuminate\Support\Str;
+$surface = env('APP_SURFACE', 'all');
+$defaultSessionCookie = match ($surface) {
+    'customer' => 'apobox_customer_session',
+    'admin' => 'apobox_admin_session',
+    default => 'apobox_session',
+};
 
 return [
     'driver' => env('SESSION_DRIVER', 'redis'),
@@ -12,9 +17,9 @@ return [
     'table' => env('SESSION_TABLE', 'sessions'),
     'store' => env('SESSION_STORE'),
     'lottery' => [2, 100],
-    'cookie' => env('SESSION_COOKIE', 'apobox_session'),
+    'cookie' => env('SESSION_COOKIE', $defaultSessionCookie),
     'path' => env('SESSION_PATH', '/'),
-    'domain' => env('SESSION_DOMAIN', null),
+    'domain' => env('SESSION_DOMAIN') ?: null,
     'secure' => env('SESSION_SECURE_COOKIE'),
     'http_only' => env('SESSION_HTTP_ONLY', true),
     'same_site' => env('SESSION_SAME_SITE', 'lax'),
