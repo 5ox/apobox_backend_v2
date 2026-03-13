@@ -81,43 +81,113 @@
 
         {{-- Addresses Tab --}}
         <div class="tab-pane" id="addresses">
+            {{-- Warehouse / Ship-To Address --}}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="address-card border-primary bg-primary bg-opacity-10">
+                        <div class="address-card__label text-primary">
+                            <span><i data-lucide="warehouse" class="icon--sm me-1"></i> You Ship Packages Here</span>
+                        </div>
+                        <address class="mb-0 fw-semibold">
+                            {{ $customer->customers_firstname }} {{ $customer->customers_lastname }}<br>
+                            {{ $customer->billing_id }}<br>
+                            {{ config('apobox.address.line1') }}<br>
+                            {{ config('apobox.address.city') }}, {{ config('apobox.address.state') }} {{ config('apobox.address.zip') }}
+                        </address>
+                        <div class="form-text mt-2">Ship your packages to this address. Include your Billing ID so we can identify them when they arrive.</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Default Address Assignments --}}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Default Addresses</h6>
+                <a href="{{ url('/customers/edit/addresses') }}" class="btn btn-sm btn-outline-secondary"><i data-lucide="settings" class="icon--sm me-1"></i>Change Defaults</a>
+            </div>
             <div class="row">
-                <div class="col-sm-6">
-                    <x-address-card label="Billing Address">
+                <div class="col-md-4">
+                    <x-address-card label="Billing Address" :edit-url="$customer->defaultAddress ? url('/address/' . $customer->defaultAddress->address_book_id . '/edit') : null">
                         @if($customer->defaultAddress)
-                            {{ $customer->defaultAddress->full }}
+                            {{ $customer->defaultAddress->entry_firstname }} {{ $customer->defaultAddress->entry_lastname }}<br>
+                            @if($customer->defaultAddress->entry_company){{ $customer->defaultAddress->entry_company }}<br>@endif
+                            {{ $customer->defaultAddress->entry_street_address }}<br>
+                            @if($customer->defaultAddress->entry_suburb){{ $customer->defaultAddress->entry_suburb }}<br>@endif
+                            {{ $customer->defaultAddress->entry_city }}, {{ $customer->defaultAddress->zone?->zone_code ?? $customer->defaultAddress->entry_state }} {{ $customer->defaultAddress->entry_postcode }}
                         @endif
                     </x-address-card>
                 </div>
-                <div class="col-sm-6">
-                    <x-address-card label="Shipping Address">
+                <div class="col-md-4">
+                    <x-address-card label="Shipping Address" :edit-url="$customer->shippingAddress ? url('/address/' . $customer->shippingAddress->address_book_id . '/edit') : null">
                         @if($customer->shippingAddress)
-                            {{ $customer->shippingAddress->full }}
+                            {{ $customer->shippingAddress->entry_firstname }} {{ $customer->shippingAddress->entry_lastname }}<br>
+                            @if($customer->shippingAddress->entry_company){{ $customer->shippingAddress->entry_company }}<br>@endif
+                            {{ $customer->shippingAddress->entry_street_address }}<br>
+                            @if($customer->shippingAddress->entry_suburb){{ $customer->shippingAddress->entry_suburb }}<br>@endif
+                            {{ $customer->shippingAddress->entry_city }}, {{ $customer->shippingAddress->zone?->zone_code ?? $customer->shippingAddress->entry_state }} {{ $customer->shippingAddress->entry_postcode }}
                         @endif
                     </x-address-card>
                 </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-sm-6">
-                    <x-address-card label="Backup Shipping Address">
+                <div class="col-md-4">
+                    <x-address-card label="Backup Shipping Address" :edit-url="$customer->emergencyAddress ? url('/address/' . $customer->emergencyAddress->address_book_id . '/edit') : null">
                         @if($customer->emergencyAddress)
-                            {{ $customer->emergencyAddress->full }}
+                            {{ $customer->emergencyAddress->entry_firstname }} {{ $customer->emergencyAddress->entry_lastname }}<br>
+                            @if($customer->emergencyAddress->entry_company){{ $customer->emergencyAddress->entry_company }}<br>@endif
+                            {{ $customer->emergencyAddress->entry_street_address }}<br>
+                            @if($customer->emergencyAddress->entry_suburb){{ $customer->emergencyAddress->entry_suburb }}<br>@endif
+                            {{ $customer->emergencyAddress->entry_city }}, {{ $customer->emergencyAddress->zone?->zone_code ?? $customer->emergencyAddress->entry_state }} {{ $customer->emergencyAddress->entry_postcode }}
                         @endif
                     </x-address-card>
                 </div>
-                <div class="col-sm-6">
-                    <x-detail-card title="All Addresses" action="New Address" :action-url="url('/address/add')">
-                        @if($customer->addresses->isNotEmpty())
-                            <ol class="mb-0">
-                                @foreach($customer->addresses as $address)
-                                    <li><a href="{{ url('/address/' . $address->address_book_id . '/edit') }}">{{ $address->full }}</a></li>
-                                @endforeach
-                            </ol>
-                        @endif
-                    </x-detail-card>
-                </div>
             </div>
-            <p class="mt-2"><small><a href="{{ url('/customers/edit/addresses') }}">Change default addresses</a></small></p>
+
+            {{-- All Addresses --}}
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                <h6 class="mb-0">All Addresses</h6>
+                <a href="{{ url('/address/add') }}" class="btn btn-sm btn-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Address</a>
+            </div>
+            @if($customer->addresses->isNotEmpty())
+                <div class="row">
+                    @foreach($customer->addresses as $address)
+                        @php
+                            $isBilling = $customer->customers_default_address_id == $address->address_book_id;
+                            $isShipping = $customer->customers_shipping_address_id == $address->address_book_id;
+                            $isEmergency = $customer->customers_emergency_address_id == $address->address_book_id;
+                            $isDefault = $isBilling || $isShipping || $isEmergency;
+                        @endphp
+                        <div class="col-md-4 mb-3">
+                            <div class="address-card h-100">
+                                <div class="address-card__label">
+                                    <span>
+                                        @if($isBilling)<span class="badge bg-primary-subtle text-primary me-1">Billing</span>@endif
+                                        @if($isShipping)<span class="badge bg-success-subtle text-success me-1">Shipping</span>@endif
+                                        @if($isEmergency)<span class="badge bg-warning-subtle text-warning me-1">Backup</span>@endif
+                                        @if(!$isDefault)<span class="text-muted">Address</span>@endif
+                                    </span>
+                                </div>
+                                <address class="mb-2">
+                                    {{ $address->entry_firstname }} {{ $address->entry_lastname }}<br>
+                                    @if($address->entry_company){{ $address->entry_company }}<br>@endif
+                                    {{ $address->entry_street_address }}<br>
+                                    @if($address->entry_suburb){{ $address->entry_suburb }}<br>@endif
+                                    {{ $address->entry_city }}, {{ $address->zone?->zone_code ?? $address->entry_state }} {{ $address->entry_postcode }}
+                                </address>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url('/address/' . $address->address_book_id . '/edit') }}" class="btn btn-sm btn-outline-primary">
+                                        <i data-lucide="pencil" class="icon--sm"></i> Edit
+                                    </a>
+                                    @unless($isDefault)
+                                        <a href="{{ url('/address/' . $address->address_book_id . '/delete') }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this address?')">
+                                            <i data-lucide="trash-2" class="icon--sm"></i> Delete
+                                        </a>
+                                    @endunless
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-muted">No addresses on file. <a href="{{ url('/address/add') }}">Add your first address</a>.</p>
+            @endif
         </div>
 
         {{-- Payment Tab --}}
@@ -183,26 +253,6 @@
         @endif
     </div>
 
-    @if($requests->isNotEmpty())
-        <x-table-card title="My Pending Requests" class="mt-4">
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        @foreach($requests as $request)
-                            <tr>
-                                <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
-                                <td>{{ $request->instructions }}</td>
-                                <td>{{ $request->status_label }}</td>
-                                <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </x-table-card>
-    @endif
-
     @if($awaitingPayments->isNotEmpty())
         <x-table-card title="My Orders Awaiting Payment" class="mt-4">
             <p class="px-3 pt-2 text-muted small">The orders listed below were unable to be automatically paid. These orders will need to be paid manually before they can be shipped.</p>
@@ -219,6 +269,26 @@
                                 <td>{{ $order->dimensions }}</td>
                                 <td>{{ $order->weight ? $order->weight . ' lb' : 'N/A' }}</td>
                                 <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </x-table-card>
+    @endif
+
+    @if($requests->isNotEmpty())
+        <x-table-card title="Custom Package Requests" class="mt-4">
+            <div class="table-responsive">
+                <table class="table table-modern">
+                    <thead><tr><th>Date</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        @foreach($requests as $request)
+                            <tr>
+                                <td>{{ $request->order_add_date?->format('m/d/Y') }}</td>
+                                <td>{{ $request->instructions }}</td>
+                                <td>{{ $request->status_label }}</td>
+                                <td><a href="{{ url('/requests/edit/' . $request->custom_orders_id) }}">Edit</a></td>
                             </tr>
                         @endforeach
                     </tbody>

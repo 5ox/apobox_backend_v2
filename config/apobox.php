@@ -17,10 +17,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'address' => [
-        'line1' => env('APOBOX_ADDRESS_LINE1', '2501 Technology Dr Suite 301'),
-        'city' => env('APOBOX_ADDRESS_CITY', 'Indianapolis'),
+        'line1' => env('APOBOX_ADDRESS_LINE1', '1911 Western Ave'),
+        'city' => env('APOBOX_ADDRESS_CITY', 'Plymouth'),
         'state' => env('APOBOX_ADDRESS_STATE', 'IN'),
-        'zip' => env('APOBOX_ADDRESS_ZIP', '46268'),
+        'zip' => env('APOBOX_ADDRESS_ZIP', '46563'),
     ],
 
     'warehouse' => [

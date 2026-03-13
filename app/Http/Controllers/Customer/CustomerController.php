@@ -41,7 +41,7 @@ class CustomerController extends Controller
 
         // Reload with relationships
         $customer = Customer::with([
-            'addresses',
+            'addresses.zone',
             'defaultAddress.zone',
             'shippingAddress.zone',
             'emergencyAddress.zone',
