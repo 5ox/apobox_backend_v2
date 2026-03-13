@@ -16,6 +16,9 @@
     <x-slot:actions>
         <div class="d-flex align-items-center gap-2">
             <x-status-badge :status="$order->status?->orders_status_name" class="fs-6 px-3 py-2" />
+            @if($order->problem_reason)
+                <span class="badge bg-danger fs-6 px-3 py-2">{{ $order->problem_reason }}</span>
+            @endif
             @if($order->customer?->billing_id)
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="badge bg-primary fs-6 px-3 py-2 text-decoration-none">{{ $order->customer->billing_id }}</a>
             @endif
@@ -101,9 +104,17 @@
             <form method="POST" action="/{{ $prefix }}/orders/{{ $order->orders_id }}/update-status">
                 @csrf
                 <div class="mb-2">
-                    <select name="orders_status" class="form-select form-select-sm">
+                    <select name="orders_status" id="ordersStatus" class="form-select form-select-sm">
                         @foreach($ordersStatuses as $sid => $sname)
                             <option value="{{ $sid }}" @selected($order->orders_status == $sid)>{{ $sname }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-2" id="problemReasonWrap" style="display: none;">
+                    <select name="problem_reason" id="problemReason" class="form-select form-select-sm">
+                        <option value="">Select reason...</option>
+                        @foreach(['Lithium', 'Overweight', 'Oversize', 'Mis Insured', 'Prohibited Items', 'Return'] as $reason)
+                            <option value="{{ $reason }}" @selected($order->problem_reason === $reason)>{{ $reason }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -220,3 +231,23 @@
     </a>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusSelect = document.getElementById('ordersStatus');
+        const reasonWrap = document.getElementById('problemReasonWrap');
+        const reasonSelect = document.getElementById('problemReason');
+
+        function toggleProblemReason() {
+            const isProblem = statusSelect.value === '6';
+            reasonWrap.style.display = isProblem ? '' : 'none';
+            reasonSelect.required = isProblem;
+            if (!isProblem) reasonSelect.value = '';
+        }
+
+        statusSelect.addEventListener('change', toggleProblemReason);
+        toggleProblemReason();
+    });
+</script>
+@endpush

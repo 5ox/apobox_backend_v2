@@ -601,8 +601,21 @@ class OrderController extends Controller
             }
         }
 
+        // If marking as problem, save the reason; otherwise clear it
+        if ($newStatus == 6) {
+            $updateData['problem_reason'] = $request->input('problem_reason');
+        } else {
+            $updateData['problem_reason'] = null;
+        }
+
         if ($order->update($updateData)) {
             $comments = $request->input('status_history_comments', '');
+
+            // Prepend problem reason to history comments for audit trail
+            if ($newStatus == 6 && $request->filled('problem_reason')) {
+                $reason = $request->input('problem_reason');
+                $comments = $comments ? "[{$reason}] {$comments}" : "[{$reason}]";
+            }
             $notified = (bool) $request->input('notify_customer', false);
             OrderStatusHistory::record($id, $newStatus, $comments, $notified);
 

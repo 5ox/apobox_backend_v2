@@ -119,7 +119,12 @@
                         $outbound = $order->usps_track_num ?: '';
                     @endphp
                     <tr>
-                        <td><a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="fw-semibold">{{ $order->orders_id }}</a></td>
+                        <td>
+                            <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="fw-semibold">{{ $order->orders_id }}</a>
+                            @if($order->problem_reason)
+                                <span class="badge bg-danger small">{{ $order->problem_reason }}</span>
+                            @endif
+                        </td>
                         <td>
                             @if($order->customer)
                                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}">{{ $order->customer->billing_id }}</a>

@@ -98,6 +98,7 @@ class Order extends Model
         'creator_id',
         'amazon_track_num',
         'customs_description',
+        'problem_reason',
     ];
 
     protected $casts = [
