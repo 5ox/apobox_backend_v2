@@ -275,6 +275,21 @@ class OrderController extends Controller
         $mailClasses = config('apobox.postal_classes', []);
         $defaultMailClass = $customer->default_postal_type ?? 'priority_mail';
 
+        // Load open Zendesk tickets for the customer
+        $openTickets = [];
+        try {
+            $zendesk = app(\App\Services\ZendeskService::class);
+            if ($zendesk->isConfigured() && $customer->customers_email_address) {
+                $allTickets = $zendesk->getTicketsForEmail($customer->customers_email_address);
+                $openTickets = collect($allTickets)
+                    ->filter(fn($t) => in_array($t['status'], ['new', 'open', 'pending']))
+                    ->values()
+                    ->all();
+            }
+        } catch (\Exception $e) {
+            // Silently fail — don't block order creation
+        }
+
         return view('manager.orders.add', compact(
             'customer',
             'customersAddresses',
@@ -282,7 +297,8 @@ class OrderController extends Controller
             'requests',
             'customerIsReadonly',
             'mailClasses',
-            'defaultMailClass'
+            'defaultMailClass',
+            'openTickets'
         ));
     }
 
@@ -303,6 +319,7 @@ class OrderController extends Controller
         $data['creator_id'] = auth('admin')->id();
         $data['orders_status'] = $validated['orders_status'];
         $data['date_purchased'] = now();
+        $data['last_modified'] = now();
 
         // Required NOT NULL columns with no database default
         $data['postage_id'] = '';
@@ -407,6 +424,24 @@ class OrderController extends Controller
             // Create default line items for the order
             $this->createDefaultLineItems($order);
 
+            // Apply additional fees from checkboxes
+            $feeRates = config('apobox.orders.fee_rates', []);
+            $feeMap = [
+                'fee_inspection'  => ['relation' => 'inspection',  'rate' => $feeRates['inspection'] ?? 0],
+                'fee_return'      => ['relation' => 'returnItem',  'rate' => $feeRates['return'] ?? 0],
+                'fee_misaddressed' => ['relation' => 'misaddressed', 'rate' => $feeRates['misaddressed'] ?? 0],
+                'fee_ship_to_us'  => ['relation' => 'shipToUS',    'rate' => $feeRates['ship_to_us'] ?? 0],
+            ];
+            foreach ($feeMap as $inputName => $feeInfo) {
+                if ($request->boolean($inputName) && $order->{$feeInfo['relation']}) {
+                    $amount = (float) $feeInfo['rate'];
+                    $order->{$feeInfo['relation']}->update([
+                        'value' => $amount,
+                        'text' => '$' . number_format($amount, 2),
+                    ]);
+                }
+            }
+
             session()->flash('message', 'The order has been created.');
 
             return redirect()->route($prefix . '.orders.charge', ['id' => $order->orders_id]);
@@ -432,7 +467,7 @@ class OrderController extends Controller
             'shipping',
             'fee',
             'insurance',
-            'battery',
+            'inspection',
             'repack',
             'storage',
             'returnItem',
@@ -606,7 +641,7 @@ class OrderController extends Controller
             $sub = ($order->shipping?->fresh()->value ?? 0)
                  + ($order->fee?->fresh()->value ?? 0)
                  + ($order->insurance?->fresh()->value ?? 0)
-                 + ($order->battery?->value ?? 0)
+                 + ($order->inspection?->value ?? 0)
                  + ($order->repack?->value ?? 0)
                  + ($order->storage?->value ?? 0)
                  + ($order->returnItem?->value ?? 0)
@@ -622,7 +657,7 @@ class OrderController extends Controller
 
             // Refresh relationships so the view shows updated values
             $order->load([
-                'shipping', 'fee', 'insurance', 'battery', 'repack',
+                'shipping', 'fee', 'insurance', 'inspection', 'repack',
                 'storage', 'returnItem', 'misaddressed', 'shipToUS',
                 'subtotal', 'total',
             ]);
@@ -1072,7 +1107,7 @@ class OrderController extends Controller
             \App\Models\OrderLineItems\OrderInsurance::class => ['title' => 'Insurance', 'class' => 'ot_insurance'],
             \App\Models\OrderLineItems\OrderStorage::class => ['title' => 'Storage', 'class' => 'ot_storage'],
             \App\Models\OrderLineItems\OrderRepack::class => ['title' => 'Repack', 'class' => 'ot_repack'],
-            \App\Models\OrderLineItems\OrderBattery::class => ['title' => 'Battery', 'class' => 'ot_battery'],
+            \App\Models\OrderLineItems\OrderBattery::class => ['title' => 'Inspection', 'class' => 'ot_battery'],
             \App\Models\OrderLineItems\OrderReturn::class => ['title' => 'Return', 'class' => 'ot_return'],
             \App\Models\OrderLineItems\OrderMisaddressed::class => ['title' => 'Misaddressed', 'class' => 'ot_misaddressed'],
             \App\Models\OrderLineItems\OrderShipToUS::class => ['title' => 'Ship to US', 'class' => 'ot_ship_to_us'],
@@ -1103,7 +1138,7 @@ class OrderController extends Controller
             'OrderInsurance' => 'insurance',
             'OrderFee' => 'fee',
             'OrderRepack' => 'repack',
-            'OrderBattery' => 'battery',
+            'OrderBattery' => 'inspection',
             'OrderReturn' => 'returnItem',
             'OrderMisaddressed' => 'misaddressed',
             'OrderShipToUS' => 'shipToUS',

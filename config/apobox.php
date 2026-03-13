@@ -54,7 +54,7 @@ return [
     */
     'orders' => [
         'fee_rates' => [
-            'battery' => '5.00',
+            'inspection' => '5.00',
             'return' => '10.00',
             'misaddressed' => '5.00',
             'ship_to_us' => '10.00',

@@ -81,7 +81,7 @@
                                 ['name' => 'OrderInsurance', 'label' => 'Insurance', 'relation' => 'insurance', 'auto' => $autoInsurance ?? null, 'hint' => null],
                                 ['name' => 'OrderStorage', 'label' => 'Storage', 'relation' => 'storage', 'auto' => null, 'hint' => null],
                                 ['name' => 'OrderRepack', 'label' => 'Repack', 'relation' => 'repack', 'auto' => null, 'hint' => null],
-                                ['name' => 'OrderBattery', 'label' => 'Battery', 'relation' => 'battery', 'auto' => $feeRates['battery'] ?? null, 'hint' => null],
+                                ['name' => 'OrderBattery', 'label' => 'Inspection', 'relation' => 'inspection', 'auto' => $feeRates['inspection'] ?? null, 'hint' => null],
                                 ['name' => 'OrderReturn', 'label' => 'Return', 'relation' => 'returnItem', 'auto' => $feeRates['return'] ?? null, 'hint' => null],
                                 ['name' => 'OrderMisaddressed', 'label' => 'Misaddressed', 'relation' => 'misaddressed', 'auto' => $feeRates['misaddressed'] ?? null, 'hint' => null],
                                 ['name' => 'OrderShipToUS', 'label' => 'Ship to US', 'relation' => 'shipToUS', 'auto' => $feeRates['ship_to_us'] ?? null, 'hint' => null],

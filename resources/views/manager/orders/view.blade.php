@@ -45,6 +45,67 @@
     </x-slot:actions>
 </x-page-header>
 
+{{-- Billing & Package at a glance --}}
+<div class="row mb-4">
+    <div class="col-lg-4">
+        <x-detail-card title="Customer & Billing">
+            <x-detail-row label="Customer">
+                <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="fw-semibold">{{ $order->customers_name }}</a>
+                @if($order->customer?->billing_id)
+                    <span class="badge bg-primary ms-1">{{ $order->customer->billing_id }}</span>
+                @endif
+            </x-detail-row>
+            <x-detail-row label="Email"><a href="mailto:{{ $order->customers_email_address }}">{{ $order->customers_email_address }}</a></x-detail-row>
+            <x-detail-row label="Billing Address">
+                {{ $order->billing_street_address }}
+                @if($order->billing_suburb)<br>{{ $order->billing_suburb }}@endif
+                <br>{{ $order->billing_city }}, {{ $order->billing_state }} {{ $order->billing_postcode }}
+            </x-detail-row>
+            @if($order->customer)
+                <x-detail-row label="Card on File">
+                    {{ $order->customer->masked_cc_number ?: 'None' }}
+                    @if($order->customer->cc_expires)
+                        <span class="text-muted small ms-1">(exp {{ $order->customer->cc_expires }})</span>
+                    @endif
+                </x-detail-row>
+            @endif
+        </x-detail-card>
+    </div>
+    <div class="col-lg-4">
+        <x-detail-card title="Package Details">
+            <x-detail-row label="Dimensions">{{ $dims->isNotEmpty() ? $dims->implode(' x ') . ' in.' : 'N/A' }}</x-detail-row>
+            <x-detail-row label="Weight">{{ $lbs }} lb, {{ $oz }} oz</x-detail-row>
+            <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
+            <x-detail-row label="Package Type">{{ $order->package_type ?: 'N/A' }}</x-detail-row>
+            @if($order->customer?->insurance_fee)
+                <x-detail-row label="Insurance">${{ number_format($order->customer->insurance_fee, 2) }}</x-detail-row>
+            @endif
+            @if($order->customs_description)
+                <x-detail-row label="Customs">{{ $order->customs_description }}</x-detail-row>
+            @endif
+        </x-detail-card>
+    </div>
+    <div class="col-lg-4">
+        <x-detail-card title="Charges">
+            <table class="table table-sm table-borderless mb-0 small">
+                <tbody>
+                    @foreach($orderCharges as $charge)
+                        <tr @if(in_array($charge->class, ['ot_subtotal', 'ot_total'])) class="fw-bold" @endif>
+                            <td>{{ $charge->title }}</td>
+                            <td class="text-end">${{ number_format($charge->value, 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div class="mt-2">
+                <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" class="btn btn-sm btn-outline-success w-100">
+                    <i data-lucide="credit-card" class="icon--sm me-1"></i>Charge / Edit Totals
+                </a>
+            </div>
+        </x-detail-card>
+    </div>
+</div>
+
 {{-- Main two-column layout --}}
 <div class="row">
     {{-- Left column --}}
@@ -66,25 +127,6 @@
                     <span class="text-muted">None</span>
                 @endif
             </x-detail-row>
-        </x-detail-card>
-
-        {{-- Package Details --}}
-        <x-detail-card title="Package Details">
-            <x-detail-row label="Dimensions">{{ $dims->isNotEmpty() ? $dims->implode(' x ') . ' in.' : 'N/A' }}</x-detail-row>
-            <x-detail-row label="Weight">{{ $lbs }} lb, {{ $oz }} oz</x-detail-row>
-            <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
-            <x-detail-row label="Package Type">{{ $order->package_type ?: 'N/A' }}</x-detail-row>
-            @if($order->customer?->insurance_fee)
-                <x-detail-row label="Insurance">${{ number_format($order->customer->insurance_fee, 2) }}</x-detail-row>
-            @endif
-            @if($order->customs_description)
-                <x-detail-row label="Customs">{{ $order->customs_description }}</x-detail-row>
-            @endif
-            <x-detail-row label="Processed">{{ $order->date_purchased?->format('g:ia M jS, Y') ?? 'N/A' }}</x-detail-row>
-            <x-detail-row label="Last Modified">{{ $order->last_modified?->isToday() ? 'Today' : $order->last_modified?->format('M jS, Y') }}</x-detail-row>
-            @if($creator)
-                <x-detail-row label="Created By">{{ $creator }}</x-detail-row>
-            @endif
         </x-detail-card>
 
         {{-- Addresses --}}
@@ -112,8 +154,19 @@
         </div>
 
         {{-- Comments --}}
-        <x-detail-card title="Comments">
-            <div class="small">{{ $order->comments ?: 'None' }}</div>
+        @if($order->comments)
+            <x-detail-card title="Comments">
+                <div class="small">{{ $order->comments }}</div>
+            </x-detail-card>
+        @endif
+
+        {{-- Order Meta --}}
+        <x-detail-card title="Order Info">
+            <x-detail-row label="Processed">{{ $order->date_purchased?->format('g:ia M jS, Y') ?? 'N/A' }}</x-detail-row>
+            <x-detail-row label="Last Modified">{{ $order->last_modified?->isToday() ? 'Today' : $order->last_modified?->format('M jS, Y') }}</x-detail-row>
+            @if($creator)
+                <x-detail-row label="Created By">{{ $creator }}</x-detail-row>
+            @endif
         </x-detail-card>
     </div>
 
@@ -179,9 +232,6 @@
         {{-- Actions --}}
         <x-detail-card title="Actions">
             <div class="d-grid gap-2">
-                <a href="mailto:{{ $order->customers_email_address }}" class="btn btn-sm btn-outline-secondary">
-                    <i data-lucide="mail" class="icon--sm me-1"></i>Email Customer
-                </a>
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="btn btn-sm btn-outline-secondary">
                     <i data-lucide="user" class="icon--sm me-1"></i>Go to Customer
                 </a>
@@ -206,46 +256,7 @@
                 <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/print_label" class="btn btn-sm btn-outline-secondary">
                     <i data-lucide="tag" class="icon--sm me-1"></i>Print Zebra Label
                 </a>
-                <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" class="btn btn-sm btn-outline-success">
-                    <i data-lucide="credit-card" class="icon--sm me-1"></i>Charge / Edit Totals
-                </a>
             </div>
-        </x-detail-card>
-
-        {{-- Billing --}}
-        <x-detail-card title="Billing">
-            <x-detail-row label="Name">{{ $order->billing_name }}</x-detail-row>
-            @if($order->billing_company)
-                <x-detail-row label="Company">{{ $order->billing_company }}</x-detail-row>
-            @endif
-            <x-detail-row label="Address">
-                {{ $order->billing_street_address }}
-                @if($order->billing_suburb)<br>{{ $order->billing_suburb }}@endif
-                <br>{{ $order->billing_city }}, {{ $order->billing_state }} {{ $order->billing_postcode }}
-                <br>{{ $order->billing_country }}
-            </x-detail-row>
-            @if($order->customer)
-                <x-detail-row label="Card">
-                    {{ $order->customer->masked_cc_number ?: 'No card on file' }}
-                    @if($order->customer->cc_expires)
-                        <br><span class="text-muted small">Expires: {{ $order->customer->cc_expires }}</span>
-                    @endif
-                </x-detail-row>
-            @endif
-        </x-detail-card>
-
-        {{-- Charges --}}
-        <x-detail-card title="Charges">
-            <table class="table table-sm table-borderless mb-0 small">
-                <tbody>
-                    @foreach($orderCharges as $charge)
-                        <tr @if(in_array($charge->class, ['ot_subtotal', 'ot_total'])) class="fw-bold" @endif>
-                            <td>{{ $charge->title }}</td>
-                            <td class="text-end">${{ number_format($charge->value, 2) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
         </x-detail-card>
     </div>
 </div>

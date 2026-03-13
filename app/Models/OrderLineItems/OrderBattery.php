@@ -11,7 +11,7 @@ class OrderBattery extends OrderLineItem
 
     protected static function lineItemTitle(): string
     {
-        return 'Battery Fee:';
+        return 'Inspection Fee:';
     }
 
     protected static function lineItemSortOrder(): int

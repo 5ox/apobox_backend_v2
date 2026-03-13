@@ -152,7 +152,7 @@ class Order extends Model
         return $this->hasOne(OrderInsurance::class, 'orders_id', 'orders_id');
     }
 
-    public function battery()
+    public function inspection()
     {
         return $this->hasOne(OrderBattery::class, 'orders_id', 'orders_id');
     }

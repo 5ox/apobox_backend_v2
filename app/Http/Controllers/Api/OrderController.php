@@ -336,7 +336,7 @@ class OrderController extends Controller
             $order->refresh();
             $order->load([
                 'shipping', 'storage', 'insurance', 'fee',
-                'repack', 'battery', 'returnItem', 'misaddressed',
+                'repack', 'inspection', 'returnItem', 'misaddressed',
                 'shipToUS', 'subtotal', 'total', 'status',
             ]);
 
@@ -598,7 +598,7 @@ class OrderController extends Controller
             'insurance' => $order->insurance,
             'fee' => $order->fee,
             'repack' => $order->repack,
-            'battery' => $order->battery,
+            'inspection' => $order->inspection,
             'return' => $order->returnItem,
             'misaddressed' => $order->misaddressed,
             'ship_to_us' => $order->shipToUS,

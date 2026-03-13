@@ -2,7 +2,41 @@
 @section('title', 'New Order - APO Box Admin')
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
-<x-page-header title="New Order" subtitle="{{ $customer->full_name }} &mdash; {{ $customer->billing_id }}" />
+
+{{-- Customer Header (matches customer/view design) --}}
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    @if($customer->billing_id)
+        <span class="badge bg-primary fs-5 px-4 py-2" style="border-radius:12px">{{ $customer->billing_id }}</span>
+    @endif
+    <h2 class="mb-0">{{ $customer->full_name }}</h2>
+    <span class="text-muted">&mdash; New Order</span>
+</div>
+
+{{-- Alerts: open tickets & custom requests --}}
+@if(!empty($openTickets))
+    <div class="alert alert-warning d-flex align-items-start gap-2 py-2">
+        <i data-lucide="message-circle" class="icon mt-1 flex-shrink-0"></i>
+        <div>
+            <strong>{{ count($openTickets) }} open support {{ Str::plural('ticket', count($openTickets)) }}:</strong>
+            @foreach($openTickets as $ticket)
+                <a href="{{ $ticket['url'] }}" target="_blank" class="ms-2 text-decoration-none">
+                    #{{ $ticket['id'] }} <span class="text-muted small">({{ $ticket['status'] }})</span>
+                </a>{{ !$loop->last ? ',' : '' }}
+            @endforeach
+        </div>
+    </div>
+@endif
+@if($requests->isNotEmpty())
+    <div class="alert alert-info d-flex align-items-start gap-2 py-2">
+        <i data-lucide="package" class="icon mt-1 flex-shrink-0"></i>
+        <div>
+            <strong>{{ $requests->count() }} pending custom {{ Str::plural('request', $requests->count()) }}:</strong>
+            @foreach($requests as $req)
+                <span class="ms-2">#{{ $req->custom_orders_id }} &mdash; {{ Str::limit($req->instructions, 40) }}</span>{{ !$loop->last ? ',' : '' }}
+            @endforeach
+        </div>
+    </div>
+@endif
 
 <form method="POST" action="/{{ $prefix }}/orders/add/{{ $customer->customers_id }}" id="addOrderForm">
     @csrf
@@ -14,7 +48,7 @@
                     <label class="form-label">Inbound Tracking Number</label>
                     <div class="input-group">
                         <input type="text" name="inbound_tracking" id="inbound-tracking" class="form-control"
-                               value="{{ old('inbound_tracking') }}" placeholder="Scan or paste tracking number">
+                               value="{{ old('inbound_tracking') }}" placeholder="Scan or paste tracking number" autofocus>
                         <span class="input-group-text" id="carrier-badge">
                             <span class="text-muted small">Auto-detect</span>
                         </span>
@@ -54,8 +88,18 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Customs Description</label>
-                    <input type="text" name="customs_description" class="form-control"
-                           value="{{ old('customs_description', 'Household & Personal Goods') }}">
+                    <select name="customs_description" class="form-select">
+                        @foreach([
+                            'Household & Personal Goods',
+                            'Clothing & Apparel',
+                            'Electronics & Accessories',
+                            'Health & Beauty Products',
+                            'Books & Documents',
+                            'Food & Supplements',
+                        ] as $desc)
+                            <option value="{{ $desc }}" @selected(old('customs_description', 'Household & Personal Goods') === $desc)>{{ $desc }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </x-form-section>
         </div>
@@ -93,6 +137,28 @@
                             <option value="{{ $status->orders_status_id }}" @selected(old('orders_status', 1) == $status->orders_status_id)>{{ $status->orders_status_name }}</option>
                         @endforeach
                     </select>
+                </div>
+            </x-form-section>
+
+            <x-form-section title="Additional Fees">
+                @php
+                    $feeRates = config('apobox.orders.fee_rates', []);
+                    $fees = [
+                        'fee_inspection' => ['label' => 'Inspection', 'amount' => $feeRates['inspection'] ?? '5.00'],
+                        'fee_return' => ['label' => 'Return', 'amount' => $feeRates['return'] ?? '10.00'],
+                        'fee_misaddressed' => ['label' => 'Misaddressed', 'amount' => $feeRates['misaddressed'] ?? '5.00'],
+                        'fee_ship_to_us' => ['label' => 'Ship to US', 'amount' => $feeRates['ship_to_us'] ?? '10.00'],
+                    ];
+                @endphp
+                <div class="row g-2">
+                    @foreach($fees as $name => $fee)
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="{{ $name }}" id="{{ $name }}" value="1" @checked(old($name))>
+                                <label class="form-check-label" for="{{ $name }}">{{ $fee['label'] }} <span class="text-muted small">${{ $fee['amount'] }}</span></label>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </x-form-section>
 
