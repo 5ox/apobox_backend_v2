@@ -132,7 +132,11 @@
                         <td>{{ $order->mail_class }}</td>
                         <td class="small text-nowrap">
                             @if($inboundTrack)
-                                <a href="{{ $inboundUrl }}" target="_blank" class="text-decoration-none" title="{{ $inboundTrack }}">
+                                <a href="#" class="text-decoration-none track-link"
+                                   data-bs-toggle="modal" data-bs-target="#trackingModal"
+                                   data-tracking="{{ $inboundTrack }}"
+                                   data-carrier="{{ $inboundCarrier }}"
+                                   data-carrier-url="{{ $inboundUrl }}">
                                     <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>...{{ substr($inboundTrack, -7) }}
                                 </a>
                             @endif
@@ -176,6 +180,35 @@
     </div>
 @endif
 
+{{-- Tracking Modal --}}
+<div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title d-flex align-items-center gap-2">
+                    <i data-lucide="package" style="width:18px;height:18px"></i>
+                    <span id="trackingModalCarrier"></span> Tracking
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <span id="trackingCarrierBadge" class="badge fs-6 px-3 py-2"></span>
+                </div>
+                <code id="trackingModalNumber" class="d-block fs-5 mb-3 user-select-all"></code>
+                <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-primary">
+                    <i data-lucide="external-link" style="width:16px;height:16px;vertical-align:-2px" class="me-1"></i>Track on carrier site
+                </a>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingCopyBtn">
+                        <i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copy number
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -185,6 +218,41 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.comment-pop').forEach(function(el) {
         new bootstrap.Popover(el, { html: false, sanitize: true });
     });
+
+    // Tracking modal
+    var trackModal = document.getElementById('trackingModal');
+    if (trackModal) {
+        var carrierColors = { USPS: 'bg-primary', UPS: 'bg-warning text-dark', FedEx: 'bg-info text-dark', DHL: 'bg-danger' };
+
+        trackModal.addEventListener('show.bs.modal', function(e) {
+            var btn = e.relatedTarget;
+            if (!btn) return;
+            var trackNum = btn.dataset.tracking;
+            var carrier = btn.dataset.carrier;
+            var carrierUrl = btn.dataset.carrierUrl;
+
+            document.getElementById('trackingModalCarrier').textContent = carrier;
+            document.getElementById('trackingModalNumber').textContent = trackNum;
+            document.getElementById('trackingCarrierLink').href = carrierUrl;
+
+            var badge = document.getElementById('trackingCarrierBadge');
+            badge.className = 'badge fs-6 px-3 py-2 ' + (carrierColors[carrier] || 'bg-secondary');
+            badge.textContent = carrier;
+        });
+
+        document.getElementById('trackingCopyBtn').addEventListener('click', function() {
+            var num = document.getElementById('trackingModalNumber').textContent;
+            navigator.clipboard.writeText(num).then(function() {
+                var btn = document.getElementById('trackingCopyBtn');
+                btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copied!';
+                if (window.lucide) lucide.createIcons();
+                setTimeout(function() {
+                    btn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copy number';
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
+        });
+    }
 });
 </script>
 @endpush
