@@ -72,6 +72,9 @@ class ReportApiController extends Controller
             // Total customers
             $totalCustomers = Customer::where('is_active', true)->count();
 
+            // Lifetime shipped packages (all time, status 3 = shipped)
+            $lifetimeShipped = Order::where('orders_status', 3)->count();
+
             // Avg packages per customer
             $avgPerCustomer = $activeCustomers > 0
                 ? round($currentOrders / $activeCustomers, 1)
@@ -92,6 +95,7 @@ class ReportApiController extends Controller
                 'sizeBreakdown' => $sizeBreakdown,
                 'statusCounts' => $statusCounts,
                 'topCustomers' => $topCustomers,
+                'lifetimeShipped' => $lifetimeShipped,
             ];
         });
 
@@ -130,7 +134,8 @@ class ReportApiController extends Controller
                     DB::raw('COUNT(*) as total_orders'),
                     DB::raw('SUM(CASE WHEN orders_status = 4 THEN 1 ELSE 0 END) as paid_orders'),
                     DB::raw('SUM(CASE WHEN orders_status = 3 THEN 1 ELSE 0 END) as shipped_orders'),
-                    DB::raw('SUM(CASE WHEN orders_status != 5 THEN 1 ELSE 0 END) as active_orders')
+                    DB::raw('SUM(CASE WHEN orders_status != 5 THEN 1 ELSE 0 END) as active_orders'),
+                    DB::raw('ROUND(AVG(NULLIF(weight_oz, 0)), 1) as avg_weight_oz')
                 )
                 ->whereBetween('date_purchased', [$from . ' 00:00:00', $to . ' 23:59:59'])
                 ->groupBy('period')
@@ -292,6 +297,44 @@ class ReportApiController extends Controller
         }, 'orders-export-' . now()->format('Y-m-d') . '.csv', [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    /**
+     * GET /reports/api/destinations?from=...&to=...&limit=20
+     *
+     * Top destination zip codes by order volume.
+     */
+    public function destinations(Request $request): JsonResponse
+    {
+        $from = $request->input('from', now()->subYear()->format('Y-m-d'));
+        $to = $request->input('to', now()->format('Y-m-d'));
+        $limit = min((int) $request->input('limit', 20), 50);
+
+        $cacheKey = "reports:destinations:{$from}:{$to}:{$limit}";
+
+        $data = Cache::remember($cacheKey, 1800, function () use ($from, $to, $limit) {
+            return Order::select(
+                    'delivery_postcode',
+                    'delivery_state',
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('AVG(weight_oz) as avg_weight_oz')
+                )
+                ->whereBetween('date_purchased', [$from . ' 00:00:00', $to . ' 23:59:59'])
+                ->where('delivery_postcode', '!=', '')
+                ->whereNotNull('delivery_postcode')
+                ->groupBy('delivery_postcode', 'delivery_state')
+                ->orderByDesc('count')
+                ->limit($limit)
+                ->get()
+                ->map(fn ($row) => [
+                    'zip' => $row->delivery_postcode,
+                    'state' => $row->delivery_state,
+                    'count' => $row->count,
+                    'avg_weight_oz' => round((float) $row->avg_weight_oz, 1),
+                ]);
+        });
+
+        return response()->json($data);
     }
 
     // ---------------------------------------------------------------

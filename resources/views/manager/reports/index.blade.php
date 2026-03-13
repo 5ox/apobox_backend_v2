@@ -51,6 +51,13 @@
             <div class="stat-card__label">Total Customers</div>
         </div>
     </div>
+    <div class="card card-hover kpi-card">
+        <div class="stat-card">
+            <div class="stat-card__icon"><i data-lucide="truck" class="icon--lg"></i></div>
+            <div class="stat-card__number" id="kpi-lifetime-shipped">--</div>
+            <div class="stat-card__label">Lifetime Shipped</div>
+        </div>
+    </div>
 </div>
 @endif
 
@@ -115,6 +122,26 @@
             </x-detail-card>
         </div>
     @endif
+</div>
+
+{{-- ============================================================ --}}
+{{-- Average Weight Trends + Top Destination Zip Codes --}}
+{{-- ============================================================ --}}
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <x-detail-card title="Average Weight Shipped (oz)">
+            <div style="height: 280px; position: relative;">
+                <canvas id="avgWeightChart"></canvas>
+            </div>
+        </x-detail-card>
+    </div>
+    <div class="col-lg-6">
+        <x-detail-card title="Top Destination Zip Codes">
+            <div style="height: 280px; position: relative;">
+                <canvas id="destinationsChart"></canvas>
+            </div>
+        </x-detail-card>
+    </div>
 </div>
 
 {{-- ============================================================ --}}

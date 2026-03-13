@@ -65,6 +65,7 @@ async function loadSummary(range = '30d') {
         setText('#kpi-active-customers', data.activeCustomers.toLocaleString());
         setText('#kpi-avg-per-customer', data.avgPerCustomer);
         setText('#kpi-total-customers', data.totalCustomers.toLocaleString());
+        setText('#kpi-lifetime-shipped', (data.lifetimeShipped || 0).toLocaleString());
 
         // Percent change badge
         const changeBadge = document.getElementById('kpi-percent-change');
@@ -104,6 +105,8 @@ let trendsChart = null;
 let sizeDonutChart = null;
 let topCustomersChart = null;
 let customerGrowthChart = null;
+let avgWeightChart = null;
+let destinationsChart = null;
 
 async function loadTrends(interval = 'week') {
     const base = getBaseUrl();
@@ -171,8 +174,95 @@ async function loadTrends(interval = 'week') {
                 },
             },
         });
+
+        // Render average weight chart from same data
+        renderAvgWeight(data);
     } catch (err) {
         console.error('Failed to load trends:', err);
+    }
+}
+
+function renderAvgWeight(data) {
+    const ctx = document.getElementById('avgWeightChart');
+    if (!ctx) return;
+
+    if (avgWeightChart) avgWeightChart.destroy();
+
+    avgWeightChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.period),
+            datasets: [{
+                label: 'Avg Weight (oz)',
+                data: data.map(d => d.avg_weight_oz),
+                borderColor: COLORS.amber,
+                backgroundColor: hexToRgba(COLORS.amber, 0.08),
+                fill: true,
+                tension: 0.3,
+                pointRadius: 2,
+                pointHoverRadius: 5,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ` ${ctx.raw} oz (${(ctx.raw / 16).toFixed(1)} lb)`,
+                    },
+                },
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Ounces' } },
+                x: { grid: { display: false } },
+            },
+        },
+    });
+}
+
+async function loadDestinations() {
+    const base = getBaseUrl();
+    const from = document.getElementById('trends-from')?.value || defaultFrom();
+    const to = document.getElementById('trends-to')?.value || defaultTo();
+
+    try {
+        const data = await fetchJSON(
+            `${base}/reports/api/destinations?from=${from}&to=${to}&limit=15`,
+            120000
+        );
+
+        const ctx = document.getElementById('destinationsChart');
+        if (!ctx) return;
+
+        if (destinationsChart) destinationsChart.destroy();
+
+        destinationsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => `${d.zip} (${d.state})`),
+                datasets: [{
+                    label: 'Packages',
+                    data: data.map(d => d.count),
+                    backgroundColor: hexToRgba(COLORS.navy, 0.7),
+                    borderRadius: 4,
+                }],
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 }, grid: { display: false } },
+                    y: { grid: { display: false } },
+                },
+            },
+        });
+    } catch (err) {
+        console.error('Failed to load destinations:', err);
     }
 }
 
@@ -555,11 +645,13 @@ function bindEvents() {
         const active = document.querySelector('[data-interval].active');
         loadTrends(active?.dataset.interval || 'week');
         loadCustomerGrowth(active?.dataset.interval || 'month');
+        loadDestinations();
     });
     document.getElementById('trends-to')?.addEventListener('change', () => {
         const active = document.querySelector('[data-interval].active');
         loadTrends(active?.dataset.interval || 'week');
         loadCustomerGrowth(active?.dataset.interval || 'month');
+        loadDestinations();
     });
 
     // CSV Export
@@ -647,5 +739,6 @@ Promise.all([
     loadSummary('30d'),
     loadTrends('week'),
     loadCustomerGrowth('month'),
+    loadDestinations(),
     loadOrdersTable(1),
 ]);

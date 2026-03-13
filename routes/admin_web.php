@@ -91,6 +91,7 @@ $adminRoutes = function () {
     Route::get('/reports/api/customers', [Manager\ReportApiController::class, 'customers'])->name('reports.api.customers');
     Route::get('/reports/api/orders', [Manager\ReportApiController::class, 'orders'])->name('reports.api.orders');
     Route::get('/reports/api/export', [Manager\ReportApiController::class, 'export'])->name('reports.api.export');
+    Route::get('/reports/api/destinations', [Manager\ReportApiController::class, 'destinations'])->name('reports.api.destinations');
 
     Route::get('/admins/index', [Manager\AdminController::class, 'index'])->name('admins.index');
     Route::get('/admins/add', [Manager\AdminController::class, 'create'])->name('admins.create');
