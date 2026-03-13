@@ -182,27 +182,56 @@
 
 {{-- Tracking Modal --}}
 <div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h6 class="modal-title d-flex align-items-center gap-2">
                     <i data-lucide="package" style="width:18px;height:18px"></i>
                     <span id="trackingModalCarrier"></span> Tracking
                 </h6>
+                <div class="d-flex align-items-center gap-2 ms-auto me-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingCopyBtn" title="Copy tracking number">
+                        <i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>
+                    </button>
+                    <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary" title="Open on carrier site">
+                        <i data-lucide="external-link" style="width:14px;height:14px;vertical-align:-2px"></i>
+                    </a>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body text-center py-4">
-                <div class="mb-3">
-                    <span id="trackingCarrierBadge" class="badge fs-6 px-3 py-2"></span>
+            <div class="modal-body p-0">
+                {{-- Loading state --}}
+                <div id="trackingLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2 mb-0 small">Fetching tracking info&hellip;</p>
                 </div>
-                <code id="trackingModalNumber" class="d-block fs-5 mb-3 user-select-all"></code>
-                <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-primary">
-                    <i data-lucide="external-link" style="width:16px;height:16px;vertical-align:-2px" class="me-1"></i>Track on carrier site
-                </a>
-                <div class="mt-3">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingCopyBtn">
-                        <i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copy number
-                    </button>
+                {{-- Error state --}}
+                <div id="trackingError" class="text-center py-5" style="display:none;">
+                    <i data-lucide="alert-circle" style="width:36px;height:36px" class="text-danger mb-2"></i>
+                    <p id="trackingErrorMsg" class="text-muted mb-0"></p>
+                </div>
+                {{-- Tracking data --}}
+                <div id="trackingContent" style="display:none;">
+                    {{-- Status bar --}}
+                    <div class="px-3 py-3 border-bottom bg-light">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <span id="trackingCarrierBadge" class="badge me-2"></span>
+                                <code id="trackingModalNumber" class="user-select-all small"></code>
+                            </div>
+                            <div>
+                                <span id="trackingStatusBadge" class="badge bg-success fs-6"></span>
+                            </div>
+                        </div>
+                        <div id="trackingEstDelivery" class="text-muted small mt-1" style="display:none;">
+                            <i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px" class="me-1"></i>
+                            Est. delivery: <strong id="trackingEstDate"></strong>
+                        </div>
+                    </div>
+                    {{-- Events timeline --}}
+                    <div class="px-3 py-3" style="max-height:400px;overflow-y:auto;">
+                        <div id="trackingEvents"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -225,10 +254,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Tracking modal
+    // Tracking modal — fetch real tracking data from backend
     var trackModal = document.getElementById('trackingModal');
     if (trackModal) {
         var carrierColors = { USPS: 'bg-primary', UPS: 'bg-warning text-dark', FedEx: 'bg-info text-dark', DHL: 'bg-danger' };
+        var prefix = '{{ $prefix }}';
+        var currentTrackNum = '';
 
         trackModal.addEventListener('show.bs.modal', function(e) {
             var btn = e.relatedTarget;
@@ -236,28 +267,114 @@ document.addEventListener('DOMContentLoaded', function() {
             var trackNum = btn.dataset.tracking;
             var carrier = btn.dataset.carrier;
             var carrierUrl = btn.dataset.carrierUrl;
+            currentTrackNum = trackNum;
 
+            // Set header info
             document.getElementById('trackingModalCarrier').textContent = carrier;
-            document.getElementById('trackingModalNumber').textContent = trackNum;
             document.getElementById('trackingCarrierLink').href = carrierUrl;
 
-            var badge = document.getElementById('trackingCarrierBadge');
-            badge.className = 'badge fs-6 px-3 py-2 ' + (carrierColors[carrier] || 'bg-secondary');
-            badge.textContent = carrier;
+            // Reset states
+            document.getElementById('trackingLoading').style.display = '';
+            document.getElementById('trackingError').style.display = 'none';
+            document.getElementById('trackingContent').style.display = 'none';
+
+            // Fetch tracking data
+            fetch('/' + prefix + '/tracking/' + encodeURIComponent(carrier) + '/' + encodeURIComponent(trackNum))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    document.getElementById('trackingLoading').style.display = 'none';
+
+                    if (data.error) {
+                        document.getElementById('trackingErrorMsg').textContent = data.error;
+                        document.getElementById('trackingError').style.display = '';
+                        if (window.lucide) lucide.createIcons();
+                        return;
+                    }
+
+                    // Populate status bar
+                    var badge = document.getElementById('trackingCarrierBadge');
+                    badge.className = 'badge ' + (carrierColors[data.carrier] || 'bg-secondary');
+                    badge.textContent = data.carrier;
+
+                    document.getElementById('trackingModalNumber').textContent = data.tracking_number;
+
+                    var statusBadge = document.getElementById('trackingStatusBadge');
+                    var statusLower = (data.status || '').toLowerCase();
+                    var statusColor = 'bg-secondary';
+                    if (statusLower.indexOf('delivered') !== -1) statusColor = 'bg-success';
+                    else if (statusLower.indexOf('transit') !== -1 || statusLower.indexOf('accepted') !== -1) statusColor = 'bg-primary';
+                    else if (statusLower.indexOf('exception') !== -1 || statusLower.indexOf('alert') !== -1) statusColor = 'bg-danger';
+                    else if (statusLower.indexOf('out for delivery') !== -1) statusColor = 'bg-info';
+                    statusBadge.className = 'badge ' + statusColor + ' fs-6';
+                    statusBadge.textContent = data.status;
+
+                    // Estimated delivery
+                    var estWrap = document.getElementById('trackingEstDelivery');
+                    if (data.estimated_delivery) {
+                        document.getElementById('trackingEstDate').textContent = data.estimated_delivery;
+                        estWrap.style.display = '';
+                    } else {
+                        estWrap.style.display = 'none';
+                    }
+
+                    // Build events timeline
+                    var eventsContainer = document.getElementById('trackingEvents');
+                    eventsContainer.innerHTML = '';
+
+                    if (data.events && data.events.length > 0) {
+                        data.events.forEach(function(evt, i) {
+                            var isFirst = i === 0;
+                            var dot = document.createElement('div');
+                            dot.className = 'd-flex gap-3 mb-0';
+                            dot.innerHTML =
+                                '<div class="d-flex flex-column align-items-center" style="min-width:12px">' +
+                                    '<div style="width:10px;height:10px;border-radius:50%;margin-top:5px" class="' + (isFirst ? 'bg-success' : 'bg-secondary opacity-50') + '"></div>' +
+                                    (i < data.events.length - 1 ? '<div style="width:2px;flex:1;min-height:20px" class="bg-secondary opacity-25"></div>' : '') +
+                                '</div>' +
+                                '<div class="pb-3 flex-grow-1">' +
+                                    '<div class="' + (isFirst ? 'fw-semibold' : 'small') + '">' + escapeHtml(evt.description) + '</div>' +
+                                    '<div class="text-muted" style="font-size:0.78rem">' +
+                                        (evt.location ? '<span class="me-2">' + escapeHtml(evt.location) + '</span>' : '') +
+                                        (evt.date ? '<span>' + escapeHtml(evt.date) + '</span>' : '') +
+                                    '</div>' +
+                                '</div>';
+                            eventsContainer.appendChild(dot);
+                        });
+                    } else {
+                        eventsContainer.innerHTML = '<p class="text-muted text-center mb-0">No tracking events available yet.</p>';
+                    }
+
+                    document.getElementById('trackingContent').style.display = '';
+                    if (window.lucide) lucide.createIcons();
+                })
+                .catch(function(err) {
+                    document.getElementById('trackingLoading').style.display = 'none';
+                    document.getElementById('trackingErrorMsg').textContent = 'Could not load tracking data.';
+                    document.getElementById('trackingError').style.display = '';
+                    if (window.lucide) lucide.createIcons();
+                });
         });
 
+        // Copy tracking number
         document.getElementById('trackingCopyBtn').addEventListener('click', function() {
-            var num = document.getElementById('trackingModalNumber').textContent;
-            navigator.clipboard.writeText(num).then(function() {
+            if (!currentTrackNum) return;
+            navigator.clipboard.writeText(currentTrackNum).then(function() {
                 var btn = document.getElementById('trackingCopyBtn');
-                btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copied!';
+                btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px"></i>';
                 if (window.lucide) lucide.createIcons();
                 setTimeout(function() {
-                    btn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px" class="me-1"></i>Copy number';
+                    btn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>';
                     if (window.lucide) lucide.createIcons();
                 }, 2000);
             });
         });
+    }
+
+    // HTML escaping helper
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
     }
 });
 </script>

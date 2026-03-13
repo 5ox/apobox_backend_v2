@@ -21,6 +21,7 @@ use App\Services\Shipping\EndiciaService;
 use App\Services\Shipping\FedexService;
 use App\Services\Shipping\UpsService;
 use App\Services\Shipping\UspsService;
+use App\Services\Shipping\TrackingService;
 use App\Services\Shipping\ZebraLabelService;
 use App\Mail\OrderStatusUpdate;
 use Illuminate\Database\Eloquent\Builder;
@@ -732,6 +733,16 @@ class OrderController extends Controller
         $statuses = OrderStatus::all()->keyBy('orders_status_id');
 
         return view('manager.orders.status-totals', compact('statusCounts', 'statuses'));
+    }
+
+    /**
+     * AJAX endpoint: fetch tracking info for a package.
+     */
+    public function trackPackage(string $carrier, string $trackingNumber, TrackingService $tracking): \Illuminate\Http\JsonResponse
+    {
+        $result = $tracking->track($trackingNumber, $carrier);
+
+        return response()->json($result);
     }
 
     /**
