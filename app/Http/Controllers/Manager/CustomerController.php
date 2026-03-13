@@ -31,6 +31,23 @@ class CustomerController extends Controller
         $results = collect();
         $isAjax = $request->wantsJson() || $request->ajax();
 
+        // Default listing: no search query — show all customers paginated & sortable
+        if ($search === '' && !$isAjax) {
+            $sortCol = $request->query('sort', 'customers_lastname');
+            $sortDir = $request->query('dir', 'asc');
+            $allowed = ['billing_id', 'customers_lastname', 'customers_email_address', 'is_active'];
+            if (!in_array($sortCol, $allowed)) $sortCol = 'customers_lastname';
+            if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'asc';
+
+            $results = Customer::orderBy($sortCol, $sortDir)
+                ->paginate(20)
+                ->appends($request->query());
+
+            $userIsManager = auth('admin')->user()->isManager();
+
+            return view('manager.customers.search', compact('search', 'results', 'userIsManager', 'sortCol', 'sortDir'));
+        }
+
         if ($search !== '') {
             $normalizedSearch = mb_strtolower($search);
 
@@ -129,8 +146,10 @@ class CustomerController extends Controller
         }
 
         $userIsManager = auth('admin')->user()->isManager();
+        $sortCol = 'customers_lastname';
+        $sortDir = 'asc';
 
-        return view('manager.customers.search', compact('search', 'results', 'userIsManager'));
+        return view('manager.customers.search', compact('search', 'results', 'userIsManager', 'sortCol', 'sortDir'));
     }
 
     /**
