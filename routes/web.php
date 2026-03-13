@@ -169,6 +169,10 @@ $adminRoutes = function () {
     Route::post('/admins/edit/{id}', [Manager\AdminController::class, 'update'])->name('admins.update');
     Route::get('/admins/delete/{id}', [Manager\AdminController::class, 'destroy'])->name('admins.delete');
 
+    // ---- Tools (run artisan commands from web) ----
+    Route::get('/tools', [Manager\ToolController::class, 'index'])->name('tools.index');
+    Route::post('/tools/run/{command}', [Manager\ToolController::class, 'run'])->name('tools.run');
+
     // ---- Logs ----
     Route::get('/logs/view/{file?}', [Manager\LogController::class, 'view'])->name('logs.view');
 

@@ -38,6 +38,7 @@
             <div class="sidebar-section-title">Management</div>
             <nav class="nav flex-column">
                 <a class="nav-link" href="/{{ $prefix }}/admins/index"><i data-lucide="shield" class="icon"></i> Manage Admins</a>
+                <a class="nav-link" href="/{{ $prefix }}/tools"><i data-lucide="wrench" class="icon"></i> Tools</a>
             </nav>
         </div>
     @endif
