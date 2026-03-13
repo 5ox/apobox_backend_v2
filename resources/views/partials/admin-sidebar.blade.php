@@ -3,10 +3,16 @@
     $isManager = auth('admin')->user()?->role === 'manager';
     $orderStatuses = $orderStatuses ?? \App\Models\OrderStatus::all();
 
-    // Order status counts for the last 24 hours (cached 5 min)
-    $statusCounts24h = \Illuminate\Support\Facades\Cache::remember('sidebar:status_counts_24h', 300, function () {
-        return \App\Models\Order::where('date_purchased', '>=', now()->subDay())
-            ->select('orders_status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
+    // Shipped count for last 24 hours (cached 5 min)
+    $shippedCount24h = \Illuminate\Support\Facades\Cache::remember('sidebar:shipped_24h', 300, function () {
+        return \App\Models\Order::where('orders_status', 3)
+            ->where('last_modified', '>=', now()->subDay())
+            ->count();
+    });
+
+    // All-time status counts (cached 5 min)
+    $statusCountsAll = \Illuminate\Support\Facades\Cache::remember('sidebar:status_counts_all', 300, function () {
+        return \App\Models\Order::select('orders_status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
             ->groupBy('orders_status')
             ->pluck('count', 'orders_status');
     });
@@ -32,8 +38,19 @@
     <div class="sidebar-section">
         <div class="sidebar-section-title">Last 24 Hours</div>
         <div class="px-3">
+            <a href="/{{ $prefix }}/orders?showStatus=3"
+               class="d-flex justify-content-between align-items-center py-1 text-decoration-none">
+                <span class="status-badge status-badge--shipped status-badge--filter">Shipped</span>
+                <span class="badge {{ $shippedCount24h > 0 ? 'bg-dark' : 'bg-secondary bg-opacity-25 text-muted' }} rounded-pill">{{ $shippedCount24h }}</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Status</div>
+        <div class="px-3">
             @foreach($orderStatuses as $status)
-                @php $count = $statusCounts24h[$status->orders_status_id] ?? 0; @endphp
+                @php $count = $statusCountsAll[$status->orders_status_id] ?? 0; @endphp
                 <a href="/{{ $prefix }}/orders?showStatus={{ $status->orders_status_id }}"
                    class="d-flex justify-content-between align-items-center py-1 text-decoration-none">
                     <span class="status-badge status-badge--{{ \Illuminate\Support\Str::slug($status->orders_status_name) }} status-badge--filter">
