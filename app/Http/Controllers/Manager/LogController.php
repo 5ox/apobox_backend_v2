@@ -50,16 +50,33 @@ class LogController extends Controller
         $dailyFiles = glob($pattern);
 
         if (!empty($dailyFiles)) {
-            sort($dailyFiles); // Alphabetical = chronological for date-suffixed files
-            $path = end($dailyFiles); // Latest file
+            sort($dailyFiles);
+            $path = end($dailyFiles);
         } elseif (File::exists($logDir . $name . '.log')) {
-            // Fall back to single-driver file (e.g. email.log)
             $path = $logDir . $name . '.log';
         } else {
-            return 'There is currently no log data to display.';
+            // Diagnostics: show what files exist so we can debug
+            $allFiles = glob($logDir . '*.log');
+            if (empty($allFiles)) {
+                return "No log files found in {$logDir}\n\n"
+                    . "Directory exists: " . (is_dir($logDir) ? 'yes' : 'NO') . "\n"
+                    . "Writable: " . (is_writable($logDir) ? 'yes' : 'NO') . "\n"
+                    . "Log channel: " . config('logging.default') . "\n"
+                    . "Stack channels: " . implode(', ', config('logging.channels.stack.channels', []));
+            }
+
+            $fileList = array_map(
+                fn ($f) => basename($f) . ' (' . number_format(filesize($f)) . ' bytes)',
+                $allFiles
+            );
+            return "No '{$name}' log files found.\n\nAvailable log files:\n- " . implode("\n- ", $fileList);
         }
 
         $lines = collect(file($path));
+
+        if ($lines->isEmpty()) {
+            return "Log file exists but is empty: " . basename($path);
+        }
 
         return $lines->slice(-500)->implode('');
     }

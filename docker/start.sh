@@ -71,8 +71,10 @@ if [ -n "$PORT" ]; then
     sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/*.conf
 fi
 
-# Clear stale debug files from previous deploys
-rm -f /var/www/html/storage/logs/last_error.json /var/www/html/storage/logs/laravel*.log
+# Ensure logs directory exists and is writable
+mkdir -p /var/www/html/storage/logs
+chmod 775 /var/www/html/storage/logs
+rm -f /var/www/html/storage/logs/last_error.json
 
 # Cache config with runtime env vars
 php artisan config:cache

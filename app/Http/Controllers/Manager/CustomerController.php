@@ -283,7 +283,7 @@ class CustomerController extends Controller
             $data['cc_number_encrypted'] = $ccService->encrypt($data['cc_number']);
             $data['cc_number'] = $ccService->maskNumber($data['cc_number']);
 
-            // Generate a payment token if available
+            // Generate a payment token via PayPal vault
             $cardToken = app(\App\Services\PaymentService::class)->storeCard([
                 'number' => $request->input('cc_number'),
                 'expire_month' => $data['cc_expires_month'],
@@ -299,7 +299,11 @@ class CustomerController extends Controller
 
         $customer->update($data);
 
-        session()->flash('message', "The customer's credit card has been updated.");
+        if (!empty($data['cc_number']) && empty($data['card_token'] ?? null)) {
+            session()->flash('warning', 'Card saved locally but PayPal vault token could not be created. Charges may fail until the token is generated.');
+        } else {
+            session()->flash('message', "The customer's credit card has been updated.");
+        }
 
         return redirect()->route(auth('admin')->user()->role . '.customers.view', ['id' => $id]);
     }

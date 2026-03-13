@@ -14,6 +14,7 @@ use App\Models\OrderStatus;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderLineItems\OrderShipping;
 use App\Models\OrderLineItems\OrderTotal;
+use App\Services\CreditCardService;
 use App\Services\PaymentService;
 use App\Services\ZendeskService;
 use App\Services\Shipping\EndiciaService;
@@ -402,6 +403,27 @@ class OrderController extends Controller
                     } else {
                         // Charge the customer's card
                         $cardToken = $order->customer->card_token;
+
+                        // Fallback: if no vault token but encrypted card exists, re-vault it
+                        if (empty($cardToken)) {
+                            $decrypted = $order->customer->decryptCreditCard();
+                            if (!empty($decrypted)) {
+                                $ccService = app(CreditCardService::class);
+                                $cardToken = $paymentService->storeCard([
+                                    'type' => $ccService->getCardType($decrypted) ?? 'visa',
+                                    'number' => $decrypted,
+                                    'expire_month' => $order->customer->cc_expires_month,
+                                    'expire_year' => $order->customer->cc_expires_year,
+                                    'cvv' => $order->customer->cc_cvv,
+                                    'first_name' => $order->customer->cc_firstname,
+                                    'last_name' => $order->customer->cc_lastname,
+                                ]);
+                                if ($cardToken) {
+                                    $order->customer->update(['card_token' => $cardToken]);
+                                }
+                            }
+                        }
+
                         if ($cardToken) {
                             $result = $paymentService->chargeCard($cardToken, $totalAmount, 'Order #' . $id);
 
@@ -421,7 +443,7 @@ class OrderController extends Controller
                                     'last_modified' => now(),
                                 ]);
                                 OrderStatusHistory::record($id, 2, 'Charge failed: ' . ($result['error'] ?? 'Unknown error'));
-                                session()->flash('message', 'Order payment could not be processed. Error: ' . ($result['error'] ?? 'Unknown'));
+                                session()->flash('error', 'Charge failed: ' . ($result['error'] ?? 'Unknown error'));
                             }
                         } else {
                             $order->update([
@@ -429,7 +451,7 @@ class OrderController extends Controller
                                 'last_modified' => now(),
                             ]);
                             OrderStatusHistory::record($id, 2, 'No payment method on file');
-                            session()->flash('message', 'No payment method on file. Customer has been notified of awaiting payment status.');
+                            session()->flash('error', 'No payment method on file. Customer has been notified of awaiting payment status.');
                         }
                     }
                 } else {
