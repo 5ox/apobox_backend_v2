@@ -97,13 +97,10 @@
 {{-- ============================================================ --}}
 <div class="row mb-4">
     <div class="{{ $isManager ? 'col-lg-4' : 'col-lg-6' }}">
-        <x-detail-card title="Package Size Distribution">
+        <x-detail-card title="Package Weight Distribution">
             <div style="height: 280px; position: relative;">
                 <canvas id="sizeDonutChart"></canvas>
             </div>
-            @if($isManager)
-                <p class="text-muted small mt-2 mb-0 text-center">Click a segment to filter the table below</p>
-            @endif
         </x-detail-card>
     </div>
     @if($isManager)

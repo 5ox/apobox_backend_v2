@@ -297,15 +297,7 @@ function renderSizeDonut(breakdown) {
                     },
                 },
             },
-            onClick: (_event, elements) => {
-                if (elements.length > 0) {
-                    const idx = elements[0].index;
-                    const type = breakdown[idx]?.type;
-                    if (type && type !== 'Unknown') {
-                        applyTableFilter('package_type', type);
-                    }
-                }
-            },
+            onClick: () => {},
         },
     });
 }

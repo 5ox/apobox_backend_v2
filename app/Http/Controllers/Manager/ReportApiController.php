@@ -37,16 +37,21 @@ class ReportApiController extends Controller
                 ->distinct('customers_id')
                 ->count('customers_id');
 
-            // Package type breakdown
-            $sizeBreakdown = Order::whereBetween('date_purchased', [$from, $to])
-                ->select('package_type', DB::raw('COUNT(*) as count'))
-                ->groupBy('package_type')
-                ->orderByDesc('count')
-                ->get()
-                ->map(fn ($row) => [
-                    'type' => $row->package_type ?: 'Unknown',
-                    'count' => $row->count,
-                ]);
+            // Weight-based size breakdown
+            $weightBuckets = [
+                ['label' => 'Under 1 lb', 'min' => 0, 'max' => 15],
+                ['label' => '1–5 lbs', 'min' => 16, 'max' => 80],
+                ['label' => '5–10 lbs', 'min' => 81, 'max' => 160],
+                ['label' => '10–20 lbs', 'min' => 161, 'max' => 320],
+                ['label' => '20+ lbs', 'min' => 321, 'max' => 999999],
+            ];
+            $sizeBreakdown = collect($weightBuckets)->map(function ($bucket) use ($from, $to) {
+                $count = Order::whereBetween('date_purchased', [$from, $to])
+                    ->where('weight_oz', '>', 0)
+                    ->whereBetween('weight_oz', [$bucket['min'], $bucket['max']])
+                    ->count();
+                return ['type' => $bucket['label'], 'count' => $count];
+            })->filter(fn ($row) => $row['count'] > 0)->values();
 
             $totalForPercent = $sizeBreakdown->sum('count') ?: 1;
             $sizeBreakdown = $sizeBreakdown->map(fn ($row) => [
