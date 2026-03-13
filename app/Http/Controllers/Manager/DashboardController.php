@@ -62,6 +62,13 @@ class DashboardController extends Controller
         };
         $statsRange = in_array($statsRange, ['7d', '30d', '90d', '12m']) ? $statsRange : '7d';
 
+        // Grouping: 7d = daily, 30d/90d = weekly, 12m = monthly
+        $statsGrouping = match ($statsRange) {
+            '30d', '90d' => 'week',
+            '12m'        => 'month',
+            default      => 'day',
+        };
+
         $admins = Admin::whereIn('role', ['manager', 'employee'])->get()->keyBy('id');
         $rangeStart = today()->subDays($statsDays - 1);
 
@@ -82,36 +89,96 @@ class DashboardController extends Controller
             return [$id => $admin ? explode('@', $admin->email)[0] : 'Unknown'];
         });
 
-        // Build daily stats array
-        $dailyStats = collect();
-        for ($i = $statsDays - 1; $i >= 0; $i--) {
-            $date = today()->subDays($i);
-            $dateStr = $date->toDateString();
-            $dayCounts = $dailyRows->where('day', $dateStr);
+        // Build period stats based on grouping
+        $periodStats = collect();
 
-            $byEmployee = $employeeIds->mapWithKeys(function ($id) use ($dayCounts) {
-                return [$id => (int) $dayCounts->where('creator_id', $id)->first()?->total];
-            });
+        if ($statsGrouping === 'day') {
+            // Daily rows
+            for ($i = $statsDays - 1; $i >= 0; $i--) {
+                $date = today()->subDays($i);
+                $dateStr = $date->toDateString();
+                $dayCounts = $dailyRows->where('day', $dateStr);
 
-            $dailyStats->push([
-                'date'       => $date,
-                'label'      => $date->isToday() ? 'Today' : ($date->isYesterday() ? 'Yesterday' : $date->format('D n/j')),
-                'total'      => $byEmployee->sum(),
-                'byEmployee' => $byEmployee,
-            ]);
+                $byEmployee = $employeeIds->mapWithKeys(function ($id) use ($dayCounts) {
+                    return [$id => (int) $dayCounts->where('creator_id', $id)->first()?->total];
+                });
+
+                $periodStats->push([
+                    'date'       => $date,
+                    'label'      => $date->isToday() ? 'Today' : ($date->isYesterday() ? 'Yesterday' : $date->format('D n/j')),
+                    'total'      => $byEmployee->sum(),
+                    'byEmployee' => $byEmployee,
+                    'isCurrent'  => $date->isToday(),
+                ]);
+            }
+        } elseif ($statsGrouping === 'week') {
+            // Weekly rows — group daily data into ISO weeks
+            $weekStart = $rangeStart->copy()->startOfWeek();
+            while ($weekStart->lte(today())) {
+                $weekEnd = $weekStart->copy()->endOfWeek();
+                $weekDays = $dailyRows->filter(fn ($r) => $r->day >= $weekStart->toDateString() && $r->day <= $weekEnd->toDateString());
+
+                $byEmployee = $employeeIds->mapWithKeys(function ($id) use ($weekDays) {
+                    return [$id => (int) $weekDays->where('creator_id', $id)->sum('total')];
+                });
+
+                $isCurrent = today()->between($weekStart, $weekEnd);
+                $label = $isCurrent ? 'This Week' : $weekStart->format('n/j') . '–' . $weekEnd->format('n/j');
+
+                $periodStats->push([
+                    'date'       => $weekStart->copy(),
+                    'label'      => $label,
+                    'total'      => $byEmployee->sum(),
+                    'byEmployee' => $byEmployee,
+                    'isCurrent'  => $isCurrent,
+                ]);
+
+                $weekStart->addWeek();
+            }
+        } else {
+            // Monthly rows
+            $monthStart = $rangeStart->copy()->startOfMonth();
+            while ($monthStart->lte(today())) {
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                $monthDays = $dailyRows->filter(fn ($r) => $r->day >= $monthStart->toDateString() && $r->day <= $monthEnd->toDateString());
+
+                $byEmployee = $employeeIds->mapWithKeys(function ($id) use ($monthDays) {
+                    return [$id => (int) $monthDays->where('creator_id', $id)->sum('total')];
+                });
+
+                $isCurrent = today()->month === $monthStart->month && today()->year === $monthStart->year;
+                $label = $isCurrent ? 'This Month' : $monthStart->format('M Y');
+
+                $periodStats->push([
+                    'date'       => $monthStart->copy(),
+                    'label'      => $label,
+                    'total'      => $byEmployee->sum(),
+                    'byEmployee' => $byEmployee,
+                    'isCurrent'  => $isCurrent,
+                ]);
+
+                $monthStart->addMonth();
+            }
         }
 
         // Per-employee totals for the period
-        $employeeTotals = $employeeIds->mapWithKeys(function ($id) use ($dailyStats) {
-            return [$id => $dailyStats->sum(fn ($d) => $d['byEmployee'][$id] ?? 0)];
+        $employeeTotals = $employeeIds->mapWithKeys(function ($id) use ($periodStats) {
+            return [$id => $periodStats->sum(fn ($d) => $d['byEmployee'][$id] ?? 0)];
         })->sortDesc();
 
-        $statsTotal = $dailyStats->sum('total');
+        $statsTotal = $periodStats->sum('total');
+
+        // Column header for the table
+        $periodLabel = match ($statsGrouping) {
+            'week'  => 'Week',
+            'month' => 'Month',
+            default => 'Day',
+        };
 
         return view('manager.dashboard', compact(
             'paid', 'awaitingPayment', 'inWarehouse', 'problem',
-            'dailyStats', 'employeeNames', 'employeeTotals',
-            'statsRange', 'statsTotal',
+            'periodStats', 'employeeNames', 'employeeTotals',
+            'statsRange', 'statsTotal', 'periodLabel',
         ));
     }
 

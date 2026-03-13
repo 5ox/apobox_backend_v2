@@ -36,14 +36,14 @@
                 </div>
             </div>
         </div>
-        {{-- Daily breakdown table --}}
-        @if($dailyStats->sum('total') > 0)
+        {{-- Period breakdown table --}}
+        @if($periodStats->sum('total') > 0)
             <hr class="my-2">
             <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
                 <table class="table table-sm table-borderless mb-0 small align-middle">
                     <thead class="sticky-top bg-white">
                         <tr class="text-muted">
-                            <th class="fw-semibold">Day</th>
+                            <th class="fw-semibold">{{ $periodLabel }}</th>
                             @foreach($employeeNames as $name)
                                 <th class="text-center fw-semibold">{{ $name }}</th>
                             @endforeach
@@ -51,11 +51,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($dailyStats->reverse() as $day)
-                            <tr @if($day['date']->isToday()) class="table-active fw-semibold" @endif>
-                                <td class="text-nowrap">{{ $day['label'] }}</td>
+                        @foreach($periodStats->reverse() as $period)
+                            <tr @if($period['isCurrent']) class="table-active fw-semibold" @endif>
+                                <td class="text-nowrap">{{ $period['label'] }}</td>
                                 @foreach($employeeNames as $id => $name)
-                                    @php $cnt = $day['byEmployee'][$id] ?? 0; @endphp
+                                    @php $cnt = $period['byEmployee'][$id] ?? 0; @endphp
                                     <td class="text-center">
                                         @if($cnt > 0)
                                             <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">{{ $cnt }}</span>
@@ -65,8 +65,8 @@
                                     </td>
                                 @endforeach
                                 <td class="text-center">
-                                    @if($day['total'] > 0)
-                                        <span class="badge bg-dark rounded-pill">{{ $day['total'] }}</span>
+                                    @if($period['total'] > 0)
+                                        <span class="badge bg-dark rounded-pill">{{ $period['total'] }}</span>
                                     @else
                                         <span class="text-muted">&mdash;</span>
                                     @endif
