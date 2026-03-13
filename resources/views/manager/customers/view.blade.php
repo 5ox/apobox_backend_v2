@@ -2,40 +2,56 @@
 @section('title', $customer->full_name . ' - APO Box Admin')
 @section('content')
 @php $prefix = auth('admin')->user()->role === 'manager' ? 'manager' : 'employee'; @endphp
-<x-page-header title="{{ $customer->full_name }}">
-    <x-slot:actions>
-        <div class="d-flex align-items-center gap-2">
-            @if($closed)
-                <x-status-badge status="Closed {{ $closed }}" />
-            @endif
-            @if($customer->billing_id)
-                <span class="badge bg-primary fs-5 px-3 py-2">{{ $customer->billing_id }}</span>
-            @endif
-        </div>
-    </x-slot:actions>
-</x-page-header>
+{{-- Customer Header --}}
+<div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+    @if($customer->billing_id)
+        <span class="badge rounded-pill bg-primary fs-5 px-4 py-2">{{ $customer->billing_id }}</span>
+    @endif
+    <h2 class="mb-0">{{ $customer->full_name }}</h2>
+    @if($closed)
+        <x-status-badge status="Closed {{ $closed }}" />
+    @endif
+</div>
 
 @if($partialSignup) <div class="alert alert-warning"><i data-lucide="alert-triangle" class="icon--sm me-1"></i>Partial signup - no billing ID</div> @endif
 
 <div class="row">
-    <div class="col-md-6">
+    {{-- Left: Customer Info --}}
+    <div class="col-lg-5">
         <x-detail-card title="Customer Information">
             <x-detail-row label="Billing ID">{{ $customer->billing_id }}</x-detail-row>
-            <x-detail-row label="Email">{{ $customer->customers_email_address }}</x-detail-row>
-            <x-detail-row label="Backup Email">{{ $customer->backup_email_address }}</x-detail-row>
-            <x-detail-row label="Phone">{{ $customer->customers_telephone }}</x-detail-row>
-            <x-detail-row label="Cell">{{ $customer->customers_fax }}</x-detail-row>
+            <x-detail-row label="Email">
+                @if($customer->customers_email_address)
+                    <a href="mailto:{{ $customer->customers_email_address }}">{{ $customer->customers_email_address }}</a>
+                @endif
+            </x-detail-row>
+            <x-detail-row label="Backup Email">
+                @if($customer->backup_email_address)
+                    <a href="mailto:{{ $customer->backup_email_address }}">{{ $customer->backup_email_address }}</a>
+                @endif
+            </x-detail-row>
+            <x-detail-row label="Phone">
+                @if($customer->customers_telephone)
+                    <a href="tel:{{ $customer->customers_telephone }}">{{ $customer->customers_telephone }}</a>
+                @endif
+            </x-detail-row>
+            <x-detail-row label="Cell">
+                @if($customer->customers_fax)
+                    <a href="tel:{{ $customer->customers_fax }}">{{ $customer->customers_fax }}</a>
+                @endif
+            </x-detail-row>
         </x-detail-card>
     </div>
-    <div class="col-md-6">
+    {{-- Right: Addresses --}}
+    <div class="col-lg-7">
         <div class="row g-3">
-            <div class="col-12">
+            <div class="col-sm-6">
                 <x-address-card label="Billing Address">{{ $customer->defaultAddress?->full ?? '' }}</x-address-card>
             </div>
-            <div class="col-12">
+            <div class="col-sm-6">
                 <x-address-card label="Shipping Address">{{ $customer->shippingAddress?->full ?? '' }}</x-address-card>
             </div>
-            <div class="col-12">
+            <div class="col-sm-6">
                 <x-address-card label="Emergency Address">{{ $customer->emergencyAddress?->full ?? '' }}</x-address-card>
             </div>
         </div>
