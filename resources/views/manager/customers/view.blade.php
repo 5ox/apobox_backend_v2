@@ -57,7 +57,7 @@
         <a href="/{{ $prefix }}/customers/{{ $customer->customers_id }}/edit/default-addresses" class="btn btn-sm btn-outline-secondary"><i data-lucide="map-pin" class="icon--sm me-1"></i>Edit Addresses</a>
         <a href="/{{ $prefix }}/orders/add/{{ $customer->customers_id }}" class="btn btn-sm btn-outline-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Order</a>
         <a href="/{{ $prefix }}/customer/{{ $customer->customers_id }}/request/add" class="btn btn-sm btn-outline-primary"><i data-lucide="plus" class="icon--sm me-1"></i>New Request</a>
-        @if(app(\App\Services\ZendeskService::class)->isConfigured())
+        @if($zendeskConfigured)
             <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#newTicketModal"><i data-lucide="message-circle" class="icon--sm me-1"></i>New Ticket</button>
         @endif
         <a href="/{{ $prefix }}/customers/{{ $customer->customers_id }}/close-account" class="btn btn-sm btn-outline-danger" onclick="return confirm('Close this account?')"><i data-lucide="x-circle" class="icon--sm me-1"></i>Close Account</a>
@@ -93,49 +93,11 @@
     </x-slot:footer>
 </x-table-card>
 
-<x-table-card title="Orders" class="mt-4">
-    @if($orders->isNotEmpty())
-        <div class="table-responsive">
-            <table class="table table-modern">
-                <thead><tr><th>Order #</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
-                <tbody>
-                    @foreach($orders as $order)
-                        <tr>
-                            <td><a href="/{{ $prefix }}/orders/{{ $order->orders_id }}">{{ $order->orders_id }}</a></td>
-                            <td><x-status-badge :status="$order->status?->orders_status_name" /></td>
-                            <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
-                            <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        <x-slot:footer>{{ $orders->appends(request()->query())->links() }}</x-slot:footer>
-    @else
-        <p class="text-muted px-3 py-2">No orders.</p>
-    @endif
-</x-table-card>
-
-@if($customRequests->isNotEmpty())
-    <x-table-card title="Custom Requests" class="mt-4">
-        <table class="table table-modern">
-            <thead><tr><th>Date</th><th>Instructions</th><th>Status</th></tr></thead>
-            <tbody>
-                @foreach($customRequests as $req)
-                    <tr>
-                        <td>{{ $req->order_add_date?->format('m/d/Y') }}</td>
-                        <td>{{ $req->instructions }}</td>
-                        <td><x-status-badge :status="$req->status_label" /></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </x-table-card>
-@endif
-
-@php $zendeskConfigured = app(\App\Services\ZendeskService::class)->isConfigured(); @endphp
 @if($zendeskConfigured)
     <x-table-card title="Support Tickets" class="mt-4">
+        @if($zendeskError)
+            <div class="alert alert-warning m-3 mb-0"><i data-lucide="alert-triangle" class="icon--sm me-1"></i>Zendesk error: {{ $zendeskError }}</div>
+        @endif
         @if(!empty($zendeskTickets))
             <table class="table table-modern">
                 <thead>
@@ -163,14 +125,54 @@
                     @endforeach
                 </tbody>
             </table>
-        @else
+        @elseif(!$zendeskError)
             <p class="text-muted px-3 py-2">No tickets found.</p>
         @endif
     </x-table-card>
 @endif
 
+@if($customRequests->isNotEmpty())
+    <x-table-card title="Custom Requests" class="mt-4">
+        <table class="table table-modern">
+            <thead><tr><th>Date</th><th>Instructions</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach($customRequests as $req)
+                    <tr>
+                        <td>{{ $req->order_add_date?->format('m/d/Y') }}</td>
+                        <td>{{ $req->instructions }}</td>
+                        <td><x-status-badge :status="$req->status_label" /></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </x-table-card>
+@endif
+
+<x-table-card title="Orders" class="mt-4">
+    @if($orders->isNotEmpty())
+        <div class="table-responsive">
+            <table class="table table-modern">
+                <thead><tr><th>Order #</th><th>Status</th><th>Total</th><th>Date</th></tr></thead>
+                <tbody>
+                    @foreach($orders as $order)
+                        <tr>
+                            <td><a href="/{{ $prefix }}/orders/{{ $order->orders_id }}">{{ $order->orders_id }}</a></td>
+                            <td><x-status-badge :status="$order->status?->orders_status_name" /></td>
+                            <td>${{ number_format($order->total?->value ?? 0, 2) }}</td>
+                            <td>{{ $order->date_purchased?->format('m/d/Y') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <x-slot:footer>{{ $orders->appends(request()->query())->links() }}</x-slot:footer>
+    @else
+        <p class="text-muted px-3 py-2">No orders.</p>
+    @endif
+</x-table-card>
+
 {{-- New Ticket Modal --}}
-@if(app(\App\Services\ZendeskService::class)->isConfigured())
+@if($zendeskConfigured)
 <div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

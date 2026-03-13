@@ -242,11 +242,14 @@ class ZendeskService
             ]);
 
             if (!$response->successful()) {
+                $errorBody = $response->json();
+                $errorMsg = $errorBody['error'] ?? $errorBody['description'] ?? "HTTP {$response->status()}";
                 $this->log()->warning('Zendesk: search failed', [
                     'email' => $email,
                     'status' => $response->status(),
+                    'body' => $errorBody,
                 ]);
-                return [];
+                throw new Exception("Zendesk search failed: {$errorMsg}");
             }
 
             $results = $response->json('results', []);
@@ -265,7 +268,7 @@ class ZendeskService
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
-            return [];
+            throw $e;
         }
     }
 

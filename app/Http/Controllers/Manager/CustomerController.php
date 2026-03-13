@@ -173,11 +173,14 @@ class CustomerController extends Controller
         // Fetch Zendesk tickets for this customer
         $zendesk = app(ZendeskService::class);
         $zendeskTickets = [];
-        if ($zendesk->isConfigured() && $customer->customers_email_address) {
+        $zendeskError = null;
+        $zendeskConfigured = $zendesk->isConfigured();
+
+        if ($zendeskConfigured && $customer->customers_email_address) {
             try {
                 $zendeskTickets = $zendesk->getTicketsForEmail($customer->customers_email_address);
             } catch (\Exception $e) {
-                // Silently fail — don't break the page
+                $zendeskError = $e->getMessage();
             }
         }
 
@@ -188,7 +191,9 @@ class CustomerController extends Controller
             'partialSignup',
             'customRequests',
             'closed',
-            'zendeskTickets'
+            'zendeskTickets',
+            'zendeskError',
+            'zendeskConfigured'
         ));
     }
 
