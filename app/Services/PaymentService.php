@@ -76,10 +76,16 @@ class PaymentService
     {
         $this->ensureInitialized();
 
+        $lastFour = substr($cardData['number'] ?? '', -4);
+        Log::channel('payment')->info('PayPal: storeCard called', [
+            'card_last4' => $lastFour,
+            'mode' => $this->mode,
+        ]);
+
         try {
             $expiry = '20' . $cardData['expire_year'] . '-' . str_pad($cardData['expire_month'], 2, '0', STR_PAD_LEFT);
 
-            $setupToken = $this->client->createPaymentSetupToken([
+            $setupPayload = [
                 'payment_source' => [
                     'card' => [
                         'number' => $cardData['number'],
@@ -88,10 +94,20 @@ class PaymentService
                         'security_code' => $cardData['cvv'],
                     ],
                 ],
+            ];
+
+            $setupToken = $this->client->createPaymentSetupToken($setupPayload);
+
+            Log::channel('payment')->info('PayPal: setup token response', [
+                'card_last4' => $lastFour,
+                'response' => $setupToken,
             ]);
 
             if (empty($setupToken['id'])) {
-                report(new Exception('PayPal setup token creation failed: ' . json_encode($setupToken)));
+                Log::channel('payment')->error('PayPal: setup token creation failed — no ID in response', [
+                    'card_last4' => $lastFour,
+                    'response' => $setupToken,
+                ]);
                 return null;
             }
 
@@ -104,8 +120,31 @@ class PaymentService
                 ],
             ]);
 
-            return $paymentToken['id'] ?? null;
+            Log::channel('payment')->info('PayPal: payment token response', [
+                'card_last4' => $lastFour,
+                'response' => $paymentToken,
+            ]);
+
+            $vaultId = $paymentToken['id'] ?? null;
+            if ($vaultId) {
+                Log::channel('payment')->info('PayPal: card vaulted successfully', [
+                    'card_last4' => $lastFour,
+                    'vault_id' => substr($vaultId, 0, 8) . '...',
+                ]);
+            } else {
+                Log::channel('payment')->error('PayPal: payment token creation failed — no ID in response', [
+                    'card_last4' => $lastFour,
+                    'response' => $paymentToken,
+                ]);
+            }
+
+            return $vaultId;
         } catch (Exception $e) {
+            Log::channel('payment')->error('PayPal: storeCard exception', [
+                'card_last4' => $lastFour,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             report($e);
             return null;
         }
