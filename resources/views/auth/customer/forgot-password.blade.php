@@ -12,7 +12,7 @@
             <form method="POST" action="{{ url('/forgot-password') }}">
                 @csrf
                 <div class="mb-3">
-                    <input type="email" name="customers_email_address" class="form-control" placeholder="Email Address" required autofocus value="{{ old('customers_email_address') }}">
+                    <input type="email" name="email" class="form-control" placeholder="Email Address" required autofocus value="{{ old('email') }}">
                 </div>
                 <button class="btn btn-primary w-100" type="submit">Send Reset Link</button>
             </form>

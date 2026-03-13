@@ -74,10 +74,14 @@ class OrderController extends Controller
 
         $selected = $customer->customers_default_address_id;
 
-        $orderCharges = $order->lineItems()->get();
+        $orderCharges = $order->lineItems()->get()->filter(function ($item) {
+            // Always show subtotal and total rows; hide other $0 lines
+            return $item->value != 0 || in_array($item->class, ['ot_subtotal', 'ot_total']);
+        });
 
         return view('customer.orders.pay', compact(
             'order',
+            'customer',
             'addresses',
             'zones',
             'selected',

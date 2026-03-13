@@ -12,11 +12,11 @@
                 @csrf
                 <div class="mb-3">
                     <label class="form-label">New Password</label>
-                    <input type="password" name="password" class="form-control" required autofocus>
+                    <input type="password" name="new_password" class="form-control" required autofocus>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Confirm Password</label>
-                    <input type="password" name="password_confirmation" class="form-control" required>
+                    <input type="password" name="password_confirm" class="form-control" required>
                 </div>
                 <button class="btn btn-primary w-100" type="submit">Reset Password</button>
             </form>
