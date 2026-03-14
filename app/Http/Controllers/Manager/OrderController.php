@@ -1102,28 +1102,28 @@ class OrderController extends Controller
     protected function createDefaultLineItems(Order $order): void
     {
         $lineItemClasses = [
-            \App\Models\OrderLineItems\OrderShipping::class => ['title' => 'Shipping', 'class' => 'ot_shipping'],
-            \App\Models\OrderLineItems\OrderFee::class => ['title' => 'Fee', 'class' => 'ot_fee'],
-            \App\Models\OrderLineItems\OrderInsurance::class => ['title' => 'Insurance', 'class' => 'ot_insurance'],
-            \App\Models\OrderLineItems\OrderStorage::class => ['title' => 'Storage', 'class' => 'ot_storage'],
-            \App\Models\OrderLineItems\OrderRepack::class => ['title' => 'Repack', 'class' => 'ot_repack'],
-            \App\Models\OrderLineItems\OrderBattery::class => ['title' => 'Inspection', 'class' => 'ot_battery'],
-            \App\Models\OrderLineItems\OrderReturn::class => ['title' => 'Return', 'class' => 'ot_return'],
-            \App\Models\OrderLineItems\OrderMisaddressed::class => ['title' => 'Misaddressed', 'class' => 'ot_misaddressed'],
-            \App\Models\OrderLineItems\OrderShipToUS::class => ['title' => 'Ship to US', 'class' => 'ot_ship_to_us'],
-            \App\Models\OrderLineItems\OrderSubtotal::class => ['title' => 'Subtotal', 'class' => 'ot_subtotal'],
-            \App\Models\OrderLineItems\OrderTotal::class => ['title' => 'Total', 'class' => 'ot_total'],
+            \App\Models\OrderLineItems\OrderShipping::class,
+            \App\Models\OrderLineItems\OrderFee::class,
+            \App\Models\OrderLineItems\OrderInsurance::class,
+            \App\Models\OrderLineItems\OrderStorage::class,
+            \App\Models\OrderLineItems\OrderRepack::class,
+            \App\Models\OrderLineItems\OrderBattery::class,
+            \App\Models\OrderLineItems\OrderReturn::class,
+            \App\Models\OrderLineItems\OrderMisaddressed::class,
+            \App\Models\OrderLineItems\OrderShipToUS::class,
+            \App\Models\OrderLineItems\OrderSubtotal::class,
+            \App\Models\OrderLineItems\OrderTotal::class,
         ];
 
-        foreach ($lineItemClasses as $class => $attrs) {
-            $class::create([
-                'orders_id' => $order->orders_id,
-                'title' => $attrs['title'],
-                'text' => '$0.00',
-                'value' => 0.00,
-                'class' => $attrs['class'],
-                'sort_order' => 0,
-            ]);
+        foreach ($lineItemClasses as $class) {
+            // Skip if a row for this class already exists (e.g. CakePHP-era orders).
+            // Each model's global scope filters by its own class automatically.
+            if (! $class::where('orders_id', $order->orders_id)->exists()) {
+                $class::create([
+                    'orders_id' => $order->orders_id,
+                    'value' => 0.00,
+                ]);
+            }
         }
     }
 
