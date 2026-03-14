@@ -28,5 +28,24 @@
 
     @vite(['resources/js/app.js'])
     @stack('scripts')
+
+    @if(config('apobox.zendesk.widget_key'))
+    <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config('apobox.zendesk.widget_key') }}"></script>
+    @if(auth('customer')->check())
+    <script>
+        window.zESettings = {
+            webWidget: {
+                contactForm: {
+                    fields: [{ id: 'email', prefill: { '*': '{{ auth('customer')->user()->customers_email_address }}' } }]
+                },
+                identify: {
+                    name: '{{ auth('customer')->user()->customers_firstname }} {{ auth('customer')->user()->customers_lastname }}',
+                    email: '{{ auth('customer')->user()->customers_email_address }}'
+                }
+            }
+        };
+    </script>
+    @endif
+    @endif
 </body>
 </html>

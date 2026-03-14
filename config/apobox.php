@@ -147,6 +147,7 @@ return [
         'subdomain' => env('ZENDESK_SUBDOMAIN', 'apobox'),
         'api_token' => env('ZENDESK_API', ''),
         'agent_email' => env('ZENDESK_AGENT_EMAIL', 'support@apobox.com'),
+        'widget_key' => env('ZENDESK_WIDGET_KEY', ''),
     ],
 
     /*
