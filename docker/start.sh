@@ -93,5 +93,8 @@ a2dismod mpm_event mpm_worker 2>/dev/null || true
 rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
 a2enmod mpm_prefork 2>/dev/null || true
 
+# Start Horizon queue worker in background (processes queued emails, jobs, etc.)
+php artisan horizon &
+
 # Start Apache
 apache2-foreground
