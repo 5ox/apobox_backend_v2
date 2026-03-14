@@ -1,22 +1,19 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->string('customers_password', 255)->default('')->change();
-        });
+        DB::statement("SET SESSION sql_mode = ''");
+        DB::statement("ALTER TABLE `customers` MODIFY `customers_password` VARCHAR(255) NOT NULL DEFAULT ''");
     }
 
     public function down(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->string('customers_password', 40)->default('')->change();
-        });
+        DB::statement("SET SESSION sql_mode = ''");
+        DB::statement("ALTER TABLE `customers` MODIFY `customers_password` VARCHAR(40) NOT NULL DEFAULT ''");
     }
 };
