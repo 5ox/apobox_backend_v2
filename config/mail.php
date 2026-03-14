@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'default' => env('MAIL_MAILER', 'gmail-oauth'),
+    'default' => env('MAIL_MAILER', 'smtp'),
     'mailers' => [
         'gmail-oauth' => [
             'transport' => 'gmail-oauth',
