@@ -58,6 +58,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        \Laravel\Horizon\Horizon::auth(function ($request) {
+            return auth('admin')->check() && auth('admin')->user()->isSysadmin();
+        });
+
         Hash::extend('apobox', function () {
             return new ApoboxPasswordHasher();
         });

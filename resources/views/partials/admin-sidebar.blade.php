@@ -74,10 +74,10 @@
         <div class="sidebar-section">
             <div class="sidebar-section-title">Management</div>
             <nav class="nav flex-column">
-                <a class="nav-link" href="/{{ $prefix }}/admins/index"><i data-lucide="shield" class="icon"></i> Manage Admins</a>
+                <a class="nav-link" href="/{{ $prefix }}/admins/index"><i data-lucide="shield" class="icon"></i> Manage Staff</a>
                 <a class="nav-link" href="/{{ $prefix }}/tools"><i data-lucide="wrench" class="icon"></i> Tools</a>
                 @if(auth('admin')->user()?->isSysadmin())
-                    <a class="nav-link" href="/{{ $prefix }}/settings"><i data-lucide="settings" class="icon"></i> Settings</a>
+                    <a class="nav-link" href="/{{ $prefix }}/settings"><i data-lucide="mail" class="icon"></i> Mail Settings</a>
                 @endif
             </nav>
         </div>
