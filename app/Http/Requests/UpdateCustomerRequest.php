@@ -35,6 +35,7 @@ class UpdateCustomerRequest extends FormRequest
             'customers_dob' => ['nullable', 'date'],
             'customers_newsletter' => ['nullable', 'boolean'],
             'backup_email_address' => ['nullable', 'email', 'max:96'],
+            'insurance_amount' => ['nullable', 'numeric', 'min:0'],
             'default_postal_type' => ['nullable', 'string', 'max:32'],
         ];
     }

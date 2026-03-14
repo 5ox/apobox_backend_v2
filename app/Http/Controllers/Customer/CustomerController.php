@@ -247,13 +247,11 @@ class CustomerController extends Controller
     /**
      * Handle profile updates from partial edit forms.
      *
-     * The partial is indicated by a hidden 'partial' input field. Each
-     * partial maps to a different set of allowed fields.
+     * The partial name comes from the route parameter {partial}.
      */
-    public function update(UpdateCustomerRequest $request): RedirectResponse
+    public function update(UpdateCustomerRequest $request, string $partial = 'my_info'): RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
-        $partial = $request->input('partial', 'my_info');
         $data = $request->validated();
 
         // Handle special logic per partial
