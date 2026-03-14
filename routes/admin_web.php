@@ -105,8 +105,6 @@ $adminRoutes = function () {
 
     Route::get('/tools', [Manager\ToolController::class, 'index'])->name('tools.index');
     Route::post('/tools/run/{command}', [Manager\ToolController::class, 'run'])->name('tools.run');
-    Route::get('/tools/gmail-oauth', [Manager\ToolController::class, 'gmailOAuthStart'])->name('tools.gmail-oauth');
-    Route::get('/tools/gmail-oauth/callback', [Manager\ToolController::class, 'gmailOAuthCallback'])->name('tools.gmail-oauth-callback');
 
     Route::get('/logs/view/{file?}', [Manager\LogController::class, 'view'])->name('logs.view');
 
@@ -132,3 +130,15 @@ Route::prefix('employee')
     ->name('employee.')
     ->middleware(['auth:admin', 'warehouse.ip', 'role:employee', 'admin.layout'])
     ->group($adminRoutes);
+
+// Sysadmin-only settings routes
+Route::prefix('sysadmin')
+    ->name('sysadmin.settings.')
+    ->middleware(['auth:admin', 'warehouse.ip', 'role:sysadmin', 'admin.layout'])
+    ->group(function () {
+        Route::get('/settings', [Manager\SettingsController::class, 'index'])->name('index');
+        Route::post('/settings/mail', [Manager\SettingsController::class, 'updateMail'])->name('update-mail');
+        Route::post('/settings/test-email', [Manager\SettingsController::class, 'sendTestEmail'])->name('test-email');
+        Route::get('/settings/gmail-oauth', [Manager\SettingsController::class, 'gmailOAuthStart'])->name('gmail-oauth');
+        Route::get('/settings/gmail-oauth/callback', [Manager\SettingsController::class, 'gmailOAuthCallback'])->name('gmail-oauth-callback');
+    });

@@ -84,6 +84,47 @@ class AppServiceProvider extends ServiceProvider
             return $transport;
         });
 
+        // Override mail config from database settings
+        try {
+            $mailSettings = \App\Models\Setting::getMany([
+                'mail_mailer', 'mail_host', 'mail_port', 'mail_username',
+                'mail_password', 'mail_encryption', 'mail_from_address', 'mail_from_name',
+            ]);
+
+            $overrides = [];
+            if ($mailSettings['mail_mailer']) {
+                $overrides['mail.default'] = $mailSettings['mail_mailer'];
+            }
+            if ($mailSettings['mail_host']) {
+                $overrides['mail.mailers.smtp.host'] = $mailSettings['mail_host'];
+            }
+            if ($mailSettings['mail_port']) {
+                $overrides['mail.mailers.smtp.port'] = (int) $mailSettings['mail_port'];
+            }
+            if ($mailSettings['mail_username']) {
+                $overrides['mail.mailers.smtp.username'] = $mailSettings['mail_username'];
+                $overrides['mail.mailers.gmail-oauth.username'] = $mailSettings['mail_username'];
+            }
+            if ($mailSettings['mail_password']) {
+                $overrides['mail.mailers.smtp.password'] = $mailSettings['mail_password'];
+            }
+            if ($mailSettings['mail_encryption'] !== null) {
+                $overrides['mail.mailers.smtp.encryption'] = $mailSettings['mail_encryption'] === 'none' ? null : $mailSettings['mail_encryption'];
+            }
+            if ($mailSettings['mail_from_address']) {
+                $overrides['mail.from.address'] = $mailSettings['mail_from_address'];
+            }
+            if ($mailSettings['mail_from_name']) {
+                $overrides['mail.from.name'] = $mailSettings['mail_from_name'];
+            }
+
+            if (!empty($overrides)) {
+                config($overrides);
+            }
+        } catch (\Exception $e) {
+            // Settings table may not exist yet
+        }
+
         Customer::observe(CustomerObserver::class);
         AuthorizedName::observe(AuthorizedNameObserver::class);
 
