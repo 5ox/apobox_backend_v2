@@ -494,10 +494,18 @@ document.addEventListener('DOMContentLoaded', function () {
         commentsEl.innerHTML = '<div class="text-center text-muted py-4">Loading comments...</div>';
 
         fetch('/support/tickets/' + ticketId + '/comments', {
-            headers: { 'Accept': 'application/json' }
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
         .then(data => {
+            if (data.error) {
+                commentsEl.innerHTML = '<div class="alert alert-warning">' + data.error + '</div>';
+                return;
+            }
             if (!data.comments || data.comments.length === 0) {
                 commentsEl.innerHTML = '<p class="text-muted">No comments yet.</p>';
                 return;

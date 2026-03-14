@@ -124,10 +124,19 @@ class CustomerController extends Controller
      */
     public function ticketComments(int $id): JsonResponse
     {
-        $zendesk = app(ZendeskService::class);
-        $comments = $zendesk->getTicketComments($id);
+        try {
+            $zendesk = app(ZendeskService::class);
 
-        return response()->json(['comments' => $comments]);
+            if (!$zendesk->isConfigured()) {
+                return response()->json(['error' => 'Zendesk is not configured.', 'comments' => []], 503);
+            }
+
+            $comments = $zendesk->getTicketComments($id);
+
+            return response()->json(['comments' => $comments]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to load comments: ' . $e->getMessage(), 'comments' => []], 500);
+        }
     }
 
     /**
