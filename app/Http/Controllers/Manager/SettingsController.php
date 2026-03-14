@@ -254,7 +254,7 @@ class SettingsController extends Controller
         $sampleData = $this->getSampleData($key);
 
         return Blade::render(
-            '@extends("layouts.email") @section("content")' . $body . '@endsection',
+            "@extends('layouts.email')\n@section('content')\n" . $body . "\n@endsection",
             $sampleData
         );
     }

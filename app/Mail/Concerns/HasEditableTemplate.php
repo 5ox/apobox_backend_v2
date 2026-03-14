@@ -14,7 +14,7 @@ trait HasEditableTemplate
 
         if ($dbBody !== null) {
             $html = Blade::render(
-                '@extends("layouts.email") @section("content")' . $dbBody . '@endsection',
+                "@extends('layouts.email')\n@section('content')\n" . $dbBody . "\n@endsection",
                 $this->templateData()
             );
             return new Content(htmlString: $html);
