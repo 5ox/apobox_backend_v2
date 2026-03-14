@@ -45,45 +45,45 @@
     </x-slot:actions>
 </x-page-header>
 
-{{-- Billing & Package at a glance --}}
+{{-- Customer & Package overview --}}
 <div class="row mb-4">
-    <div class="col-lg-4">
-        <x-detail-card title="Customer & Billing">
-            <x-detail-row label="Customer">
-                <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="fw-semibold">{{ $order->customers_name }}</a>
-                @if($order->customer?->billing_id)
-                    <span class="badge bg-primary ms-1">{{ $order->customer->billing_id }}</span>
-                @endif
-            </x-detail-row>
-            <x-detail-row label="Email"><a href="mailto:{{ $order->customers_email_address }}">{{ $order->customers_email_address }}</a></x-detail-row>
-            <x-detail-row label="Billing Address">
-                {{ $order->billing_street_address }}
-                @if($order->billing_suburb)<br>{{ $order->billing_suburb }}@endif
-                <br>{{ $order->billing_city }}, {{ $order->billing_state }} {{ $order->billing_postcode }}
-            </x-detail-row>
-            @if($order->customer)
-                <x-detail-row label="Card on File">
-                    {{ $order->customer->masked_cc_number ?: 'None' }}
-                    @if($order->customer->cc_expires)
-                        <span class="text-muted small ms-1">(exp {{ $order->customer->cc_expires }})</span>
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-6">
+                <x-detail-card title="Customer">
+                    <x-detail-row label="Name">
+                        <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="fw-semibold">{{ $order->customers_name }}</a>
+                        @if($order->customer?->billing_id)
+                            <span class="badge bg-primary ms-1">{{ $order->customer->billing_id }}</span>
+                        @endif
+                    </x-detail-row>
+                    <x-detail-row label="Email"><a href="mailto:{{ $order->customers_email_address }}" class="text-break">{{ $order->customers_email_address }}</a></x-detail-row>
+                    <x-detail-row label="Phone">{{ $order->customers_telephone ?: 'N/A' }}</x-detail-row>
+                    @if($order->customer)
+                        <x-detail-row label="Card">
+                            {{ $order->customer->masked_cc_number ?: 'None' }}
+                            @if($order->customer->cc_expires)
+                                <span class="text-muted small ms-1">(exp {{ $order->customer->cc_expires }})</span>
+                            @endif
+                        </x-detail-row>
                     @endif
-                </x-detail-row>
-            @endif
-        </x-detail-card>
-    </div>
-    <div class="col-lg-4">
-        <x-detail-card title="Package Details">
-            <x-detail-row label="Dimensions">{{ $dims->isNotEmpty() ? $dims->implode(' x ') . ' in.' : 'N/A' }}</x-detail-row>
-            <x-detail-row label="Weight">{{ $lbs }} lb, {{ $oz }} oz</x-detail-row>
-            <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
-            <x-detail-row label="Package Type">{{ $order->package_type ?: 'N/A' }}</x-detail-row>
-            @if($order->customer?->insurance_fee)
-                <x-detail-row label="Insurance">${{ number_format($order->customer->insurance_fee, 2) }}</x-detail-row>
-            @endif
-            @if($order->customs_description)
-                <x-detail-row label="Customs">{{ $order->customs_description }}</x-detail-row>
-            @endif
-        </x-detail-card>
+                </x-detail-card>
+            </div>
+            <div class="col-md-6">
+                <x-detail-card title="Package">
+                    <x-detail-row label="Dimensions">{{ $dims->isNotEmpty() ? $dims->implode(' × ') . ' in.' : 'N/A' }}</x-detail-row>
+                    <x-detail-row label="Weight">{{ $lbs }} lb, {{ $oz }} oz</x-detail-row>
+                    <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
+                    <x-detail-row label="Package Type">{{ $order->package_type ?: 'N/A' }}</x-detail-row>
+                    @if($order->customer?->insurance_fee)
+                        <x-detail-row label="Insurance">${{ number_format($order->customer->insurance_fee, 2) }}</x-detail-row>
+                    @endif
+                    @if($order->customs_description)
+                        <x-detail-row label="Customs">{{ $order->customs_description }}</x-detail-row>
+                    @endif
+                </x-detail-card>
+            </div>
+        </div>
     </div>
     <div class="col-lg-4">
         <x-detail-card title="Charges">
@@ -131,18 +131,26 @@
 
         {{-- Addresses --}}
         <div class="row">
-            <div class="col-md-6">
-                <x-address-card label="From">
+            <div class="col-md-4">
+                <x-address-card label="Billing">
+                    {{ $order->billing_name ?: $order->customers_name }}
+                    @if($order->billing_company)<br>{{ $order->billing_company }}@endif
+                    <br>{{ $order->billing_street_address }}
+                    @if($order->billing_suburb)<br>{{ $order->billing_suburb }}@endif
+                    <br>{{ $order->billing_city }}, {{ $order->billing_state }} {{ $order->billing_postcode }}
+                </x-address-card>
+            </div>
+            <div class="col-md-4">
+                <x-address-card label="From (Warehouse)">
                     {{ $order->customers_name }}
-                    @if($order->customer?->billing_id)<br>Attn: {{ $order->customer->billing_id }}@endif
+                    @if($order->customer?->billing_id)<br>{{ $order->customer->billing_id }}@endif
                     <br>{{ $order->customers_street_address }}
                     @if($order->customers_suburb)<br>{{ $order->customers_suburb }}@endif
                     <br>{{ $order->customers_city }}, {{ $order->customers_state }} {{ $order->customers_postcode }}
-                    <br>{{ $order->customers_country }}
                 </x-address-card>
             </div>
-            <div class="col-md-6">
-                <x-address-card label="To">
+            <div class="col-md-4">
+                <x-address-card label="To (Delivery)">
                     {{ $order->delivery_name }}
                     @if($order->delivery_company)<br>{{ $order->delivery_company }}@endif
                     <br>{{ $order->delivery_street_address }}
