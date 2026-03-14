@@ -5,7 +5,7 @@ return [
     'name' => env('APP_NAME', 'APO Box Account'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
-    'url' => env('APP_URL', 'https://account.apobox.com'),
+    'url' => env('APP_URL', 'https://app.apobox.com'),
     'timezone' => env('APP_TIMEZONE', 'America/Indiana/Indianapolis'),
     'locale' => env('APP_LOCALE', 'en'),
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
