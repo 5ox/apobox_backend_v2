@@ -92,7 +92,7 @@
                         </div>
                         <div class="email-footer">
                             <p>&copy; {{ date('Y') }} APO Box. All rights reserved.</p>
-                            <p><a href="{{ config('app.url') }}">{{ config('app.url') }}</a></p>
+                            <p><a href="https://apobox.com">apobox.com</a></p>
                         </div>
                     </div>
                 </td>
