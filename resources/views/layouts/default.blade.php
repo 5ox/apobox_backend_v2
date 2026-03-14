@@ -29,9 +29,8 @@
     @vite(['resources/js/app.js'])
     @stack('scripts')
 
-    @if(config('apobox.zendesk.widget_key'))
+    @if(config('apobox.zendesk.widget_key') && auth('customer')->check())
     <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key={{ config('apobox.zendesk.widget_key') }}"></script>
-    @if(auth('customer')->check())
     <script>
         window.zESettings = {
             webWidget: {
@@ -45,7 +44,6 @@
             }
         };
     </script>
-    @endif
     @endif
 </body>
 </html>
