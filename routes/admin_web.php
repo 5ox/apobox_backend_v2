@@ -146,4 +146,11 @@ Route::prefix('sysadmin')
         Route::post('/settings/email-templates/{key}', [Manager\SettingsController::class, 'updateEmailTemplate'])->name('email-templates.update');
         Route::post('/settings/email-templates/{key}/reset', [Manager\SettingsController::class, 'resetEmailTemplate'])->name('email-templates.reset');
         Route::get('/settings/email-templates/{key}/preview', [Manager\SettingsController::class, 'previewEmailTemplate'])->name('email-templates.preview');
+
+        Route::get('/settings/insurance-tiers', [Manager\InsuranceTierController::class, 'index'])->name('insurance-tiers');
+        Route::get('/settings/insurance-tiers/add', [Manager\InsuranceTierController::class, 'create'])->name('insurance-tiers.create');
+        Route::post('/settings/insurance-tiers/add', [Manager\InsuranceTierController::class, 'store'])->name('insurance-tiers.store');
+        Route::get('/settings/insurance-tiers/edit/{id}', [Manager\InsuranceTierController::class, 'edit'])->name('insurance-tiers.edit');
+        Route::post('/settings/insurance-tiers/edit/{id}', [Manager\InsuranceTierController::class, 'update'])->name('insurance-tiers.update');
+        Route::get('/settings/insurance-tiers/delete/{id}', [Manager\InsuranceTierController::class, 'destroy'])->name('insurance-tiers.delete');
     });

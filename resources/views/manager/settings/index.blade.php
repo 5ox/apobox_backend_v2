@@ -152,6 +152,17 @@
                 </a>
             </div>
         </div>
+        <div class="card mb-3">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1"><i data-lucide="shield" class="icon"></i> Insurance Tiers</h6>
+                    <p class="text-muted small mb-0">Manage coverage-based insurance fee schedule</p>
+                </div>
+                <a href="/{{ $prefix }}/settings/insurance-tiers" class="btn btn-outline-primary btn-sm">
+                    <i data-lucide="pencil" class="icon"></i> Manage
+                </a>
+            </div>
+        </div>
         <div class="card" id="help-smtp">
             <div class="card-body">
                 <h6 class="card-title"><i data-lucide="info" class="icon"></i> Gmail App Password</h6>
