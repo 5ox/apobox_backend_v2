@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class PartialSignupAlert extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $customerName;
     public string $addAddressUrl;
@@ -32,7 +33,7 @@ class PartialSignupAlert extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: 'APO Box Account - Complete Your Registration',
+            subject: $this->editableSubject('partial_signup_alert', 'APO Box Account - Complete Your Registration'),
         );
     }
 
@@ -41,9 +42,7 @@ class PartialSignupAlert extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.partial_signup_alert',
-        );
+        return $this->editableContent('partial_signup_alert', 'emails.partial_signup_alert');
     }
 
     /**
@@ -54,5 +53,13 @@ class PartialSignupAlert extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'customerName' => $this->customerName,
+            'addAddressUrl' => $this->addAddressUrl,
+        ];
     }
 }

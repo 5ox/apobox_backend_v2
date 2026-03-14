@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class Welcome extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $firstName;
     public string $lastName;
@@ -43,7 +44,7 @@ class Welcome extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.support', 'support@apobox.com'),
-            subject: 'Welcome to APO Box Shipping',
+            subject: $this->editableSubject('welcome', 'Welcome to APO Box Shipping'),
         );
     }
 
@@ -52,9 +53,7 @@ class Welcome extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.welcome',
-        );
+        return $this->editableContent('welcome', 'emails.welcome');
     }
 
     /**
@@ -65,5 +64,16 @@ class Welcome extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'firstName' => $this->firstName,
+            'lastName' => $this->lastName,
+            'billingId' => $this->billingId,
+            'address' => $this->address,
+            'almostFinishedUrl' => $this->almostFinishedUrl,
+        ];
     }
 }

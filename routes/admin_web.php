@@ -141,4 +141,9 @@ Route::prefix('sysadmin')
         Route::post('/settings/test-email', [Manager\SettingsController::class, 'sendTestEmail'])->name('test-email');
         Route::get('/settings/gmail-oauth', [Manager\SettingsController::class, 'gmailOAuthStart'])->name('gmail-oauth');
         Route::get('/settings/gmail-oauth/callback', [Manager\SettingsController::class, 'gmailOAuthCallback'])->name('gmail-oauth-callback');
+        Route::get('/settings/email-templates', [Manager\SettingsController::class, 'emailTemplates'])->name('email-templates');
+        Route::get('/settings/email-templates/{key}/edit', [Manager\SettingsController::class, 'editEmailTemplate'])->name('email-templates.edit');
+        Route::post('/settings/email-templates/{key}', [Manager\SettingsController::class, 'updateEmailTemplate'])->name('email-templates.update');
+        Route::post('/settings/email-templates/{key}/reset', [Manager\SettingsController::class, 'resetEmailTemplate'])->name('email-templates.reset');
+        Route::get('/settings/email-templates/{key}/preview', [Manager\SettingsController::class, 'previewEmailTemplate'])->name('email-templates.preview');
     });

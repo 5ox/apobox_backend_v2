@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderStatusUpdate extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $firstName;
     public string $lastName;
@@ -43,7 +44,7 @@ class OrderStatusUpdate extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: "APO Box Order #{$this->orderId} - Status Update",
+            subject: $this->editableSubject('order_status_update', "APO Box Order #{$this->orderId} - Status Update"),
         );
     }
 
@@ -52,9 +53,7 @@ class OrderStatusUpdate extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.order_status_update',
-        );
+        return $this->editableContent('order_status_update', 'emails.order_status_update');
     }
 
     /**
@@ -65,5 +64,16 @@ class OrderStatusUpdate extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'firstName' => $this->firstName,
+            'lastName' => $this->lastName,
+            'orderId' => $this->orderId,
+            'status' => $this->status,
+            'comments' => $this->comments,
+        ];
     }
 }

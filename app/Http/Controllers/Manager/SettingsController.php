@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Models\EmailTemplate;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -168,5 +171,160 @@ class SettingsController extends Controller
         return redirect($redirectRoute)
             ->with('success', 'Gmail OAuth connected successfully.')
             ->with('gmail_refresh_token', $refreshToken);
+    }
+
+    public function emailTemplates(): View
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+
+        $customized = EmailTemplate::allCached();
+        $templates = collect(EmailTemplate::TEMPLATES)->map(function ($meta, $key) use ($customized) {
+            $meta['key'] = $key;
+            $meta['customized'] = isset($customized[$key]);
+            return $meta;
+        });
+
+        return view('manager.settings.email-templates', ['templates' => $templates]);
+    }
+
+    public function editEmailTemplate(string $key): View
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+        abort_unless(isset(EmailTemplate::TEMPLATES[$key]), 404);
+
+        $meta = EmailTemplate::TEMPLATES[$key];
+        $cached = EmailTemplate::allCached();
+        $customized = isset($cached[$key]);
+
+        // Get current body: DB override or default blade file
+        $body = $cached[$key]['body'] ?? $this->getDefaultTemplateBody($key);
+        $subject = $cached[$key]['subject'] ?? null;
+
+        return view('manager.settings.email-template-edit', [
+            'key' => $key,
+            'meta' => $meta,
+            'body' => $body,
+            'subject' => $subject,
+            'customized' => $customized,
+        ]);
+    }
+
+    public function updateEmailTemplate(Request $request, string $key): RedirectResponse
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+        abort_unless(isset(EmailTemplate::TEMPLATES[$key]), 404);
+
+        $validated = $request->validate([
+            'subject' => 'nullable|string|max:255',
+            'body' => 'required|string',
+        ]);
+
+        EmailTemplate::updateOrCreate(
+            ['key' => $key],
+            ['subject' => $validated['subject'] ?: null, 'body' => $validated['body']]
+        );
+        EmailTemplate::clearCache();
+
+        $prefix = auth('admin')->user()->routePrefix();
+        return redirect("/{$prefix}/settings/email-templates/{$key}/edit")
+            ->with('success', 'Template saved.');
+    }
+
+    public function resetEmailTemplate(string $key): RedirectResponse
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+        abort_unless(isset(EmailTemplate::TEMPLATES[$key]), 404);
+
+        EmailTemplate::where('key', $key)->delete();
+        EmailTemplate::clearCache();
+
+        $prefix = auth('admin')->user()->routePrefix();
+        return redirect("/{$prefix}/settings/email-templates/{$key}/edit")
+            ->with('success', 'Template reset to default.');
+    }
+
+    public function previewEmailTemplate(string $key): string
+    {
+        abort_unless(auth('admin')->user()->isSysadmin(), 403);
+        abort_unless(isset(EmailTemplate::TEMPLATES[$key]), 404);
+
+        $meta = EmailTemplate::TEMPLATES[$key];
+        $cached = EmailTemplate::allCached();
+        $body = $cached[$key]['body'] ?? $this->getDefaultTemplateBody($key);
+        $sampleData = $this->getSampleData($key);
+
+        return Blade::render(
+            '@extends("layouts.email") @section("content")' . $body . '@endsection',
+            $sampleData
+        );
+    }
+
+    protected function getDefaultTemplateBody(string $key): string
+    {
+        $viewMap = [
+            'welcome' => 'welcome',
+            'forgot_password' => 'forgot_password',
+            'confirm_close' => 'confirm_close',
+            'order_shipped' => 'order_shipped',
+            'order_status_update' => 'order_status_update',
+            'order_failed_payment' => 'order_failed_payment',
+            'awaiting_payment_alert' => 'awaiting_payment_alert',
+            'customer_card_expiring' => 'customer_card_expiring',
+            'customer_card_expired' => 'customer_card_expired',
+            'partial_signup_alert' => 'partial_signup_alert',
+            'blank' => 'blank',
+            'manager_message' => 'manager_message',
+        ];
+
+        $filename = $viewMap[$key] ?? $key;
+        $path = resource_path("views/emails/{$filename}.blade.php");
+
+        if (!File::exists($path)) {
+            return '<p>Template file not found.</p>';
+        }
+
+        $content = File::get($path);
+
+        // Extract content between @section('content') and @endsection
+        if (preg_match("/@section\('content'\)\s*(.*?)\s*@endsection/s", $content, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return $content;
+    }
+
+    protected function getSampleData(string $key): array
+    {
+        $common = [
+            'firstName' => 'John',
+            'lastName' => 'Doe',
+            'customerName' => 'John Doe',
+            'orderId' => '12345',
+            'url' => 'https://account.apobox.com/example-link',
+            'payUrl' => 'https://account.apobox.com/pay/12345',
+            'trackingUrl' => 'https://www.google.com/search?q=',
+            'outboundTracking' => '1Z999AA10123456784',
+            'inboundTracking' => '9400111899223456789012',
+            'status' => 'Shipped',
+            'comments' => 'Your package has been processed and is on its way.',
+            'billingId' => 'AB1234',
+            'address' => [
+                'entry_company' => '',
+                'entry_street_address' => '123 Main Street',
+                'entry_suburb' => '',
+                'entry_city' => 'Anytown',
+                'zone_code' => 'IN',
+                'entry_postcode' => '46563',
+            ],
+            'almostFinishedUrl' => 'https://account.apobox.com/complete-signup',
+            'addAddressUrl' => 'https://account.apobox.com/add-address',
+            'updatePaymentUrl' => 'https://account.apobox.com/update-payment',
+            'name' => 'John Doe',
+            'body' => '<p>This is a sample email body with <strong>HTML</strong> content.</p>',
+            'message' => 'This is a sample manager message.',
+            'subject' => 'Sample Subject',
+        ];
+
+        return $common;
     }
 }

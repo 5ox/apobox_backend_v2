@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class BlankMessage extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $name;
     public string $body;
@@ -33,7 +34,7 @@ class BlankMessage extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: $this->subject,
+            subject: $this->editableSubject('blank', $this->subject),
         );
     }
 
@@ -42,9 +43,7 @@ class BlankMessage extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.blank',
-        );
+        return $this->editableContent('blank', 'emails.blank');
     }
 
     /**
@@ -55,5 +54,14 @@ class BlankMessage extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'name' => $this->name,
+            'body' => $this->body,
+            'subject' => $this->subject,
+        ];
     }
 }

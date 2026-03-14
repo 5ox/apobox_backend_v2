@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderFailedPayment extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $orderId;
     public ?string $comments;
@@ -34,7 +35,7 @@ class OrderFailedPayment extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: "APO Box Order #{$this->orderId} - Awaiting Payment",
+            subject: $this->editableSubject('order_failed_payment', "APO Box Order #{$this->orderId} - Awaiting Payment"),
         );
     }
 
@@ -43,9 +44,7 @@ class OrderFailedPayment extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.order_failed_payment',
-        );
+        return $this->editableContent('order_failed_payment', 'emails.order_failed_payment');
     }
 
     /**
@@ -56,5 +55,14 @@ class OrderFailedPayment extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'orderId' => $this->orderId,
+            'payUrl' => $this->payUrl,
+            'comments' => $this->comments,
+        ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderShipped extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $firstName;
     public string $lastName;
@@ -46,7 +47,7 @@ class OrderShipped extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: "APO Box Order #{$this->orderId} - Shipped",
+            subject: $this->editableSubject('order_shipped', "APO Box Order #{$this->orderId} - Shipped"),
         );
     }
 
@@ -55,9 +56,7 @@ class OrderShipped extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.order_shipped',
-        );
+        return $this->editableContent('order_shipped', 'emails.order_shipped');
     }
 
     /**
@@ -68,5 +67,17 @@ class OrderShipped extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'firstName' => $this->firstName,
+            'lastName' => $this->lastName,
+            'orderId' => $this->orderId,
+            'outboundTracking' => $this->outboundTracking,
+            'inboundTracking' => $this->inboundTracking,
+            'trackingUrl' => $this->trackingUrl,
+        ];
     }
 }

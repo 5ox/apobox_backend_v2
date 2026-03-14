@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ForgotPassword extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $customerName;
     public string $url;
@@ -32,7 +33,7 @@ class ForgotPassword extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.support', 'support@apobox.com'),
-            subject: 'Your Password Reset Link',
+            subject: $this->editableSubject('forgot_password', 'Your Password Reset Link'),
         );
     }
 
@@ -41,9 +42,7 @@ class ForgotPassword extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.forgot_password',
-        );
+        return $this->editableContent('forgot_password', 'emails.forgot_password');
     }
 
     /**
@@ -54,5 +53,13 @@ class ForgotPassword extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'customerName' => $this->customerName,
+            'url' => $this->url,
+        ];
     }
 }

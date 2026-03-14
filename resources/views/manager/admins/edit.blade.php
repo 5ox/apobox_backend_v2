@@ -16,7 +16,7 @@
             <select name="role" class="form-select">
                 <option value="employee" @selected($admin->role === 'employee')>Employee</option>
                 <option value="manager" @selected($admin->role === 'manager')>Manager</option>
-                @if(auth('admin')->user()->isSysadmin() || auth('admin')->user()->isManager())
+                @if(auth('admin')->user()->isSysadmin())
                     <option value="sysadmin" @selected($admin->role === 'sysadmin')>Sys Admin</option>
                 @endif
             </select>

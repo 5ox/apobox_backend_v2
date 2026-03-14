@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class CreditCardExpired extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $customerName;
     public string $updatePaymentUrl;
@@ -32,7 +33,7 @@ class CreditCardExpired extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: 'APO Box Account - Credit Card Expired',
+            subject: $this->editableSubject('customer_card_expired', 'APO Box Account - Credit Card Expired'),
         );
     }
 
@@ -41,9 +42,7 @@ class CreditCardExpired extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.customer_card_expired',
-        );
+        return $this->editableContent('customer_card_expired', 'emails.customer_card_expired');
     }
 
     /**
@@ -54,5 +53,13 @@ class CreditCardExpired extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'customerName' => $this->customerName,
+            'updatePaymentUrl' => $this->updatePaymentUrl,
+        ];
     }
 }

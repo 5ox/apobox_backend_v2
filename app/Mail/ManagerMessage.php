@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ManagerMessage extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $message;
 
@@ -31,7 +32,7 @@ class ManagerMessage extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.support', 'support@apobox.com'),
-            subject: $this->subject,
+            subject: $this->editableSubject('manager_message', $this->subject),
         );
     }
 
@@ -40,9 +41,7 @@ class ManagerMessage extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.manager_message',
-        );
+        return $this->editableContent('manager_message', 'emails.manager_message');
     }
 
     /**
@@ -53,5 +52,13 @@ class ManagerMessage extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'message' => $this->message,
+            'subject' => $this->subject,
+        ];
     }
 }

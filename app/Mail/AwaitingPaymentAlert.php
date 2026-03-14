@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\HasEditableTemplate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -11,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class AwaitingPaymentAlert extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasEditableTemplate;
 
     public string $customerName;
     public string $orderId;
@@ -40,7 +41,7 @@ class AwaitingPaymentAlert extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: config('mail.from.address', 'no-reply@apobox.com'),
-            subject: 'APO Box Account - Package Awaiting Payment',
+            subject: $this->editableSubject('awaiting_payment_alert', 'APO Box Account - Package Awaiting Payment'),
         );
     }
 
@@ -49,9 +50,7 @@ class AwaitingPaymentAlert extends Mailable implements ShouldQueue
      */
     public function content(): Content
     {
-        return new Content(
-            view: 'emails.awaiting_payment_alert',
-        );
+        return $this->editableContent('awaiting_payment_alert', 'emails.awaiting_payment_alert');
     }
 
     /**
@@ -62,5 +61,15 @@ class AwaitingPaymentAlert extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    protected function templateData(): array
+    {
+        return [
+            'customerName' => $this->customerName,
+            'orderId' => $this->orderId,
+            'payUrl' => $this->payUrl,
+            'comments' => $this->comments,
+        ];
     }
 }

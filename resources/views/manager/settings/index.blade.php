@@ -141,6 +141,17 @@
     </div>
 
     <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1"><i data-lucide="file-text" class="icon"></i> Email Templates</h6>
+                    <p class="text-muted small mb-0">View and edit email templates sent to customers</p>
+                </div>
+                <a href="/{{ $prefix }}/settings/email-templates" class="btn btn-outline-primary btn-sm">
+                    <i data-lucide="pencil" class="icon"></i> Manage
+                </a>
+            </div>
+        </div>
         <div class="card" id="help-smtp">
             <div class="card-body">
                 <h6 class="card-title"><i data-lucide="info" class="icon"></i> Gmail App Password</h6>
