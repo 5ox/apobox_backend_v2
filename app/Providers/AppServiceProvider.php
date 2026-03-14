@@ -67,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Mail::extend('gmail-oauth', function (array $config = []) {
+            if (empty($config['client_id']) || empty($config['client_secret']) || empty($config['refresh_token'])) {
+                throw new \RuntimeException('Gmail OAuth mailer requires client_id, client_secret, and refresh_token. Configure these in .env or switch to SMTP in Mail Settings.');
+            }
+
             $authenticator = new GmailOAuthAuthenticator(
                 clientId: $config['client_id'],
                 clientSecret: $config['client_secret'],
@@ -82,7 +86,6 @@ class AppServiceProvider extends ServiceProvider
             );
 
             $transport->setUsername($config['username']);
-            // Must be non-empty or EsmtpTransport skips authentication
             $transport->setPassword('oauth2');
 
             return $transport;
