@@ -48,6 +48,10 @@ Route::middleware(['auth:customer'])->group(function () {
     Route::post('/authorized_names/{id}/edit', [Customer\AuthorizedNameController::class, 'update']);
     Route::get('/authorized_names/{id}/delete', [Customer\AuthorizedNameController::class, 'destroy']);
 
+    Route::post('/support/tickets', [Customer\CustomerController::class, 'createTicket']);
+    Route::get('/support/tickets/{id}/comments', [Customer\CustomerController::class, 'ticketComments'])->where('id', '[0-9]+');
+    Route::post('/support/tickets/{id}/reply', [Customer\CustomerController::class, 'replyToTicket'])->where('id', '[0-9]+');
+
     Route::get('/requests', [Customer\CustomPackageRequestController::class, 'index']);
     Route::get('/requests/add', [Customer\CustomPackageRequestController::class, 'create']);
     Route::post('/requests/add', [Customer\CustomPackageRequestController::class, 'store']);
