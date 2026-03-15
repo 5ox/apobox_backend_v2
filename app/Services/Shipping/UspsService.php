@@ -188,68 +188,77 @@ class UspsService
             ];
 
             try {
-                // --- Commercial (our discounted) rate ---
-                $commercialPayload = $payload + [
-                    'priceType' => 'COMMERCIAL',
-                    'accountType' => 'EPS',
-                    'accountNumber' => $this->accountNumber,
-                ];
+                $commercialRate = null;
+                $retailRate = null;
+                $description = '';
 
-                $response = Http::withToken($token)
-                    ->connectTimeout(10)
-                    ->timeout(20)
-                    ->retry(2, 500, throw: false)
-                    ->post($url, $commercialPayload);
-
-                $body = $response->json() ?? [];
-
-                if (!$response->successful()) {
-                    $apiError = $body['error']['message']
-                        ?? $body['message']
-                        ?? $body['error']
-                        ?? 'HTTP ' . $response->status();
-                    Log::channel('shipping')->warning("USPS rate API error for {$mailClass}: {$apiError}", [
-                        'status' => $response->status(),
-                        'payload' => $commercialPayload,
-                        'response' => $body,
-                    ]);
-                    continue;
-                }
-
-                $commercialRate = $this->extractPrice($body);
-                $description = $this->extractDescription($body);
-
-                if ($commercialRate === null) {
-                    Log::channel('shipping')->info("USPS no rate extracted for {$mailClass}", [
-                        'response' => $body,
-                    ]);
-                    continue;
-                }
-
-                // --- Retail rate (for comparison) ---
+                // --- Retail rate (always try — no account needed) ---
                 $retailPayload = $payload + [
                     'priceType' => 'RETAIL',
                 ];
 
-                $retailRate = null;
-                try {
-                    $retailResponse = Http::withToken($token)
-                        ->connectTimeout(10)
-                        ->timeout(20)
-                        ->retry(2, 500, throw: false)
-                        ->post($url, $retailPayload);
+                $retailResponse = Http::withToken($token)
+                    ->connectTimeout(10)
+                    ->timeout(20)
+                    ->retry(2, 500, throw: false)
+                    ->post($url, $retailPayload);
 
-                    if ($retailResponse->successful()) {
-                        $retailRate = $this->extractPrice($retailResponse->json() ?? []);
+                $retailBody = $retailResponse->json() ?? [];
+
+                if ($retailResponse->successful()) {
+                    $retailRate = $this->extractPrice($retailBody);
+                    $description = $this->extractDescription($retailBody);
+                } else {
+                    $apiError = $retailBody['error']['message']
+                        ?? $retailBody['message']
+                        ?? $retailBody['error']
+                        ?? 'HTTP ' . $retailResponse->status();
+                    Log::channel('shipping')->warning("USPS retail rate error for {$mailClass}: {$apiError}", [
+                        'status' => $retailResponse->status(),
+                        'response' => $retailBody,
+                    ]);
+                }
+
+                // --- Commercial (our discounted) rate — only if account is configured ---
+                if (!empty($this->accountNumber)) {
+                    try {
+                        $commercialPayload = $payload + [
+                            'priceType' => 'COMMERCIAL',
+                            'accountType' => 'EPS',
+                            'accountNumber' => $this->accountNumber,
+                        ];
+
+                        $commercialResponse = Http::withToken($token)
+                            ->connectTimeout(10)
+                            ->timeout(20)
+                            ->retry(2, 500, throw: false)
+                            ->post($url, $commercialPayload);
+
+                        $commercialBody = $commercialResponse->json() ?? [];
+
+                        if ($commercialResponse->successful()) {
+                            $commercialRate = $this->extractPrice($commercialBody);
+                            if (empty($description)) {
+                                $description = $this->extractDescription($commercialBody);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}: " . $e->getMessage());
                     }
-                } catch (\Exception $e) {
-                    Log::channel('shipping')->info("USPS retail rate unavailable for {$mailClass}: " . $e->getMessage());
+                }
+
+                // Use commercial rate if available, otherwise retail
+                $rate = $commercialRate ?? $retailRate;
+
+                if ($rate === null) {
+                    Log::channel('shipping')->info("USPS no rate for {$mailClass}");
+                    continue;
                 }
 
                 $rates[] = [
                     'service' => $mailClass,
                     'label' => $config['label'],
-                    'rate' => $commercialRate,
+                    'rate' => $commercialRate ?? $retailRate,
                     'retail_rate' => $retailRate,
                     'description' => $description,
                 ];
