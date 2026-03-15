@@ -56,6 +56,11 @@ class TestUspsRates extends Command
             $weightLbs = 0.0625;
         }
 
+        // Dimensions are required by USPS API — default to 1" cube
+        $length = max($length, 1);
+        $width = max($width, 1);
+        $height = max($height, 1);
+
         $originZip = config('shipping.origin_zip', '46563');
 
         $this->info('');
@@ -64,12 +69,7 @@ class TestUspsRates extends Command
         $this->info("Dest ZIP:    {$zip}");
         $this->info("Weight:      {$pounds} lb {$ounces} oz ({$weightLbs} lbs)");
         $this->info("Account #:   " . (config('shipping.usps.account_number') ? '***' . substr(config('shipping.usps.account_number'), -4) : '(empty)'));
-
-        if ($length > 0) {
-            $this->info("Dimensions:  {$length}\" × {$width}\" × {$height}\"");
-        } else {
-            $this->info("Dimensions:  (none)");
-        }
+        $this->info("Dimensions:  {$length}\" × {$width}\" × {$height}\"");
 
         // Query each mail class individually with raw output
         $mailClasses = $usps->getMailClasses();
@@ -84,6 +84,9 @@ class TestUspsRates extends Command
                 'originZIPCode' => $originZip,
                 'destinationZIPCode' => $zip,
                 'weight' => $weightLbs,
+                'length' => $length,
+                'width' => $width,
+                'height' => $height,
                 'mailClass' => $mailClass,
                 'processingCategory' => $config['processingCategory'],
                 'destinationEntryFacilityType' => 'NONE',

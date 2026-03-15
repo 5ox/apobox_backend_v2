@@ -165,11 +165,10 @@ class UspsService
             $weightLbs = 0.0625;
         }
 
-        // Dimensions — only include if all three are provided and > 0
-        $length = (float) ($params['length'] ?? 0);
-        $width = (float) ($params['width'] ?? 0);
-        $height = (float) ($params['height'] ?? 0);
-        $hasDimensions = ($length > 0 && $width > 0 && $height > 0);
+        // Dimensions — required by USPS API, default to 1" cube when not provided
+        $length = max((float) ($params['length'] ?? 0), 1);
+        $width = max((float) ($params['width'] ?? 0), 1);
+        $height = max((float) ($params['height'] ?? 0), 1);
 
         $rates = [];
 
@@ -178,19 +177,15 @@ class UspsService
                 'originZIPCode' => $originZip,
                 'destinationZIPCode' => $destZip,
                 'weight' => $weightLbs,
+                'length' => $length,
+                'width' => $width,
+                'height' => $height,
                 'mailClass' => $mailClass,
                 'processingCategory' => $config['processingCategory'],
                 'destinationEntryFacilityType' => 'NONE',
                 'rateIndicator' => $config['rateIndicator'],
                 'mailingDate' => now()->format('Y-m-d'),
             ];
-
-            // Only include dimensions when we have valid measurements
-            if ($hasDimensions) {
-                $payload['length'] = $length;
-                $payload['width'] = $width;
-                $payload['height'] = $height;
-            }
 
             try {
                 // --- Commercial (our discounted) rate ---
