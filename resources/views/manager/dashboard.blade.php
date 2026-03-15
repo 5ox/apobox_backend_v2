@@ -115,13 +115,14 @@
                             };
                         }
                         $inboundCarrier = match(strtoupper($inboundCarrier)) {
-                            'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $inboundCarrier,
+                            'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', 'UDS' => 'UDS', default => $inboundCarrier,
                         };
                         $carrierUrls = [
                             'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=',
                             'UPS' => 'https://www.ups.com/track?tracknum=',
                             'FedEx' => 'https://www.fedex.com/fedextrack/?trknbr=',
                             'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+                            'UDS' => 'https://www.udswwus.com/us/tracking/tracking_page1.aspx?trackno=',
                         ];
                         $inboundUrl = $inboundTrack ? ($carrierUrls[$inboundCarrier] ?? '') . $inboundTrack : '';
                     @endphp

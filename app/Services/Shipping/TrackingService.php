@@ -24,6 +24,7 @@ class TrackingService
      *          13 chars: 2 letters + 9 digits + "US" (international)
      *  UPS   — Starts with "1Z" + 16 alphanumeric
      *  FedEx — 12 digits, 15 digits, 20 digits starting with "96", 22 digits starting with "61"
+     *  UDS   — Starts with "EZ" + 14+ digits (EZ Worldwide Express / United Delivery Service)
      *  DHL   — 10 digits, or starts with "JD" + 18 digits, or 5000-5999 range start
      */
     public static function detectCarrier(string $trackingNumber): string
@@ -39,6 +40,11 @@ class TrackingService
         // USPS international: 2 letters + 9 digits + "US" = 13 chars
         if ($len === 13 && preg_match('/^[A-Z]{2}\d{9}US$/', $tn)) {
             return 'USPS';
+        }
+
+        // UDS / EZ Worldwide Express: starts with "EZ" + digits
+        if (str_starts_with($tn, 'EZ') && $len >= 14 && ctype_digit(substr($tn, 2))) {
+            return 'UDS';
         }
 
         // DHL: starts with JD + 18 digits
@@ -111,6 +117,7 @@ class TrackingService
                 'USPS' => $this->trackUsps($trackingNumber),
                 'UPS' => $this->trackUps($trackingNumber),
                 'FEDEX' => $this->trackFedex($trackingNumber),
+                'UDS' => $this->trackUds($trackingNumber),
                 'DHL' => $this->trackDhl($trackingNumber),
                 default => ['error' => "Unsupported carrier: {$carrier}"],
             };
@@ -346,6 +353,31 @@ class TrackingService
             ]);
             return ['error' => 'FedEx tracking error: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Track via UDS / EZ Worldwide Express.
+     *
+     * UDS has no public REST API. We return the tracking number
+     * with a link to their web tracking page so the user can check
+     * status manually. The external link in the UI points there.
+     */
+    protected function trackUds(string $trackingNumber): array
+    {
+        return [
+            'carrier' => 'UDS',
+            'tracking_number' => $trackingNumber,
+            'status' => 'External Tracking',
+            'summary' => 'UDS tracking available via their website.',
+            'estimated_delivery' => null,
+            'events' => [
+                [
+                    'date' => '',
+                    'description' => 'Track this package on the UDS website using the external link above.',
+                    'location' => '',
+                ],
+            ],
+        ];
     }
 
     /**

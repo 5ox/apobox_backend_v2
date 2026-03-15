@@ -25,13 +25,14 @@
     }
     // Normalize carrier display names
     $inboundCarrierDisplay = match(strtoupper($inboundCarrier)) {
-        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $inboundCarrier,
+        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', 'UDS' => 'UDS', default => $inboundCarrier,
     };
     $carrierUrls = [
         'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=',
         'UPS' => 'https://www.ups.com/track?tracknum=',
         'FEDEX' => 'https://www.fedex.com/fedextrack/?trknbr=',
         'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+        'UDS' => 'https://www.udswwus.com/us/tracking/tracking_page1.aspx?trackno=',
     ];
     $inboundUrl = $inbound ? ($carrierUrls[strtoupper($inboundCarrier)] ?? '') . $inbound : '';
 
@@ -41,7 +42,7 @@
         ? (\App\Services\Shipping\TrackingService::detectCarrier($outbound) ?: 'USPS')
         : '';
     $outboundCarrierDisplay = match(strtoupper($outboundCarrier)) {
-        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $outboundCarrier,
+        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', 'UDS' => 'UDS', default => $outboundCarrier,
     };
     $outboundUrl = $outbound ? ($carrierUrls[strtoupper($outboundCarrier)] ?? '') . $outbound : '';
 
@@ -162,7 +163,7 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Inbound</span>
                             @if($inbound)
-                                <span class="badge {{ match(strtoupper($inboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $inboundCarrierDisplay }}</span>
+                                <span class="badge {{ match(strtoupper($inboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', 'UDS' => 'bg-dark', default => 'bg-secondary' } }}">{{ $inboundCarrierDisplay }}</span>
                                 <code class="tracking-section__number user-select-all">{{ $inbound }}</code>
                                 <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $inbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
@@ -237,7 +238,7 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Outbound</span>
                             @if($outbound)
-                                <span class="badge {{ match(strtoupper($outboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $outboundCarrierDisplay }}</span>
+                                <span class="badge {{ match(strtoupper($outboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', 'UDS' => 'bg-dark', default => 'bg-secondary' } }}">{{ $outboundCarrierDisplay }}</span>
                                 <code class="tracking-section__number user-select-all">{{ $outbound }}</code>
                                 <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $outbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
