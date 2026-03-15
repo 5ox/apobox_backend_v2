@@ -43,6 +43,7 @@ Route::middleware(['auth:customer'])->group(function () {
     Route::post('/address/{id}/edit', [Customer\AddressController::class, 'update']);
     Route::get('/address/{id}/delete', [Customer\AddressController::class, 'destroy']);
 
+    Route::get('/authorized_names/add', [Customer\AuthorizedNameController::class, 'create']);
     Route::post('/authorized_names/add', [Customer\AuthorizedNameController::class, 'store']);
     Route::get('/authorized_names/{id}/edit', [Customer\AuthorizedNameController::class, 'edit']);
     Route::post('/authorized_names/{id}/edit', [Customer\AuthorizedNameController::class, 'update']);

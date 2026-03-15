@@ -12,6 +12,14 @@ use Illuminate\Http\RedirectResponse;
 class AuthorizedNameController extends Controller
 {
     /**
+     * Show the create form for a new authorized name.
+     */
+    public function create(): View
+    {
+        return view('customer.authorized-names.create');
+    }
+
+    /**
      * Store a new authorized name for the authenticated customer.
      */
     public function store(StoreAuthorizedNameRequest $request): RedirectResponse

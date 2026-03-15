@@ -51,8 +51,6 @@ $adminRoutes = function () {
     Route::get('/authorized_names/{id}/edit', [Manager\AuthorizedNameController::class, 'edit'])->name('authorized-names.edit');
     Route::post('/authorized_names/{id}/edit', [Manager\AuthorizedNameController::class, 'update'])->name('authorized-names.update');
     Route::get('/authorized_names/{id}/delete', [Manager\AuthorizedNameController::class, 'destroy'])->name('authorized-names.delete');
-    Route::post('/customers/{customerId}/address/add', [Manager\AddressController::class, 'store'])->name('customers.address.store');
-
     Route::get('/orders', [Manager\OrderController::class, 'search'])->name('orders.search');
     Route::get('/orders/statustotals', [Manager\OrderController::class, 'statusTotals'])->name('orders.status-totals');
     Route::get('/orders/report', [Manager\OrderController::class, 'report'])->name('orders.report');
@@ -72,7 +70,6 @@ $adminRoutes = function () {
     Route::get('/orders/{id}/delete_label', [Manager\OrderController::class, 'deleteLabel'])->name('orders.delete-label');
     Route::get('/orders/delete/{id}', [Manager\OrderController::class, 'deleteOrder'])->name('orders.delete');
     Route::post('/orders/{id}/zendesk-ticket', [Manager\OrderController::class, 'createZendeskTicket'])->name('orders.zendesk-ticket');
-    Route::get('/orders/recent', [Manager\CustomerController::class, 'recentOrders'])->name('orders.recent');
 
     Route::get('/customer/{customerId}/request/add', [Manager\CustomPackageRequestController::class, 'create'])->name('requests.create');
     Route::post('/customer/{customerId}/request/add', [Manager\CustomPackageRequestController::class, 'store'])->name('requests.store');

@@ -108,6 +108,16 @@
 
     &__value {
         color: var(--apo-text-primary);
+        min-width: 0; // allow text-break / truncation inside flex
+    }
+
+    // Compact variant — narrower labels for tighter columns
+    &--compact &__label {
+        width: 110px;
+    }
+
+    &--compact &__body {
+        padding: 1rem 1.25rem;
     }
 }
 
