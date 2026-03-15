@@ -14,6 +14,14 @@ use Illuminate\Support\Facades\Log;
  */
 class UspsService
 {
+    protected const USPS_MAX_WEIGHT_LBS = 70.0;
+    protected const MACHINABLE_MAX_WEIGHT_LBS = 25.0;
+    protected const MACHINABLE_MAX_LENGTH_IN = 22.0;
+    protected const MACHINABLE_MAX_WIDTH_IN = 18.0;
+    protected const MACHINABLE_MAX_HEIGHT_IN = 15.0;
+    protected const STANDARD_MAX_LENGTH_PLUS_GIRTH_IN = 108.0;
+    protected const USPS_MAX_LENGTH_PLUS_GIRTH_IN = 130.0;
+
     protected string $clientId;
     protected string $clientSecret;
     protected string $accountNumber;
@@ -95,6 +103,11 @@ class UspsService
         $allowedClasses = config('shipping.usps.rate_classes', []);
 
         try {
+            $validationError = $this->validateRateLookupRequest($params);
+            if ($validationError !== null) {
+                return ['error' => $validationError];
+            }
+
             $token = $this->getAccessToken();
             $rates = $this->fetchRates($token, $params);
 
@@ -119,6 +132,11 @@ class UspsService
     public function getAllRates(array $params): array
     {
         try {
+            $validationError = $this->validateRateLookupRequest($params);
+            if ($validationError !== null) {
+                return ['error' => $validationError];
+            }
+
             $token = $this->getAccessToken();
             return $this->fetchRates($token, $params);
         } catch (\Exception $e) {
@@ -168,15 +186,7 @@ class UspsService
             throw new \RuntimeException('Destination ZIP code is required');
         }
 
-        // Convert pounds + ounces to decimal pounds
-        $pounds = (int) ($params['pounds'] ?? 0);
-        $ounces = (int) ($params['ounces'] ?? 0);
-        $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
-
-        // Weight must be > 0 — minimum 1 oz
-        if ($weightLbs <= 0) {
-            $weightLbs = 0.0625;
-        }
+        $weightLbs = $this->toDecimalPounds($params);
 
         ['length' => $length, 'width' => $width, 'height' => $height] = $this->extractDimensions($params);
 
@@ -421,6 +431,79 @@ class UspsService
     }
 
     /**
+     * Current lookup path only supports machinable USPS parcel pricing.
+     */
+    public function validateRateLookupRequest(array $params): ?string
+    {
+        $analysis = $this->analyzePackage($params);
+
+        if ($analysis['exceeds_usps_limits']) {
+            return sprintf(
+                'Package exceeds USPS maximum parcel limits (%.2f lb, %.1f" length + girth; USPS max is 70 lb and 130").',
+                $analysis['weight_lbs'],
+                $analysis['length_plus_girth']
+            );
+        }
+
+        if ($analysis['is_machinable']) {
+            return null;
+        }
+
+        if ($analysis['is_oversized']) {
+            return sprintf(
+                'Package is oversized at %.1f" length + girth. Priority Mail, Priority Mail Express, Media Mail, and Library Mail are unavailable at this size. USPS Ground Advantage oversized pricing requires a separate lookup path; this calculator currently supports machinable USPS parcels only.',
+                $analysis['length_plus_girth']
+            );
+        }
+
+        return sprintf(
+            'Package is non-machinable for the current USPS lookup path (%.2f lb, %.1f" x %.1f" x %.1f"). This calculator currently supports machinable USPS parcels only; Ground Advantage nonstandard pricing requires a separate lookup path.',
+            $analysis['weight_lbs'],
+            $analysis['longest_side'],
+            $analysis['middle_side'],
+            $analysis['shortest_side']
+        );
+    }
+
+    /**
+     * USPS parcel standards used to decide whether the standard lookup path applies.
+     */
+    public function analyzePackage(array $params): array
+    {
+        ['length' => $length, 'width' => $width, 'height' => $height] = $this->extractDimensions($params);
+
+        $dimensions = [$length, $width, $height];
+        rsort($dimensions, SORT_NUMERIC);
+
+        $longestSide = (float) ($dimensions[0] ?? 0);
+        $middleSide = (float) ($dimensions[1] ?? 0);
+        $shortestSide = (float) ($dimensions[2] ?? 0);
+
+        $weightLbs = $this->toDecimalPounds($params);
+        $lengthPlusGirth = $longestSide + (2 * ($middleSide + $shortestSide));
+
+        $isMachinable = $weightLbs <= self::MACHINABLE_MAX_WEIGHT_LBS
+            && $longestSide <= self::MACHINABLE_MAX_LENGTH_IN
+            && $middleSide <= self::MACHINABLE_MAX_WIDTH_IN
+            && $shortestSide <= self::MACHINABLE_MAX_HEIGHT_IN
+            && $lengthPlusGirth <= self::STANDARD_MAX_LENGTH_PLUS_GIRTH_IN;
+
+        return [
+            'weight_lbs' => $weightLbs,
+            'longest_side' => $longestSide,
+            'middle_side' => $middleSide,
+            'shortest_side' => $shortestSide,
+            'length_plus_girth' => $lengthPlusGirth,
+            'is_machinable' => $isMachinable,
+            'is_oversized' => $lengthPlusGirth > self::STANDARD_MAX_LENGTH_PLUS_GIRTH_IN
+                && $lengthPlusGirth <= self::USPS_MAX_LENGTH_PLUS_GIRTH_IN
+                && $weightLbs <= self::USPS_MAX_WEIGHT_LBS,
+            'exceeds_usps_limits' => $weightLbs > self::USPS_MAX_WEIGHT_LBS
+                || $lengthPlusGirth > self::USPS_MAX_LENGTH_PLUS_GIRTH_IN,
+        ];
+    }
+
+    /**
      * Calculates package size category.
      */
     public function calculateSize(float $height, float $length, float $width): string
@@ -478,6 +561,15 @@ class UspsService
         }
 
         return $dimensions;
+    }
+
+    protected function toDecimalPounds(array $params): float
+    {
+        $pounds = (int) ($params['pounds'] ?? 0);
+        $ounces = (int) ($params['ounces'] ?? 0);
+        $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
+
+        return $weightLbs > 0 ? $weightLbs : 0.0625;
     }
 
     /**

@@ -280,6 +280,12 @@ USPS_ACCOUNT_NUMBER=your_eps_account_number
 - Results are returned in the same `['class_id', 'service', 'rate']` format used throughout the app
 - Failed token requests throw `RuntimeException`; failed rate queries log warnings and continue
 
+### Current Lookup Boundaries
+
+- The built-in USPS calculator and order charge auto-rating path currently support only the standard machinable parcel lookup flow.
+- Oversized and non-machinable parcels are rejected up front with a descriptive message instead of sending doomed requests that USPS will reject as `Package size exceeds...`.
+- USPS Ground Advantage oversized / nonstandard pricing is not yet implemented as a separate lookup path, so those parcels still require manual handling.
+
 ### Files
 
 | File | Purpose |

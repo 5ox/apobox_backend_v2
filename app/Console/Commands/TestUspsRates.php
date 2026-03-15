@@ -62,6 +62,12 @@ class TestUspsRates extends Command
             return 1;
         }
 
+        $lookupError = $usps->validateRateLookupRequest(compact('zip', 'pounds', 'ounces', 'length', 'width', 'height'));
+        if ($lookupError !== null) {
+            $this->error($lookupError);
+            return 1;
+        }
+
         $originZip = config('shipping.origin_zip', '46563');
 
         $this->info('');
