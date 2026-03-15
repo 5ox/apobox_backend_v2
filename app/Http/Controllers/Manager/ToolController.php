@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Services\Shipping\UspsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -47,6 +48,54 @@ class ToolController extends Controller
     {
         return view('manager.tools.index', [
             'commands' => $this->commands,
+        ]);
+    }
+
+    /**
+     * USPS Postage Calculator — compare retail vs corporate rates.
+     */
+    public function postageCalculator(Request $request): View
+    {
+        $rates = null;
+        $error = null;
+        $originZip = config('shipping.origin_zip', '46563');
+
+        if ($request->filled('zip')) {
+            $request->validate([
+                'zip' => ['required', 'regex:/^\d{5}$/'],
+                'pounds' => ['nullable', 'integer', 'min:0'],
+                'ounces' => ['nullable', 'integer', 'min:0', 'max:15'],
+                'length' => ['nullable', 'numeric', 'min:0'],
+                'width' => ['nullable', 'numeric', 'min:0'],
+                'height' => ['nullable', 'numeric', 'min:0'],
+            ]);
+
+            $usps = new UspsService();
+            $result = $usps->getAllRates([
+                'zip' => $request->input('zip'),
+                'pounds' => (int) $request->input('pounds', 0),
+                'ounces' => (int) $request->input('ounces', 0),
+                'length' => (float) $request->input('length', 0),
+                'width' => (float) $request->input('width', 0),
+                'height' => (float) $request->input('height', 0),
+            ]);
+
+            if (isset($result['error'])) {
+                $error = $result['error'];
+            } else {
+                // Deduplicate by service name, keep first (lowest class_id)
+                $rates = collect($result)
+                    ->unique('service')
+                    ->sortByDesc('retail_rate')
+                    ->values()
+                    ->all();
+            }
+        }
+
+        return view('manager.tools.postage-calculator', [
+            'rates' => $rates,
+            'error' => $error,
+            'originZip' => $originZip,
         ]);
     }
 

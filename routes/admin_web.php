@@ -102,6 +102,7 @@ $adminRoutes = function () {
 
     Route::get('/tools', [Manager\ToolController::class, 'index'])->name('tools.index');
     Route::post('/tools/run/{command}', [Manager\ToolController::class, 'run'])->name('tools.run');
+    Route::get('/tools/postage-calculator', [Manager\ToolController::class, 'postageCalculator'])->name('tools.postage-calculator');
 
     Route::get('/logs/view/{file?}', [Manager\LogController::class, 'view'])->name('logs.view');
 

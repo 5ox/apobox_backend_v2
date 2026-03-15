@@ -20,6 +20,25 @@
     </div>
 @endif
 
+{{-- Postage Calculator --}}
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{{ route($prefix . '.tools.postage-calculator') }}" class="card text-decoration-none border-primary border-opacity-25 shadow-sm" style="transition: box-shadow .15s;">
+            <div class="card-body d-flex align-items-center py-3">
+                <div class="rounded-2 bg-primary bg-opacity-10 p-2 me-3">
+                    <i data-lucide="calculator" class="text-primary" style="width:24px;height:24px;"></i>
+                </div>
+                <div class="flex-fill">
+                    <h6 class="mb-0 text-body">USPS Postage Calculator</h6>
+                    <p class="text-muted small mb-0">Compare retail vs corporate USPS rates side by side</p>
+                </div>
+                <i data-lucide="chevron-right" class="text-muted" style="width:20px;height:20px;"></i>
+            </div>
+        </a>
+    </div>
+</div>
+
+<h6 class="text-muted text-uppercase small fw-semibold mb-3">Maintenance Commands</h6>
 <div class="row g-3">
     @foreach($commands as $key => $cmd)
         <div class="col-md-6 col-lg-4">
