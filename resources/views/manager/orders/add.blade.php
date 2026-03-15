@@ -6,7 +6,7 @@
 {{-- Customer Header (matches customer/view design) --}}
 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
     @if($customer->billing_id)
-        <span class="badge bg-primary fs-5 px-4 py-2" style="border-radius:12px">{{ $customer->billing_id }}</span>
+        <span class="app-tag app-tag--lg app-tag--primary">{{ $customer->billing_id }}</span>
     @endif
     <h2 class="mb-0">{{ $customer->full_name }}</h2>
     <span class="text-muted">&mdash; New Order</span>
@@ -199,11 +199,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!trackingInput || !carrierBadge) return;
 
     const carriers = [
-        { name: 'UPS',    color: 'bg-warning text-dark', test: v => /^1Z[A-Z0-9]{16}$/i.test(v) },
-        { name: 'FedEx',  color: 'bg-primary',           test: v => /^\d{12}$/.test(v) || /^\d{15}$/.test(v) || /^\d{20,22}$/.test(v) },
-        { name: 'Amazon', color: 'bg-dark',              test: v => /^TBA/i.test(v) },
-        { name: 'DHL',    color: 'bg-danger',            test: v => /^\d{10}$/.test(v) || /^[A-Z]{3}\d{7,}$/i.test(v) },
-        { name: 'USPS',   color: 'bg-info text-dark',    test: v => /^(9[0-9]{15,21}|[A-Z]{2}\d{9}US)$/i.test(v) },
+        { name: 'UPS',    color: 'app-tag--warning', test: v => /^1Z[A-Z0-9]{16}$/i.test(v) },
+        { name: 'FedEx',  color: 'app-tag--info',    test: v => /^\d{12}$/.test(v) || /^\d{15}$/.test(v) || /^\d{20,22}$/.test(v) },
+        { name: 'Amazon', color: 'app-tag--dark',     test: v => /^TBA/i.test(v) },
+        { name: 'DHL',    color: 'app-tag--danger',   test: v => /^\d{10}$/.test(v) || /^[A-Z]{3}\d{7,}$/i.test(v) },
+        { name: 'USPS',   color: 'app-tag--primary',  test: v => /^(9[0-9]{15,21}|[A-Z]{2}\d{9}US)$/i.test(v) },
     ];
 
     trackingInput.addEventListener('input', function() {
@@ -214,9 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const match = carriers.find(c => c.test(val));
         if (match) {
-            carrierBadge.innerHTML = '<span class="badge ' + match.color + '">' + match.name + '</span>';
+            carrierBadge.innerHTML = '<span class="app-tag app-tag--sm ' + match.color + '">' + match.name + '</span>';
         } else {
-            carrierBadge.innerHTML = '<span class="badge bg-secondary">Unknown</span>';
+            carrierBadge.innerHTML = '<span class="app-tag app-tag--sm app-tag--secondary">Unknown</span>';
         }
     });
 

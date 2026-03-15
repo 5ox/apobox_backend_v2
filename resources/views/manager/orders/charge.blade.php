@@ -11,19 +11,19 @@
 <x-page-header title="Charge Order #{{ $order->orders_id }}">
     <x-slot:actions>
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="badge bg-light text-dark border text-decoration-none">
+            <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="app-tag app-tag--muted">
                 <i data-lucide="user" class="icon--xs me-1"></i>{{ $order->customer?->full_name }}
             </a>
             <x-status-badge :status="$order->status?->orders_status_name" />
-            <span class="badge bg-light text-dark border">{{ $order->mail_class ?: 'No class' }}</span>
-            <span class="badge bg-light text-dark border">{{ $lbs }}lb {{ $oz }}oz</span>
-            <span class="badge bg-light text-dark border">→ {{ $order->delivery_city }}, {{ $order->delivery_state }} {{ $order->delivery_postcode }}</span>
+            <span class="app-tag app-tag--muted">{{ $order->mail_class ?: 'No class' }}</span>
+            <span class="app-tag app-tag--muted">{{ $lbs }}lb {{ $oz }}oz</span>
+            <span class="app-tag app-tag--muted">→ {{ $order->delivery_city }}, {{ $order->delivery_state }} {{ $order->delivery_postcode }}</span>
             @if($invoiceCustomer)
-                <span class="badge bg-info">Invoice</span>
+                <span class="app-tag app-tag--info">Invoice</span>
             @elseif($order->customer?->card_token)
-                <span class="badge bg-success">Card on File</span>
+                <span class="app-tag app-tag--success">Card on File</span>
             @else
-                <span class="badge bg-danger">No Payment</span>
+                <span class="app-tag app-tag--danger">No Payment</span>
             @endif
         </div>
     </x-slot:actions>

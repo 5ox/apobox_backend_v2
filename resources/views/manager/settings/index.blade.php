@@ -73,7 +73,7 @@
                             <label class="form-label">
                                 Password (App Password)
                                 @if($mailSettings['mail_password_set'] ?? false)
-                                    <span class="badge bg-success-subtle text-success ms-1">Set</span>
+                                    <span class="app-tag app-tag--sm app-tag--success ms-1">Set</span>
                                 @endif
                             </label>
                             <input type="password" name="mail_password" class="form-control"
@@ -88,10 +88,10 @@
                                 <h6 class="mb-1">Gmail OAuth Connection</h6>
                                 <p class="text-muted small mb-0">
                                     @if($oauthConfigured)
-                                        <span class="badge bg-success-subtle text-success">Connected</span>
+                                        <span class="app-tag app-tag--success">Connected</span>
                                         OAuth refresh token is configured.
                                     @else
-                                        <span class="badge bg-warning-subtle text-warning">Not configured</span>
+                                        <span class="app-tag app-tag--warning">Not configured</span>
                                         Click Connect to authorize Gmail access.
                                     @endif
                                 </p>

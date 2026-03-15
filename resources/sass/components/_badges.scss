@@ -1,90 +1,50 @@
-.status-badge {
+// ==========================================================================
+// Unified Tag System (.app-tag)
+//
+// Single design language for all badges, tags, and status indicators.
+// Rounded-square shape, subtle tinted fills, consistent height.
+// ==========================================================================
+
+.app-tag {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.75rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 50rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 0.5rem;
     white-space: nowrap;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    text-decoration: none;
+    vertical-align: middle;
 
-    &::before {
+    // ── Size variants ──────────────────────────────────────────────────
+    &--lg {
+        font-size: 0.8125rem;
+        padding: 0.375rem 0.875rem;
+    }
+
+    &--sm {
+        font-size: 0.6875rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    // ── Status dot (for order/request status tags) ─────────────────────
+    &--status::before {
         content: '';
-        width: 6px;
-        height: 6px;
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
         flex-shrink: 0;
     }
 
-    // Status variants
-    &--warehouse {
-        background-color: rgba(13, 148, 136, 0.1);
-        color: #0a7a72;
-        &::before { background-color: #0d9488; }
+    // ── Clickable variant ──────────────────────────────────────────────
+    &--clickable {
+        cursor: pointer;
+        transition: background var(--apo-transition-fast);
     }
 
-    &--awaiting-payment {
-        background-color: rgba(229, 165, 10, 0.1);
-        color: #92610a;
-        &::before { background-color: #e5a50a; }
-    }
-
-    &--shipped {
-        background-color: rgba(38, 162, 105, 0.1);
-        color: #1a7a4f;
-        &::before { background-color: #26a269; }
-    }
-
-    &--paid {
-        background-color: rgba(26, 95, 180, 0.1);
-        color: #15478a;
-        &::before { background-color: #1a5fb4; }
-    }
-
-    &--returned {
-        background-color: rgba(192, 28, 40, 0.1);
-        color: #8c1520;
-        &::before { background-color: #c01c28; }
-    }
-
-    &--problem {
-        background-color: rgba(230, 97, 0, 0.1);
-        color: #a35500;
-        &::before { background-color: #e66100; }
-    }
-
-    &--awaiting-package {
-        background-color: rgba(229, 165, 10, 0.1);
-        color: #92610a;
-        &::before { background-color: #e5a50a; }
-    }
-
-    // Custom package request statuses
-    &--new {
-        background-color: rgba(59, 130, 246, 0.1);
-        color: #1d4ed8;
-        &::before { background-color: #3b82f6; }
-    }
-
-    &--processing {
-        background-color: rgba(245, 158, 11, 0.1);
-        color: #92400e;
-        &::before { background-color: #f59e0b; }
-    }
-
-    &--completed {
-        background-color: rgba(34, 197, 94, 0.1);
-        color: #166534;
-        &::before { background-color: #22c55e; }
-    }
-
-    &--cancelled {
-        background-color: rgba(156, 163, 175, 0.1);
-        color: #4b5563;
-        &::before { background-color: #9ca3af; }
-    }
-
-    // Filter badges (sidebar)
     &--filter {
         cursor: pointer;
         transition: all var(--apo-transition-fast);
@@ -95,33 +55,92 @@
             transform: translateY(-1px);
         }
     }
-}
 
-// Order header tags — unified height, subtle fills, rounded-square shape
-.order-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    padding: 0.375rem 0.875rem;
-    border-radius: 0.5rem;
-    white-space: nowrap;
-    line-height: 1.4;
-    border: 1px solid transparent;
-    text-decoration: none;
+    // ── Pill variant (for counters) ────────────────────────────────────
+    &--pill {
+        border-radius: 50rem;
+        min-width: 1.5em;
+        justify-content: center;
+        padding: 0.2rem 0.5rem;
+    }
 
-    &--status {
-        &::before {
-            content: '';
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            flex-shrink: 0;
+    // ====================================================================
+    //  Color Palette
+    //  8% opacity background, 15% opacity border, dark text
+    // ====================================================================
+
+    // Primary — blue (billing IDs, links, USPS)
+    &--primary {
+        background: rgba(26, 95, 180, 0.08);
+        color: #15478a;
+        border-color: rgba(26, 95, 180, 0.15);
+        &::before { background: #1a5fb4; }
+
+        &:hover {
+            background: rgba(26, 95, 180, 0.14);
+            color: #15478a;
         }
     }
 
-    // Status colors (inherits from status-badge palette)
+    // Success — green (active, delivered, completed, checkmarks)
+    &--success {
+        background: rgba(38, 162, 105, 0.08);
+        color: #1a7a4f;
+        border-color: rgba(38, 162, 105, 0.15);
+        &::before { background: #26a269; }
+    }
+
+    // Danger — red (errors, problems, closed, DHL)
+    &--danger {
+        background: rgba(192, 28, 40, 0.08);
+        color: #8c1520;
+        border-color: rgba(192, 28, 40, 0.15);
+        &::before { background: #c01c28; }
+    }
+
+    // Warning — amber (UPS, pending, caution)
+    &--warning {
+        background: rgba(202, 138, 4, 0.08);
+        color: #854d0e;
+        border-color: rgba(202, 138, 4, 0.15);
+        &::before { background: #ca8a04; }
+    }
+
+    // Info — teal/cyan (repack, FedEx, informational)
+    &--info {
+        background: rgba(6, 148, 162, 0.08);
+        color: #0e6f7a;
+        border-color: rgba(6, 148, 162, 0.15);
+        &::before { background: #0694a2; }
+    }
+
+    // Secondary — neutral gray (defaults, fallbacks)
+    &--secondary {
+        background: rgba(100, 116, 139, 0.08);
+        color: #475569;
+        border-color: rgba(100, 116, 139, 0.15);
+        &::before { background: #64748b; }
+    }
+
+    // Dark — dark slate (counters, UDS)
+    &--dark {
+        background: rgba(30, 41, 59, 0.08);
+        color: #1e293b;
+        border-color: rgba(30, 41, 59, 0.15);
+        &::before { background: #1e293b; }
+    }
+
+    // Muted — very light (neutral info tags: mail class, weight, etc.)
+    &--muted {
+        background: rgba(100, 116, 139, 0.05);
+        color: #475569;
+        border-color: rgba(100, 116, 139, 0.12);
+    }
+
+    // ====================================================================
+    //  Status-specific colors (order + request statuses)
+    // ====================================================================
+
     &--warehouse {
         background: rgba(13, 148, 136, 0.08);
         color: #0a7a72;
@@ -171,34 +190,58 @@
         &::before { background: #e5a50a; }
     }
 
-    // Danger — problem reason (e.g. "Prohibited Item")
-    &--danger {
-        background: rgba(192, 28, 40, 0.08);
-        color: #8c1520;
-        border-color: rgba(192, 28, 40, 0.15);
+    &--new {
+        background: rgba(59, 130, 246, 0.08);
+        color: #1d4ed8;
+        border-color: rgba(59, 130, 246, 0.15);
+        &::before { background: #3b82f6; }
     }
 
-    // Warning — Zendesk ticket
-    &--warning {
-        background: rgba(202, 138, 4, 0.08);
-        color: #854d0e;
-        border-color: rgba(202, 138, 4, 0.15);
-        cursor: pointer;
-
-        &:hover {
-            background: rgba(202, 138, 4, 0.14);
-        }
+    &--processing {
+        background: rgba(245, 158, 11, 0.08);
+        color: #92400e;
+        border-color: rgba(245, 158, 11, 0.15);
+        &::before { background: #f59e0b; }
     }
 
-    // Primary — customer code
-    &--primary {
-        background: rgba(26, 95, 180, 0.08);
-        color: #15478a;
-        border-color: rgba(26, 95, 180, 0.15);
-
-        &:hover {
-            background: rgba(26, 95, 180, 0.14);
-            color: #15478a;
-        }
+    &--completed {
+        background: rgba(34, 197, 94, 0.08);
+        color: #166534;
+        border-color: rgba(34, 197, 94, 0.15);
+        &::before { background: #22c55e; }
     }
+
+    &--cancelled {
+        background: rgba(156, 163, 175, 0.08);
+        color: #4b5563;
+        border-color: rgba(156, 163, 175, 0.15);
+        &::before { background: #9ca3af; }
+    }
+
+    // ====================================================================
+    //  Zendesk ticket status colors
+    // ====================================================================
+    &--zd-new      { @extend .app-tag--info; }
+    &--zd-open     { @extend .app-tag--primary; }
+    &--zd-pending  { @extend .app-tag--warning; }
+    &--zd-hold     { @extend .app-tag--secondary; }
+    &--zd-solved   { @extend .app-tag--success; }
+    &--zd-closed   { @extend .app-tag--dark; }
+}
+
+// Backward compatibility — status-badge maps to app-tag
+.status-badge {
+    @extend .app-tag;
+    @extend .app-tag--status;
+}
+
+// Map each status-badge variant to its app-tag equivalent
+@each $status in warehouse, awaiting-payment, shipped, paid, returned, problem, awaiting-package, new, processing, completed, cancelled {
+    .status-badge--#{$status} {
+        @extend .app-tag--#{$status};
+    }
+}
+
+.status-badge--filter {
+    @extend .app-tag--filter;
 }

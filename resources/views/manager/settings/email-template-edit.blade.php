@@ -12,9 +12,9 @@
                 <strong>Template Body</strong>
                 <div class="d-flex align-items-center gap-2">
                     @if($customized)
-                        <span class="badge bg-primary-subtle text-primary">Customized</span>
+                        <span class="app-tag app-tag--primary">Customized</span>
                     @else
-                        <span class="badge bg-secondary-subtle text-secondary">Default</span>
+                        <span class="app-tag app-tag--secondary">Default</span>
                     @endif
                 </div>
             </div>

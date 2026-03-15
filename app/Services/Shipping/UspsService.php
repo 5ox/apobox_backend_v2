@@ -32,6 +32,20 @@ class UspsService
         '1058' => 'USPS_GROUND_ADVANTAGE',
     ];
 
+    /**
+     * Rate indicator per mail class.
+     *
+     * DR = Dimensional Rectangular (packages with dimensions)
+     * SP = Single Piece (flat-rate / weight-only classes)
+     */
+    protected array $rateIndicators = [
+        'PRIORITY_MAIL'         => 'DR',
+        'PRIORITY_MAIL_EXPRESS' => 'DR',
+        'USPS_GROUND_ADVANTAGE' => 'DR',
+        'MEDIA_MAIL'            => 'SP',
+        'LIBRARY_MAIL'          => 'SP',
+    ];
+
     public function __construct()
     {
         $this->clientId = config('shipping.usps.client_id', '');
@@ -113,6 +127,11 @@ class UspsService
         $ounces = (int) ($params['ounces'] ?? 0);
         $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
 
+        // Weight must be > 0
+        if ($weightLbs <= 0) {
+            $weightLbs = 0.0625; // minimum 1 oz
+        }
+
         // Dimensions (optional, default to 0)
         $length = (float) ($params['length'] ?? 0);
         $width = (float) ($params['width'] ?? 0);
@@ -132,6 +151,8 @@ class UspsService
                 continue;
             }
 
+            $rateIndicator = $this->rateIndicators[$mailClass] ?? 'DR';
+
             $basePayload = [
                 'originZIPCode' => $originZip,
                 'destinationZIPCode' => $this->prepareZip($params['zip'] ?? ''),
@@ -142,7 +163,7 @@ class UspsService
                 'mailClass' => $mailClass,
                 'processingCategory' => 'MACHINABLE',
                 'destinationEntryFacilityType' => 'NONE',
-                'rateIndicator' => 'DR',
+                'rateIndicator' => $rateIndicator,
             ];
 
             try {
@@ -153,8 +174,20 @@ class UspsService
                     'accountNumber' => $this->accountNumber,
                 ];
 
-                $response = Http::withToken($token)->post($url, $commercialPayload);
+                $response = Http::withToken($token)
+                    ->connectTimeout(10)
+                    ->timeout(20)
+                    ->post($url, $commercialPayload);
                 $body = $response->json();
+
+                if (!$response->successful()) {
+                    Log::channel('shipping')->warning("USPS rate API error for {$mailClass}", [
+                        'status' => $response->status(),
+                        'error' => $body['error'] ?? $body['message'] ?? $body,
+                    ]);
+                    $queried[$mailClass] = [];
+                    continue;
+                }
 
                 $commercialRate = $this->extractPrice($body);
 
@@ -165,9 +198,14 @@ class UspsService
 
                 $retailRate = null;
                 try {
-                    $retailResponse = Http::withToken($token)->post($url, $retailPayload);
+                    $retailResponse = Http::withToken($token)
+                        ->connectTimeout(10)
+                        ->timeout(20)
+                        ->post($url, $retailPayload);
                     $retailBody = $retailResponse->json();
-                    $retailRate = $this->extractPrice($retailBody);
+                    if ($retailResponse->successful()) {
+                        $retailRate = $this->extractPrice($retailBody);
+                    }
                 } catch (\Exception $e) {
                     // Retail lookup is non-critical; log and continue
                     Log::channel('shipping')->info("USPS retail rate unavailable for {$mailClass}: " . $e->getMessage());
@@ -183,6 +221,10 @@ class UspsService
                         'retail_rate' => $retailRate,
                         'description' => $body['description'] ?? '',
                     ];
+                } else {
+                    Log::channel('shipping')->info("USPS no rate extracted for {$mailClass}", [
+                        'response' => $body,
+                    ]);
                 }
 
                 $queried[$mailClass] = $classRates;

@@ -109,10 +109,10 @@
                                         </td>
                                         <td>
                                             @if($request->package_repack === 'yes')
-                                                <span class="badge bg-info-subtle text-info">Repack</span>
+                                                <span class="app-tag app-tag--info">Repack</span>
                                             @endif
                                             @if($request->insurance_coverage)
-                                                <span class="badge bg-warning-subtle text-warning">${{ $request->insurance_coverage }} Ins.</span>
+                                                <span class="app-tag app-tag--warning">${{ $request->insurance_coverage }} Ins.</span>
                                             @endif
                                             @if($request->package_repack !== 'yes' && !$request->insurance_coverage)
                                                 <span class="text-muted">&mdash;</span>
@@ -299,9 +299,9 @@
                             <div class="address-card h-100">
                                 <div class="address-card__label">
                                     <span>
-                                        @if($isBilling)<span class="badge bg-primary-subtle text-primary me-1">Billing</span>@endif
-                                        @if($isShipping)<span class="badge bg-success-subtle text-success me-1">Shipping</span>@endif
-                                        @if($isEmergency)<span class="badge bg-warning-subtle text-warning me-1">Backup</span>@endif
+                                        @if($isBilling)<span class="app-tag app-tag--sm app-tag--primary me-1">Billing</span>@endif
+                                        @if($isShipping)<span class="app-tag app-tag--sm app-tag--success me-1">Shipping</span>@endif
+                                        @if($isEmergency)<span class="app-tag app-tag--sm app-tag--warning me-1">Backup</span>@endif
                                         @if(!$isDefault)<span class="text-muted">Address</span>@endif
                                     </span>
                                 </div>
@@ -376,10 +376,10 @@
                                         <td>{{ $ticket['subject'] }}</td>
                                         <td>
                                             @php
-                                                $statusColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
-                                                $color = $statusColors[$ticket['status']] ?? 'secondary';
+                                                $zdColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
+                                                $zdColor = $zdColors[$ticket['status']] ?? 'secondary';
                                             @endphp
-                                            <span class="badge bg-{{ $color }}">{{ ucfirst($ticket['status']) }}</span>
+                                            <span class="app-tag app-tag--{{ $zdColor }}">{{ ucfirst($ticket['status']) }}</span>
                                         </td>
                                         <td>{{ $ticket['updated_at'] ? \Carbon\Carbon::parse($ticket['updated_at'])->format('m/d/Y g:ia') : '' }}</td>
                                     </tr>

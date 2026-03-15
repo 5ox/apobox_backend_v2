@@ -71,8 +71,8 @@
     @if($section['orders']->isNotEmpty())
     <div class="mb-4">
         <h2 class="mb-3 d-flex align-items-center gap-2">
-            <x-status-badge :status="$section['label']" class="fs-6 px-3 py-2" />
-            <span class="badge bg-secondary rounded-pill fs-6">{{ $section['orders']->total() }}</span>
+            <x-status-badge :status="$section['label']" class="app-tag--lg" />
+            <span class="app-tag app-tag--lg app-tag--pill app-tag--secondary">{{ $section['orders']->total() }}</span>
         </h2>
         <div class="table-responsive">
             <table class="table table-modern table-sm align-middle">
@@ -130,7 +130,7 @@
                         <td>
                             <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}" class="fw-semibold">{{ $order->orders_id }}</a>
                             @if($order->problem_reason)
-                                <span class="badge bg-danger small">{{ $order->problem_reason }}</span>
+                                <span class="app-tag app-tag--sm app-tag--danger">{{ $order->problem_reason }}</span>
                             @endif
                         </td>
                         <td>
@@ -152,7 +152,7 @@
                                    data-tracking="{{ $inboundTrack }}"
                                    data-carrier="{{ $inboundCarrier }}"
                                    data-carrier-url="{{ $inboundUrl }}">
-                                    <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>...{{ substr($inboundTrack, -7) }}
+                                    <span class="app-tag app-tag--sm app-tag--muted me-1">{{ $inboundCarrier }}</span>...{{ substr($inboundTrack, -7) }}
                                 </a>
                             @endif
                         </td>
@@ -236,11 +236,11 @@
                     <div class="px-3 py-3 border-bottom bg-light">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div>
-                                <span id="trackingCarrierBadge" class="badge me-2"></span>
+                                <span id="trackingCarrierBadge" class="app-tag app-tag--sm me-2"></span>
                                 <code id="trackingModalNumber" class="user-select-all small"></code>
                             </div>
                             <div>
-                                <span id="trackingStatusBadge" class="badge bg-success fs-6"></span>
+                                <span id="trackingStatusBadge" class="app-tag app-tag--lg app-tag--success"></span>
                             </div>
                         </div>
                         <div id="trackingEstDelivery" class="text-muted small mt-1" style="display:none;">
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Tracking modal — fetch real tracking data from backend
     var trackModal = document.getElementById('trackingModal');
     if (trackModal) {
-        var carrierColors = { USPS: 'bg-primary', UPS: 'bg-warning text-dark', FedEx: 'bg-info text-dark', DHL: 'bg-danger' };
+        var carrierColors = { USPS: 'app-tag--primary', UPS: 'app-tag--warning', FedEx: 'app-tag--info', DHL: 'app-tag--danger', UDS: 'app-tag--dark' };
         var prefix = '{{ $prefix }}';
         var currentTrackNum = '';
 
@@ -313,19 +313,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Populate status bar
                     var badge = document.getElementById('trackingCarrierBadge');
-                    badge.className = 'badge ' + (carrierColors[data.carrier] || 'bg-secondary');
+                    badge.className = 'app-tag app-tag--sm ' + (carrierColors[data.carrier] || 'app-tag--secondary');
                     badge.textContent = data.carrier;
 
                     document.getElementById('trackingModalNumber').textContent = data.tracking_number;
 
                     var statusBadge = document.getElementById('trackingStatusBadge');
                     var statusLower = (data.status || '').toLowerCase();
-                    var statusColor = 'bg-secondary';
-                    if (statusLower.indexOf('delivered') !== -1) statusColor = 'bg-success';
-                    else if (statusLower.indexOf('transit') !== -1 || statusLower.indexOf('accepted') !== -1) statusColor = 'bg-primary';
-                    else if (statusLower.indexOf('exception') !== -1 || statusLower.indexOf('alert') !== -1) statusColor = 'bg-danger';
-                    else if (statusLower.indexOf('out for delivery') !== -1) statusColor = 'bg-info';
-                    statusBadge.className = 'badge ' + statusColor + ' fs-6';
+                    var statusColor = 'app-tag--secondary';
+                    if (statusLower.indexOf('delivered') !== -1) statusColor = 'app-tag--success';
+                    else if (statusLower.indexOf('transit') !== -1 || statusLower.indexOf('accepted') !== -1) statusColor = 'app-tag--primary';
+                    else if (statusLower.indexOf('exception') !== -1 || statusLower.indexOf('alert') !== -1) statusColor = 'app-tag--danger';
+                    else if (statusLower.indexOf('out for delivery') !== -1) statusColor = 'app-tag--info';
+                    statusBadge.className = 'app-tag app-tag--lg ' + statusColor;
                     statusBadge.textContent = data.status;
 
                     // Estimated delivery

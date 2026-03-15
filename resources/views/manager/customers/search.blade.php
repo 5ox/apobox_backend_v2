@@ -80,9 +80,9 @@
                             <td class="text-muted">{{ $c->customers_email_address ?? '' }}</td>
                             <td>
                                 @if($c->is_active)
-                                    <span class="badge bg-success-subtle text-success">Active</span>
+                                    <span class="app-tag app-tag--success">Active</span>
                                 @else
-                                    <span class="badge bg-danger-subtle text-danger">Closed</span>
+                                    <span class="app-tag app-tag--danger">Closed</span>
                                 @endif
                             </td>
                             <td><a href="/{{ $prefix }}/customers/view/{{ $c->customers_id }}" class="btn btn-sm btn-outline-primary"><i data-lucide="eye" class="icon--sm me-1"></i>View</a></td>

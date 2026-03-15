@@ -40,10 +40,10 @@
                             </td>
                             <td>
                                 @if($request->package_repack === 'yes')
-                                    <span class="badge bg-info-subtle text-info">Repack</span>
+                                    <span class="app-tag app-tag--info">Repack</span>
                                 @endif
                                 @if($request->insurance_coverage)
-                                    <span class="badge bg-warning-subtle text-warning">${{ $request->insurance_coverage }} Ins.</span>
+                                    <span class="app-tag app-tag--warning">${{ $request->insurance_coverage }} Ins.</span>
                                 @endif
                                 @if($request->package_repack !== 'yes' && !$request->insurance_coverage)
                                     <span class="text-muted">&mdash;</span>

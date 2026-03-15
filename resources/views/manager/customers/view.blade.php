@@ -5,7 +5,7 @@
 {{-- Customer Header --}}
 <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
     @if($customer->billing_id)
-        <span class="badge bg-primary fs-5 px-4 py-2" style="border-radius:12px">{{ $customer->billing_id }}</span>
+        <span class="app-tag app-tag--lg app-tag--primary">{{ $customer->billing_id }}</span>
     @endif
     <h2 class="mb-0">{{ $customer->full_name }}</h2>
     @if($closed)
@@ -121,10 +121,10 @@
                             <td>{{ $ticket['subject'] }}</td>
                             <td>
                                 @php
-                                    $statusColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
-                                    $color = $statusColors[$ticket['status']] ?? 'secondary';
+                                    $zdColors = ['new' => 'info', 'open' => 'primary', 'pending' => 'warning', 'hold' => 'secondary', 'solved' => 'success', 'closed' => 'dark'];
+                                    $zdColor = $zdColors[$ticket['status']] ?? 'secondary';
                                 @endphp
-                                <span class="badge bg-{{ $color }}">{{ ucfirst($ticket['status']) }}</span>
+                                <span class="app-tag app-tag--{{ $zdColor }}">{{ ucfirst($ticket['status']) }}</span>
                             </td>
                             <td>{{ $ticket['updated_at'] ? \Carbon\Carbon::parse($ticket['updated_at'])->format('m/d/Y g:ia') : '' }}</td>
                         </tr>

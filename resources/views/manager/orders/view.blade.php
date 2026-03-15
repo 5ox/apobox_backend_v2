@@ -71,18 +71,18 @@
             ][$order->status?->orders_status_name] ?? \Illuminate\Support\Str::slug($order->status?->orders_status_name ?? 'unknown');
         @endphp
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="order-tag order-tag--status order-tag--{{ $statusSlug }}">{{ $order->status?->orders_status_name }}</span>
+            <span class="app-tag app-tag--status app-tag--{{ $statusSlug }}">{{ $order->status?->orders_status_name }}</span>
             @if($order->problem_reason)
-                <span class="order-tag order-tag--danger">{{ $order->problem_reason }}</span>
+                <span class="app-tag app-tag--danger">{{ $order->problem_reason }}</span>
             @endif
             @if($order->zendesk_ticket_id)
-                <button type="button" class="order-tag order-tag--warning"
+                <button type="button" class="app-tag app-tag--warning"
                     data-bs-toggle="modal" data-bs-target="#zendeskModal">
                     <i data-lucide="message-circle" class="icon--sm"></i> #{{ $order->zendesk_ticket_id }}
                 </button>
             @endif
             @if($order->customer?->billing_id)
-                <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="order-tag order-tag--primary">{{ $order->customer->billing_id }}</a>
+                <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="app-tag app-tag--primary">{{ $order->customer->billing_id }}</a>
             @endif
             <span class="text-muted small ms-1">
                 {{ $order->date_purchased?->format('M jS, Y') ?? '' }}
@@ -99,7 +99,7 @@
             <x-detail-row label="Name">
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="fw-semibold">{{ $order->customers_name }}</a>
                 @if($order->customer?->billing_id)
-                    <span class="badge bg-primary ms-1">{{ $order->customer->billing_id }}</span>
+                    <span class="app-tag app-tag--primary app-tag--sm ms-1">{{ $order->customer->billing_id }}</span>
                 @endif
             </x-detail-row>
             <x-detail-row label="Email"><a href="mailto:{{ $order->customers_email_address }}" class="text-break">{{ $order->customers_email_address }}</a></x-detail-row>
@@ -170,7 +170,7 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Inbound</span>
                             @if($inbound)
-                                <span class="badge {{ match(strtoupper($inboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', 'UDS' => 'bg-dark', default => 'bg-secondary' } }}">{{ $inboundCarrierDisplay }}</span>
+                                <span class="app-tag app-tag--sm {{ match(strtoupper($inboundCarrier)) { 'USPS' => 'app-tag--primary', 'UPS' => 'app-tag--warning', 'FEDEX' => 'app-tag--info', 'DHL' => 'app-tag--danger', 'UDS' => 'app-tag--dark', default => 'app-tag--secondary' } }}">{{ $inboundCarrierDisplay }}</span>
                                 <code class="tracking-section__number user-select-all">{{ $inbound }}</code>
                                 <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $inbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
@@ -223,7 +223,7 @@
                             {{-- Content --}}
                             <div id="inboundContent" style="display:none">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                                    <span id="inboundStatusBadge" class="badge fs-6"></span>
+                                    <span id="inboundStatusBadge" class="app-tag app-tag--lg"></span>
                                     <span id="inboundEstDelivery" class="text-muted small" style="display:none">
                                         <i data-lucide="calendar" class="icon--xs me-1"></i>Est. delivery: <strong id="inboundEstDate"></strong>
                                     </span>
@@ -245,7 +245,7 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Outbound</span>
                             @if($outbound)
-                                <span class="badge {{ match(strtoupper($outboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', 'UDS' => 'bg-dark', default => 'bg-secondary' } }}">{{ $outboundCarrierDisplay }}</span>
+                                <span class="app-tag app-tag--sm {{ match(strtoupper($outboundCarrier)) { 'USPS' => 'app-tag--primary', 'UPS' => 'app-tag--warning', 'FEDEX' => 'app-tag--info', 'DHL' => 'app-tag--danger', 'UDS' => 'app-tag--dark', default => 'app-tag--secondary' } }}">{{ $outboundCarrierDisplay }}</span>
                                 <code class="tracking-section__number user-select-all">{{ $outbound }}</code>
                                 <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $outbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
@@ -298,7 +298,7 @@
                             {{-- Content --}}
                             <div id="outboundContent" style="display:none">
                                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                                    <span id="outboundStatusBadge" class="badge fs-6"></span>
+                                    <span id="outboundStatusBadge" class="app-tag app-tag--lg"></span>
                                     <span id="outboundEstDelivery" class="text-muted small" style="display:none">
                                         <i data-lucide="calendar" class="icon--xs me-1"></i>Est. delivery: <strong id="outboundEstDate"></strong>
                                     </span>
@@ -459,9 +459,9 @@
                         <td class="small">{{ $history->comments }}</td>
                         <td>
                             @if($history->customer_notified)
-                                <span class="badge bg-success"><i data-lucide="check" class="icon--xs"></i></span>
+                                <span class="app-tag app-tag--sm app-tag--success"><i data-lucide="check" class="icon--xs"></i></span>
                             @else
-                                <span class="badge bg-danger"><i data-lucide="x" class="icon--xs"></i></span>
+                                <span class="app-tag app-tag--sm app-tag--danger"><i data-lucide="x" class="icon--xs"></i></span>
                             @endif
                         </td>
                     </tr>
@@ -487,7 +487,7 @@
                 <h6 class="modal-title d-flex align-items-center gap-2">
                     <i data-lucide="message-circle" style="width:18px;height:18px"></i>
                     <span>Ticket #{{ $order->zendesk_ticket_id }}</span>
-                    <span id="zendeskStatusBadge" class="badge bg-secondary ms-1" style="display:none;"></span>
+                    <span id="zendeskStatusBadge" class="app-tag app-tag--sm app-tag--secondary ms-1" style="display:none;"></span>
                 </h6>
                 <div class="d-flex align-items-center gap-2 ms-auto me-2">
                     <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Open in Zendesk">
@@ -561,12 +561,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ——— INLINE TRACKING ———
     function getStatusColor(status) {
         var s = (status || '').toLowerCase();
-        if (s.indexOf('delivered') !== -1) return 'bg-success';
-        if (s.indexOf('out for delivery') !== -1) return 'bg-info';
-        if (s.indexOf('transit') !== -1 || s.indexOf('accepted') !== -1) return 'bg-primary';
-        if (s.indexOf('exception') !== -1 || s.indexOf('alert') !== -1) return 'bg-danger';
-        if (s.indexOf('pre-shipment') !== -1 || s.indexOf('pre_shipment') !== -1) return 'bg-warning text-dark';
-        return 'bg-secondary';
+        if (s.indexOf('delivered') !== -1) return 'app-tag--success';
+        if (s.indexOf('out for delivery') !== -1) return 'app-tag--info';
+        if (s.indexOf('transit') !== -1 || s.indexOf('accepted') !== -1) return 'app-tag--primary';
+        if (s.indexOf('exception') !== -1 || s.indexOf('alert') !== -1) return 'app-tag--danger';
+        if (s.indexOf('pre-shipment') !== -1 || s.indexOf('pre_shipment') !== -1) return 'app-tag--warning';
+        return 'app-tag--secondary';
     }
 
     function renderTrackingTimeline(eventsContainer, events) {
@@ -617,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Status badge
                 var statusBadge = document.getElementById(idPrefix + 'StatusBadge');
-                statusBadge.className = 'badge ' + getStatusColor(data.status) + ' fs-6';
+                statusBadge.className = 'app-tag app-tag--lg ' + getStatusColor(data.status);
                 statusBadge.textContent = data.status;
 
                 // Estimated delivery
@@ -696,8 +696,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById('zendeskSubject').textContent = data.ticket.subject || '';
                         var sBadge = document.getElementById('zendeskStatusBadge');
                         var st = (data.ticket.status || '').toLowerCase();
-                        var sColor = { new: 'bg-info', open: 'bg-warning text-dark', pending: 'bg-primary', solved: 'bg-success', closed: 'bg-secondary' };
-                        sBadge.className = 'badge ms-1 ' + (sColor[st] || 'bg-secondary');
+                        var sColor = { new: 'app-tag--info', open: 'app-tag--warning', pending: 'app-tag--primary', solved: 'app-tag--success', closed: 'app-tag--secondary' };
+                        sBadge.className = 'app-tag app-tag--sm ms-1 ' + (sColor[st] || 'app-tag--secondary');
                         sBadge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
                         sBadge.style.display = '';
                     }

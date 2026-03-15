@@ -67,11 +67,11 @@ $input-focus-box-shadow:   0 0 0 0.2rem rgba(26, 95, 180, 0.15);
 $form-label-font-weight:   500;
 $form-label-color:         $apobox-slate;
 
-// Badges
-$badge-font-weight:  500;
-$badge-padding-y:    0.375em;
-$badge-padding-x:    0.75em;
-$badge-border-radius: 50rem;
+// Badges (Bootstrap badge — used only for count pills)
+$badge-font-weight:  600;
+$badge-padding-y:    0.25em;
+$badge-padding-x:    0.55em;
+$badge-border-radius: 50rem; // pills for counters
 
 // --------------------------------------------------------------------------
 // 2. Bootstrap Import

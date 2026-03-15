@@ -25,9 +25,9 @@
                         <td class="small font-monospace">{{ $t['default_subject'] }}</td>
                         <td>
                             @if($t['customized'])
-                                <span class="badge bg-primary-subtle text-primary">Customized</span>
+                                <span class="app-tag app-tag--primary">Customized</span>
                             @else
-                                <span class="badge bg-secondary-subtle text-secondary">Default</span>
+                                <span class="app-tag app-tag--secondary">Default</span>
                             @endif
                         </td>
                         <td class="text-end">

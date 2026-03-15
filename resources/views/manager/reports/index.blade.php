@@ -27,7 +27,7 @@
             <div class="stat-card__icon"><i data-lucide="package" class="icon--lg"></i></div>
             <div class="stat-card__number" id="kpi-total-orders">--</div>
             <div class="stat-card__label">Packages This Period</div>
-            <div class="mt-1"><span id="kpi-percent-change" class="badge bg-secondary-subtle text-secondary">--</span></div>
+            <div class="mt-1"><span id="kpi-percent-change" class="app-tag app-tag--sm app-tag--secondary">--</span></div>
         </div>
     </div>
     <div class="card card-hover kpi-card">
