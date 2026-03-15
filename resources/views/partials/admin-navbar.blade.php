@@ -11,7 +11,7 @@
             @auth('admin')
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/dashboard"><i data-lucide="layout-dashboard" class="icon--sm"></i> Dashboard</a></li>
-                    @if(auth('admin')->user()->role === 'manager')
+                    @if(in_array(auth('admin')->user()->role, ['manager', 'sysadmin']))
                         <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/reports/index"><i data-lucide="bar-chart-3" class="icon--sm"></i> Reports</a></li>
                         <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/logs/view"><i data-lucide="file-text" class="icon--sm"></i> Logs</a></li>
                         <li class="nav-item"><a class="nav-link" href="/{{ $prefix }}/affiliate-links"><i data-lucide="link" class="icon--sm"></i> Affiliate Links</a></li>

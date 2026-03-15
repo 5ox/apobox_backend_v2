@@ -76,6 +76,8 @@
             <nav class="nav flex-column">
                 <a class="nav-link" href="/{{ $prefix }}/admins/index"><i data-lucide="shield" class="icon"></i> Manage Staff</a>
                 <a class="nav-link" href="/{{ $prefix }}/tools"><i data-lucide="wrench" class="icon"></i> Tools</a>
+                <a class="nav-link" href="/{{ $prefix }}/logs/view"><i data-lucide="scroll-text" class="icon"></i> Logs</a>
+                <a class="nav-link" href="/{{ $prefix }}/affiliate-links"><i data-lucide="link" class="icon"></i> Affiliate Links</a>
                 @if(auth('admin')->user()?->isSysadmin())
                     <a class="nav-link" href="/{{ $prefix }}/settings"><i data-lucide="settings" class="icon"></i> Settings</a>
                 @endif
