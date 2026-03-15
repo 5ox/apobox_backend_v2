@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">How to measure a package</title>
+  <desc id="desc">Illustration of a box with arrows showing length, width, and height. Length is the longest side, width is the side across the front, and height is the vertical side.</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#1e4f91"/>
+    </marker>
+    <marker id="arrow-gold" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#cc8b00"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L6,3 z" fill="#c54646"/>
+    </marker>
+  </defs>
+
+  <rect width="640" height="360" rx="24" fill="#f6f8fb"/>
+
+  <g transform="translate(132 70)">
+    <polygon points="0,70 150,25 310,70 160,120" fill="#dce7f7" stroke="#6a88b6" stroke-width="3"/>
+    <polygon points="0,70 0,200 160,250 160,120" fill="#c8d8f0" stroke="#6a88b6" stroke-width="3"/>
+    <polygon points="160,120 310,70 310,200 160,250" fill="#b8ccec" stroke="#6a88b6" stroke-width="3"/>
+
+    <line x1="-10" y1="282" x2="154" y2="236" stroke="#1e4f91" stroke-width="5" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+    <text x="16" y="320" fill="#1e4f91" font-family="Arial, sans-serif" font-size="24" font-weight="700">Length</text>
+
+    <line x1="336" y1="88" x2="336" y2="194" stroke="#c54646" stroke-width="5" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)"/>
+    <text x="360" y="148" fill="#c54646" font-family="Arial, sans-serif" font-size="24" font-weight="700">Height</text>
+
+    <line x1="50" y1="32" x2="212" y2="-14" stroke="#cc8b00" stroke-width="5" marker-start="url(#arrow-gold)" marker-end="url(#arrow-gold)"/>
+    <text x="82" y="-26" fill="#cc8b00" font-family="Arial, sans-serif" font-size="24" font-weight="700">Width</text>
+  </g>
+
+  <g font-family="Arial, sans-serif" fill="#31435e">
+    <text x="40" y="36" font-size="28" font-weight="700">Measure the outside of the sealed package</text>
+    <text x="40" y="318" font-size="20">Length = longest side</text>
+    <text x="256" y="318" font-size="20">Width = side across the front</text>
+    <text x="508" y="318" font-size="20">Height = top to bottom</text>
+  </g>
+</svg>

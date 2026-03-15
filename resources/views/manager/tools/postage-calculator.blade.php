@@ -59,6 +59,15 @@
                         </div>
                     </div>
                 </div>
+                <div class="rounded-3 border bg-light-subtle p-3 mb-3">
+                    <div class="fw-semibold mb-2">How to measure</div>
+                    <img
+                        src="{{ asset('images/usps-package-measure-guide.svg') }}"
+                        alt="Package measurement guide showing length as the longest side, width across the front, and height from top to bottom."
+                        class="img-fluid rounded-2 border bg-white mb-2"
+                    >
+                    <div class="form-text mb-0">Measure the outside of the sealed box. Length is the longest side.</div>
+                </div>
                 <div class="form-text mb-3">USPS pricing requires length, width, and height.</div>
 
                 <button type="submit" class="btn btn-primary w-100">

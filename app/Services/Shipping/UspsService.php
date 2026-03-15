@@ -457,11 +457,12 @@ class UspsService
         }
 
         return sprintf(
-            'Package is non-machinable for the current USPS lookup path (%.2f lb, %.1f" x %.1f" x %.1f"). This calculator currently supports machinable USPS parcels only; Ground Advantage nonstandard pricing requires a separate lookup path.',
+            'Package is non-machinable for the current USPS lookup path (%.2f lb, %.1f" x %.1f" x %.1f) because %s. This calculator currently supports machinable USPS parcels only; Ground Advantage nonstandard pricing requires a separate lookup path.',
             $analysis['weight_lbs'],
             $analysis['longest_side'],
             $analysis['middle_side'],
-            $analysis['shortest_side']
+            $analysis['shortest_side'],
+            $analysis['non_machinable_reason_text']
         );
     }
 
@@ -488,6 +489,14 @@ class UspsService
             && $shortestSide <= self::MACHINABLE_MAX_HEIGHT_IN
             && $lengthPlusGirth <= self::STANDARD_MAX_LENGTH_PLUS_GIRTH_IN;
 
+        $nonMachinableReasons = $this->buildNonMachinableReasons(
+            $weightLbs,
+            $longestSide,
+            $middleSide,
+            $shortestSide,
+            $lengthPlusGirth
+        );
+
         return [
             'weight_lbs' => $weightLbs,
             'longest_side' => $longestSide,
@@ -495,6 +504,8 @@ class UspsService
             'shortest_side' => $shortestSide,
             'length_plus_girth' => $lengthPlusGirth,
             'is_machinable' => $isMachinable,
+            'non_machinable_reasons' => $nonMachinableReasons,
+            'non_machinable_reason_text' => $this->formatReasonList($nonMachinableReasons),
             'is_oversized' => $lengthPlusGirth > self::STANDARD_MAX_LENGTH_PLUS_GIRTH_IN
                 && $lengthPlusGirth <= self::USPS_MAX_LENGTH_PLUS_GIRTH_IN
                 && $weightLbs <= self::USPS_MAX_WEIGHT_LBS,
@@ -570,6 +581,56 @@ class UspsService
         $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
 
         return $weightLbs > 0 ? $weightLbs : 0.0625;
+    }
+
+    /**
+     * Explain which machinable rule(s) the parcel exceeds.
+     */
+    protected function buildNonMachinableReasons(
+        float $weightLbs,
+        float $longestSide,
+        float $middleSide,
+        float $shortestSide,
+        float $lengthPlusGirth
+    ): array {
+        $reasons = [];
+
+        if ($weightLbs > self::MACHINABLE_MAX_WEIGHT_LBS) {
+            $reasons[] = sprintf('weight %.2f lb exceeds the 25 lb machinable limit', $weightLbs);
+        }
+
+        if ($longestSide > self::MACHINABLE_MAX_LENGTH_IN) {
+            $reasons[] = sprintf('longest side %.1f" exceeds the 22" machinable limit', $longestSide);
+        }
+
+        if ($middleSide > self::MACHINABLE_MAX_WIDTH_IN) {
+            $reasons[] = sprintf('second side %.1f" exceeds the 18" machinable limit', $middleSide);
+        }
+
+        if ($shortestSide > self::MACHINABLE_MAX_HEIGHT_IN) {
+            $reasons[] = sprintf('third side %.1f" exceeds the 15" machinable limit', $shortestSide);
+        }
+
+        if ($lengthPlusGirth > self::STANDARD_MAX_LENGTH_PLUS_GIRTH_IN) {
+            $reasons[] = sprintf('length + girth %.1f" exceeds the 108" standard parcel limit', $lengthPlusGirth);
+        }
+
+        return $reasons;
+    }
+
+    protected function formatReasonList(array $reasons): string
+    {
+        if (empty($reasons)) {
+            return 'it does not fit the machinable parcel rules';
+        }
+
+        if (count($reasons) === 1) {
+            return $reasons[0];
+        }
+
+        $lastReason = array_pop($reasons);
+
+        return implode(', ', $reasons) . ', and ' . $lastReason;
     }
 
     /**

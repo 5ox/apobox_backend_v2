@@ -95,7 +95,24 @@ class UspsServiceTest extends TestCase
         $this->assertStringContainsString('Ground Advantage', $message);
     }
 
-    public function test_validate_rate_lookup_request_rejects_non_machinable_parcels_with_specific_message(): void
+    public function test_validate_rate_lookup_request_rejects_non_machinable_weight_with_specific_message(): void
+    {
+        $service = app(UspsService::class);
+
+        $message = $service->validateRateLookupRequest([
+            'pounds' => 26,
+            'ounces' => 2,
+            'length' => 10,
+            'width' => 10,
+            'height' => 10,
+        ]);
+
+        $this->assertIsString($message);
+        $this->assertStringContainsString('non-machinable', strtolower($message));
+        $this->assertStringContainsString('weight 26.12 lb exceeds the 25 lb machinable limit', $message);
+    }
+
+    public function test_validate_rate_lookup_request_rejects_non_machinable_dimensions_with_specific_message(): void
     {
         $service = app(UspsService::class);
 
@@ -109,5 +126,6 @@ class UspsServiceTest extends TestCase
 
         $this->assertIsString($message);
         $this->assertStringContainsString('non-machinable', strtolower($message));
+        $this->assertStringContainsString('second side 20.0" exceeds the 18" machinable limit', $message);
     }
 }
