@@ -79,7 +79,8 @@
                 <a class="nav-link" href="/{{ $prefix }}/logs/view"><i data-lucide="scroll-text" class="icon"></i> Logs</a>
                 <a class="nav-link" href="/{{ $prefix }}/affiliate-links"><i data-lucide="link" class="icon"></i> Affiliate Links</a>
                 @if(auth('admin')->user()?->isSysadmin())
-                    <a class="nav-link" href="/{{ $prefix }}/settings"><i data-lucide="settings" class="icon"></i> Settings</a>
+                    <a class="nav-link" href="/{{ $prefix }}/settings/insurance-tiers"><i data-lucide="shield" class="icon"></i> Insurance Tiers</a>
+                    <a class="nav-link" href="/{{ $prefix }}/settings"><i data-lucide="mail" class="icon"></i> Email Config</a>
                 @endif
             </nav>
         </div>

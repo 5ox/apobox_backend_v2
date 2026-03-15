@@ -3,7 +3,7 @@
 @section('content')
 @php $prefix = auth('admin')->user()->routePrefix(); @endphp
 
-<x-page-header title="Settings" subtitle="System configuration" />
+<x-page-header title="Email Configuration" subtitle="Mail delivery and template settings" />
 
 <div class="row">
     <div class="col-lg-8">
@@ -148,17 +148,6 @@
                     <p class="text-muted small mb-0">View and edit email templates sent to customers</p>
                 </div>
                 <a href="/{{ $prefix }}/settings/email-templates" class="btn btn-outline-primary btn-sm">
-                    <i data-lucide="pencil" class="icon"></i> Manage
-                </a>
-            </div>
-        </div>
-        <div class="card mb-3">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="mb-1"><i data-lucide="shield" class="icon"></i> Insurance Tiers</h6>
-                    <p class="text-muted small mb-0">Manage coverage-based insurance fee schedule</p>
-                </div>
-                <a href="/{{ $prefix }}/settings/insurance-tiers" class="btn btn-outline-primary btn-sm">
                     <i data-lucide="pencil" class="icon"></i> Manage
                 </a>
             </div>
