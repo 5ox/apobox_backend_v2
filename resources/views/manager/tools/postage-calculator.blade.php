@@ -99,7 +99,7 @@
                             @endphp
                             <tr>
                                 <td>
-                                    <span class="fw-semibold">{{ $rate['description'] ?: $rate['service'] }}</span>
+                                    <span class="fw-semibold">{{ $rate['label'] ?? ($rate['description'] ?: $rate['service']) }}</span>
                                 </td>
                                 <td class="text-end text-muted">
                                     {{ $retailRate ? '$' . number_format($retailRate, 2) : '—' }}

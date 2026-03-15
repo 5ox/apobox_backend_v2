@@ -46,7 +46,7 @@
                     <tbody>
                         @php
                             $lineItems = [
-                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate ? ($autoRate['retail_rate'] ?? $autoRate['rate']) : null, 'hint' => $autoRate ? ($autoRate['description'] ?: $autoRate['service']) . ' (retail)' : null],
+                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate ? ($autoRate['retail_rate'] ?? $autoRate['rate']) : null, 'hint' => $autoRate ? ($autoRate['label'] ?? $autoRate['description'] ?: $autoRate['service']) . ' (retail)' : null],
                                 ['name' => 'OrderFee', 'label' => 'Handling Fee', 'relation' => 'fee', 'auto' => $autoFee ?? null, 'hint' => null],
                                 ['name' => 'OrderInsurance', 'label' => 'Insurance', 'relation' => 'insurance', 'auto' => $autoInsurance ?? null, 'hint' => null],
                                 ['name' => 'OrderStorage', 'label' => 'Storage', 'relation' => 'storage', 'auto' => null, 'hint' => null],
@@ -131,8 +131,8 @@
                                 $retailRate = $rate['retail_rate'] ?? null;
                                 $savings = ($retailRate && $retailRate > $ourRate) ? $retailRate - $ourRate : null;
                             @endphp
-                            <tr @if($autoRate && ($rate['class_id'] ?? '') === ($autoRate['class_id'] ?? '')) class="table-success" @endif>
-                                <td>{{ $rate['description'] ?: $rate['service'] }}</td>
+                            <tr @if($autoRate && $rate['service'] === $autoRate['service']) class="table-success" @endif>
+                                <td>{{ $rate['label'] ?? ($rate['description'] ?: $rate['service']) }}</td>
                                 <td class="text-end">${{ number_format($ourRate, 2) }}</td>
                                 <td class="text-end text-muted">{{ $retailRate ? '$' . number_format($retailRate, 2) : '—' }}</td>
                                 <td class="text-end">

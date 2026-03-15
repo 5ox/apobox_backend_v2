@@ -271,7 +271,9 @@ class OrderController extends Controller
         $customerIsReadonly = true;
 
         $mailClasses = config('apobox.postal_classes', []);
-        $defaultMailClass = $customer->default_postal_type ?? 'priority_mail';
+        $defaultMailClass = app(UspsService::class)->normalizeMailClass(
+            $customer->default_postal_type ?? 'PRIORITY_MAIL'
+        );
 
         // Load open Zendesk tickets for the customer
         $openTickets = [];
@@ -353,8 +355,9 @@ class OrderController extends Controller
         // Insurance coverage
         $data['insurance_coverage'] = (float) ($validated['insurance_coverage'] ?? $customer->insurance_amount ?? 0);
 
-        // Mail class
-        $data['mail_class'] = strtoupper($validated['mail_class'] ?? $customer->default_postal_type ?? 'priority_mail');
+        // Mail class — postal_classes config keys are already uppercase v3 API names
+        $mailClassInput = $validated['mail_class'] ?? $customer->default_postal_type ?? 'PRIORITY_MAIL';
+        $data['mail_class'] = app(UspsService::class)->normalizeMailClass($mailClassInput);
 
         // Default package type
         $data['package_type'] = 'YOUR_PACKAGING';
@@ -592,15 +595,14 @@ class OrderController extends Controller
 
                 // Find the rate matching this order's mail class
                 if (!empty($uspsRates)) {
-                    $orderMailClass = strtoupper(trim($order->mail_class ?? ''));
+                    $orderMailClass = $usps->normalizeMailClass($order->mail_class ?? '');
                     foreach ($uspsRates as $rate) {
-                        $service = strtoupper($rate['service'] ?? '');
-                        if ($service === $orderMailClass || str_contains($service, $orderMailClass)) {
+                        if ($rate['service'] === $orderMailClass) {
                             $autoRate = $rate;
                             break;
                         }
                     }
-                    // Fallback: use the first/cheapest rate if no exact match
+                    // Fallback: use the first rate if no exact match
                     if (!$autoRate) {
                         $autoRate = $uspsRates[0] ?? null;
                     }

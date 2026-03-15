@@ -181,8 +181,11 @@ return [
     |--------------------------------------------------------------------------
     */
     'postal_classes' => [
-        'priority_mail' => 'Priority Mail',
-        'parcel_post' => 'Parcel Select',
+        'PRIORITY_MAIL'          => 'Priority Mail',
+        'PRIORITY_MAIL_EXPRESS'  => 'Priority Mail Express',
+        'USPS_GROUND_ADVANTAGE'  => 'USPS Ground Advantage',
+        'MEDIA_MAIL'             => 'Media Mail',
+        'LIBRARY_MAIL'           => 'Library Mail',
     ],
 
     /*

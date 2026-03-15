@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * USPS Domestic Prices v3 REST API (OAuth 2.0)
  *
- * Replaces the retired RateV4 XML API (retired Jan 25, 2026).
  * @see https://developers.usps.com/domesticpricesv3
+ * @see https://github.com/USPS/api-examples
  */
 class UspsService
 {
@@ -20,30 +20,48 @@ class UspsService
     protected string $baseUrl = 'https://apis.usps.com';
 
     /**
-     * Old CLASSID => new v3 mailClass mapping
+     * Supported mail classes with their v3 API parameters.
+     *
+     * rateIndicator: SP = Single Piece (standard weight-based pricing)
+     * processingCategory: MACHINABLE for standard parcels
      */
-    protected array $classIdToMailClass = [
-        '1'    => 'PRIORITY_MAIL',
-        '2'    => 'PRIORITY_MAIL_EXPRESS',
-        '3'    => 'PRIORITY_MAIL_EXPRESS',
-        '4'    => 'USPS_GROUND_ADVANTAGE',
-        '6'    => 'MEDIA_MAIL',
-        '7'    => 'LIBRARY_MAIL',
-        '1058' => 'USPS_GROUND_ADVANTAGE',
+    protected array $mailClasses = [
+        'PRIORITY_MAIL' => [
+            'label' => 'Priority Mail',
+            'rateIndicator' => 'SP',
+            'processingCategory' => 'MACHINABLE',
+        ],
+        'PRIORITY_MAIL_EXPRESS' => [
+            'label' => 'Priority Mail Express',
+            'rateIndicator' => 'SP',
+            'processingCategory' => 'MACHINABLE',
+        ],
+        'USPS_GROUND_ADVANTAGE' => [
+            'label' => 'USPS Ground Advantage',
+            'rateIndicator' => 'SP',
+            'processingCategory' => 'MACHINABLE',
+        ],
+        'MEDIA_MAIL' => [
+            'label' => 'Media Mail',
+            'rateIndicator' => 'SP',
+            'processingCategory' => 'MACHINABLE',
+        ],
+        'LIBRARY_MAIL' => [
+            'label' => 'Library Mail',
+            'rateIndicator' => 'SP',
+            'processingCategory' => 'MACHINABLE',
+        ],
     ];
 
     /**
-     * Rate indicator per mail class.
-     *
-     * DR = Dimensional Rectangular (packages with dimensions)
-     * SP = Single Piece (flat-rate / weight-only classes)
+     * Normalize legacy mail_class values from old orders to v3 API names.
      */
-    protected array $rateIndicators = [
-        'PRIORITY_MAIL'         => 'DR',
-        'PRIORITY_MAIL_EXPRESS' => 'DR',
-        'USPS_GROUND_ADVANTAGE' => 'DR',
-        'MEDIA_MAIL'            => 'SP',
-        'LIBRARY_MAIL'          => 'SP',
+    protected array $legacyClassMap = [
+        'PARCEL_POST'      => 'USPS_GROUND_ADVANTAGE',
+        'PARCEL_SELECT'    => 'USPS_GROUND_ADVANTAGE',
+        'STANDARD_POST'    => 'USPS_GROUND_ADVANTAGE',
+        'GROUND_ADVANTAGE' => 'USPS_GROUND_ADVANTAGE',
+        'APOBOX_DIRECT'    => 'PRIORITY_MAIL',  // legacy default
     ];
 
     public function __construct()
@@ -54,10 +72,10 @@ class UspsService
     }
 
     /**
-     * Get shipping rates for a package.
+     * Get shipping rates filtered to configured rate classes.
      *
-     * Returns an array of rates compatible with the old format:
-     * [['class_id' => '1', 'service' => 'PRIORITY_MAIL', 'rate' => 8.50], ...]
+     * Returns: [['service' => 'PRIORITY_MAIL', 'label' => 'Priority Mail', 'rate' => 8.50, 'retail_rate' => 10.50, 'description' => '...'], ...]
+     * On error: ['error' => 'message']
      */
     public function getRate(array $params): array
     {
@@ -67,9 +85,12 @@ class UspsService
             $token = $this->getAccessToken();
             $rates = $this->fetchRates($token, $params);
 
-            // Filter to only configured rate classes
+            if (empty($allowedClasses)) {
+                return $rates;
+            }
+
             return collect($rates)->filter(function ($rate) use ($allowedClasses) {
-                return in_array($rate['class_id'], $allowedClasses);
+                return in_array($rate['service'], $allowedClasses);
             })->values()->all();
         } catch (\Exception $e) {
             Log::channel('shipping')->error('USPS Rate Error: ' . $e->getMessage(), [
@@ -80,7 +101,7 @@ class UspsService
     }
 
     /**
-     * Get all available rates without filtering by class.
+     * Get all available rates without filtering by configured classes.
      */
     public function getAllRates(array $params): array
     {
@@ -88,25 +109,32 @@ class UspsService
             $token = $this->getAccessToken();
             return $this->fetchRates($token, $params);
         } catch (\Exception $e) {
-            Log::channel('shipping')->error('USPS Rate Error: ' . $e->getMessage());
+            Log::channel('shipping')->error('USPS Rate Error: ' . $e->getMessage(), [
+                'params' => $params,
+            ]);
             return ['error' => $e->getMessage()];
         }
     }
 
     /**
-     * Obtain an OAuth 2.0 access token (cached for ~8 hours).
+     * Obtain an OAuth 2.0 access token (cached for ~7 hours).
      */
-    protected function getAccessToken(): string
+    public function getAccessToken(): string
     {
         return Cache::remember('usps_oauth_token', 7 * 3600, function () {
-            $response = Http::post($this->baseUrl . '/oauth2/v3/token', [
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-                'grant_type' => 'client_credentials',
-            ]);
+            $response = Http::connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 500, throw: false)
+                ->post($this->baseUrl . '/oauth2/v3/token', [
+                    'client_id' => $this->clientId,
+                    'client_secret' => $this->clientSecret,
+                    'grant_type' => 'client_credentials',
+                ]);
 
             if (!$response->successful() || !$response->json('access_token')) {
-                $error = $response->json('error_description', 'OAuth token request failed');
+                $error = $response->json('error_description')
+                    ?? $response->json('error')
+                    ?? 'OAuth token request failed (HTTP ' . $response->status() . ')';
                 throw new \RuntimeException('USPS OAuth Error: ' . $error);
             }
 
@@ -115,60 +143,58 @@ class UspsService
     }
 
     /**
-     * Query Domestic Prices v3 for each configured mail class.
+     * Query Domestic Prices v3 for each mail class.
      */
     protected function fetchRates(string $token, array $params): array
     {
         $url = $this->baseUrl . '/prices/v3/base-rates/search';
-        $originZip = config('shipping.origin_zip');
+        $originZip = $this->prepareZip(config('shipping.origin_zip', '46563'));
+        $destZip = $this->prepareZip($params['zip'] ?? '');
+
+        if (empty($destZip)) {
+            throw new \RuntimeException('Destination ZIP code is required');
+        }
 
         // Convert pounds + ounces to decimal pounds
         $pounds = (int) ($params['pounds'] ?? 0);
         $ounces = (int) ($params['ounces'] ?? 0);
         $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
 
-        // Weight must be > 0
+        // Weight must be > 0 — minimum 1 oz
         if ($weightLbs <= 0) {
-            $weightLbs = 0.0625; // minimum 1 oz
+            $weightLbs = 0.0625;
         }
 
-        // Dimensions (optional, default to 0)
+        // Dimensions — only include if all three are provided and > 0
         $length = (float) ($params['length'] ?? 0);
         $width = (float) ($params['width'] ?? 0);
         $height = (float) ($params['height'] ?? 0);
+        $hasDimensions = ($length > 0 && $width > 0 && $height > 0);
 
         $rates = [];
-        $queried = []; // avoid duplicate mailClass queries
 
-        foreach ($this->classIdToMailClass as $classId => $mailClass) {
-            if (isset($queried[$mailClass])) {
-                // Map additional classIds that share the same mailClass
-                if (!empty($queried[$mailClass])) {
-                    foreach ($queried[$mailClass] as $rate) {
-                        $rates[] = array_merge($rate, ['class_id' => $classId]);
-                    }
-                }
-                continue;
-            }
-
-            $rateIndicator = $this->rateIndicators[$mailClass] ?? 'DR';
-
-            $basePayload = [
+        foreach ($this->mailClasses as $mailClass => $config) {
+            $payload = [
                 'originZIPCode' => $originZip,
-                'destinationZIPCode' => $this->prepareZip($params['zip'] ?? ''),
+                'destinationZIPCode' => $destZip,
                 'weight' => $weightLbs,
-                'length' => $length,
-                'width' => $width,
-                'height' => $height,
                 'mailClass' => $mailClass,
-                'processingCategory' => 'MACHINABLE',
+                'processingCategory' => $config['processingCategory'],
                 'destinationEntryFacilityType' => 'NONE',
-                'rateIndicator' => $rateIndicator,
+                'rateIndicator' => $config['rateIndicator'],
+                'mailingDate' => now()->format('Y-m-d'),
             ];
+
+            // Only include dimensions when we have valid measurements
+            if ($hasDimensions) {
+                $payload['length'] = $length;
+                $payload['width'] = $width;
+                $payload['height'] = $height;
+            }
 
             try {
                 // --- Commercial (our discounted) rate ---
-                $commercialPayload = $basePayload + [
+                $commercialPayload = $payload + [
                     'priceType' => 'COMMERCIAL',
                     'accountType' => 'EPS',
                     'accountNumber' => $this->accountNumber,
@@ -177,22 +203,36 @@ class UspsService
                 $response = Http::withToken($token)
                     ->connectTimeout(10)
                     ->timeout(20)
+                    ->retry(2, 500, throw: false)
                     ->post($url, $commercialPayload);
-                $body = $response->json();
+
+                $body = $response->json() ?? [];
 
                 if (!$response->successful()) {
-                    Log::channel('shipping')->warning("USPS rate API error for {$mailClass}", [
+                    $apiError = $body['error']['message']
+                        ?? $body['message']
+                        ?? $body['error']
+                        ?? 'HTTP ' . $response->status();
+                    Log::channel('shipping')->warning("USPS rate API error for {$mailClass}: {$apiError}", [
                         'status' => $response->status(),
-                        'error' => $body['error'] ?? $body['message'] ?? $body,
+                        'payload' => $commercialPayload,
+                        'response' => $body,
                     ]);
-                    $queried[$mailClass] = [];
                     continue;
                 }
 
                 $commercialRate = $this->extractPrice($body);
+                $description = $this->extractDescription($body);
 
-                // --- Retail rate ---
-                $retailPayload = $basePayload + [
+                if ($commercialRate === null) {
+                    Log::channel('shipping')->info("USPS no rate extracted for {$mailClass}", [
+                        'response' => $body,
+                    ]);
+                    continue;
+                }
+
+                // --- Retail rate (for comparison) ---
+                $retailPayload = $payload + [
                     'priceType' => 'RETAIL',
                 ];
 
@@ -201,37 +241,25 @@ class UspsService
                     $retailResponse = Http::withToken($token)
                         ->connectTimeout(10)
                         ->timeout(20)
+                        ->retry(2, 500, throw: false)
                         ->post($url, $retailPayload);
-                    $retailBody = $retailResponse->json();
+
                     if ($retailResponse->successful()) {
-                        $retailRate = $this->extractPrice($retailBody);
+                        $retailRate = $this->extractPrice($retailResponse->json() ?? []);
                     }
                 } catch (\Exception $e) {
-                    // Retail lookup is non-critical; log and continue
                     Log::channel('shipping')->info("USPS retail rate unavailable for {$mailClass}: " . $e->getMessage());
                 }
 
-                $classRates = [];
-
-                if ($commercialRate !== null) {
-                    $classRates[] = [
-                        'class_id' => $classId,
-                        'service' => $mailClass,
-                        'rate' => $commercialRate,
-                        'retail_rate' => $retailRate,
-                        'description' => $body['description'] ?? '',
-                    ];
-                } else {
-                    Log::channel('shipping')->info("USPS no rate extracted for {$mailClass}", [
-                        'response' => $body,
-                    ]);
-                }
-
-                $queried[$mailClass] = $classRates;
-                $rates = array_merge($rates, $classRates);
+                $rates[] = [
+                    'service' => $mailClass,
+                    'label' => $config['label'],
+                    'rate' => $commercialRate,
+                    'retail_rate' => $retailRate,
+                    'description' => $description,
+                ];
             } catch (\Exception $e) {
                 Log::channel('shipping')->warning("USPS rate query failed for {$mailClass}: " . $e->getMessage());
-                $queried[$mailClass] = [];
             }
         }
 
@@ -239,21 +267,41 @@ class UspsService
     }
 
     /**
-     * Extract the price from a USPS v3 rate response body.
+     * Extract the price from a USPS v3 rate response.
+     *
+     * Response structure: { "totalBasePrice": 8.02, "rates": [{ "price": 8.02, ... }] }
      */
     protected function extractPrice(array $body): ?float
     {
-        if (!empty($body['rates'])) {
-            // Use the first rate entry
-            $rate = $body['rates'][0];
-            return (float) ($rate['price'] ?? $rate['totalPrice'] ?? 0);
+        // Primary: use price from rates array
+        if (!empty($body['rates'][0]['price'])) {
+            return (float) $body['rates'][0]['price'];
         }
 
-        if (!empty($body['totalPrice'])) {
-            return (float) $body['totalPrice'];
+        // Fallback: totalBasePrice at root level
+        if (!empty($body['totalBasePrice'])) {
+            return (float) $body['totalBasePrice'];
         }
 
         return null;
+    }
+
+    /**
+     * Extract the description from a USPS v3 rate response.
+     */
+    protected function extractDescription(array $body): string
+    {
+        return $body['rates'][0]['description'] ?? $body['description'] ?? '';
+    }
+
+    /**
+     * Normalize a legacy mail_class value to a v3 API mailClass name.
+     */
+    public function normalizeMailClass(string $mailClass): string
+    {
+        $mailClass = strtoupper(trim($mailClass));
+
+        return $this->legacyClassMap[$mailClass] ?? $mailClass;
     }
 
     /**
@@ -261,8 +309,8 @@ class UspsService
      */
     public function prepareZip(string $zip): string
     {
-        if (preg_match('/^\d{5}.+$/', $zip)) {
-            return substr($zip, 0, 5);
+        if (preg_match('/^(\d{5})/', $zip, $matches)) {
+            return $matches[1];
         }
         return $zip;
     }
@@ -299,5 +347,13 @@ class UspsService
     public function flushToken(): void
     {
         Cache::forget('usps_oauth_token');
+    }
+
+    /**
+     * Get the supported mail classes configuration.
+     */
+    public function getMailClasses(): array
+    {
+        return $this->mailClasses;
     }
 }

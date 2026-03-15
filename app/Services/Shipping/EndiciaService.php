@@ -70,9 +70,16 @@ class EndiciaService
     protected function mapMailClass(string $class): string
     {
         return match ($class) {
-            'priority_mail' => 'Priority',
-            'parcel_post' => 'ParcelSelect',
-            default => 'Priority',
+            // v3 API names (uppercase)
+            'PRIORITY_MAIL'          => 'Priority',
+            'PRIORITY_MAIL_EXPRESS'  => 'PriorityExpress',
+            'USPS_GROUND_ADVANTAGE'  => 'ParcelSelect',
+            'MEDIA_MAIL'             => 'MediaMail',
+            'LIBRARY_MAIL'           => 'LibraryMail',
+            // Legacy lowercase names (backward compat)
+            'priority_mail'          => 'Priority',
+            'parcel_post'            => 'ParcelSelect',
+            default                  => 'Priority',
         };
     }
 }
