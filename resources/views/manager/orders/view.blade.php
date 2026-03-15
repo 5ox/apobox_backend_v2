@@ -23,24 +23,41 @@
         'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inbound,
         default => '',
     };
+
+    // Build clean charge lines from individual relations (avoids legacy duplicate rows)
+    $chargeLines = collect([
+        ['label' => 'Shipping', 'value' => $order->shipping?->value],
+        ['label' => 'Handling Fee', 'value' => $order->fee?->value],
+        ['label' => 'Insurance', 'value' => $order->insurance?->value],
+        ['label' => 'Storage', 'value' => $order->storage?->value],
+        ['label' => 'Repack', 'value' => $order->repack?->value],
+        ['label' => 'Inspection', 'value' => $order->inspection?->value],
+        ['label' => 'Return', 'value' => $order->returnItem?->value],
+        ['label' => 'Misaddressed', 'value' => $order->misaddressed?->value],
+        ['label' => 'Ship to US', 'value' => $order->shipToUS?->value],
+    ])->filter(fn($c) => (float)($c['value'] ?? 0) != 0);
 @endphp
 
 {{-- Page Header --}}
 <x-page-header title="Order #{{ $order->orders_id }}">
     <x-slot:actions>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <x-status-badge :status="$order->status?->orders_status_name" class="fs-6 px-3 py-2" />
             @if($order->problem_reason)
                 <span class="badge bg-danger fs-6 px-3 py-2">{{ $order->problem_reason }}</span>
             @endif
             @if($order->zendesk_ticket_id)
                 <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="badge bg-warning text-dark fs-6 px-3 py-2 text-decoration-none">
-                    <i data-lucide="message-circle" class="icon"></i> Ticket #{{ $order->zendesk_ticket_id }}
+                    <i data-lucide="message-circle" class="icon"></i> #{{ $order->zendesk_ticket_id }}
                 </a>
             @endif
             @if($order->customer?->billing_id)
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="badge bg-primary fs-6 px-3 py-2 text-decoration-none">{{ $order->customer->billing_id }}</a>
             @endif
+            <span class="text-muted small ms-1">
+                {{ $order->date_purchased?->format('M jS, Y') ?? '' }}
+                @if($creator) &middot; {{ $creator }} @endif
+            </span>
         </div>
     </x-slot:actions>
 </x-page-header>
@@ -73,25 +90,30 @@
             <x-detail-row label="Weight">{{ $lbs }} lb, {{ $oz }} oz</x-detail-row>
             <x-detail-row label="Mail Class">{{ $order->mail_class ?: 'N/A' }}</x-detail-row>
             <x-detail-row label="Pkg Type">{{ $order->package_type ?: 'N/A' }}</x-detail-row>
-            @if($order->customer?->insurance_fee)
-                <x-detail-row label="Insurance">${{ number_format($order->customer->insurance_fee, 2) }}</x-detail-row>
-            @endif
             @if($order->customs_description)
                 <x-detail-row label="Customs">{{ $order->customs_description }}</x-detail-row>
             @endif
         </x-detail-card>
     </div>
     <div class="col-lg-4 d-flex">
-        <x-detail-card title="Charges" class="flex-fill">
-            <table class="table table-sm table-borderless mb-0 small">
+        <x-detail-card title="Charges" class="flex-fill detail-card--compact">
+            <table class="table table-sm table-borderless mb-0">
                 <tbody>
-                    @foreach($orderCharges as $charge)
-                        <tr @if(in_array($charge->class, ['ot_subtotal', 'ot_total'])) class="fw-bold" @endif>
-                            <td>{{ $charge->title }}</td>
-                            <td class="text-end">${{ number_format($charge->value, 2) }}</td>
+                    @forelse($chargeLines as $line)
+                        <tr>
+                            <td class="text-muted ps-0">{{ $line['label'] }}</td>
+                            <td class="text-end pe-0">${{ number_format((float)$line['value'], 2) }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td class="text-muted ps-0" colspan="2">No charges yet</td></tr>
+                    @endforelse
                 </tbody>
+                <tfoot>
+                    <tr class="fw-bold border-top">
+                        <td class="ps-0">Total</td>
+                        <td class="text-end pe-0">${{ number_format((float)($order->total?->value ?? 0), 2) }}</td>
+                    </tr>
+                </tfoot>
             </table>
             <div class="mt-2">
                 <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" class="btn btn-sm btn-outline-success w-100">
@@ -163,15 +185,6 @@
                 <div class="small">{{ $order->comments }}</div>
             </x-detail-card>
         @endif
-
-        {{-- Order Meta --}}
-        <x-detail-card title="Order Info">
-            <x-detail-row label="Processed">{{ $order->date_purchased?->format('g:ia M jS, Y') ?? 'N/A' }}</x-detail-row>
-            <x-detail-row label="Last Modified">{{ $order->last_modified?->isToday() ? 'Today' : $order->last_modified?->format('M jS, Y') }}</x-detail-row>
-            @if($creator)
-                <x-detail-row label="Created By">{{ $creator }}</x-detail-row>
-            @endif
-        </x-detail-card>
     </div>
 
     {{-- Right column --}}
@@ -214,7 +227,7 @@
         {{-- Support Ticket --}}
         <x-detail-card title="Support Ticket">
             @if($order->zendesk_ticket_id)
-                <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center justify-content-between">
                     <span class="fw-semibold">Ticket #{{ $order->zendesk_ticket_id }}</span>
                     <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-primary">
                         <i data-lucide="external-link" class="icon--sm me-1"></i>Open in Zendesk

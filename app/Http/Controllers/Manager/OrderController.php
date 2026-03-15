@@ -153,8 +153,11 @@ class OrderController extends Controller
      */
     public function view(int $id): View
     {
-        $order = Order::with(['customer', 'status', 'lineItems', 'data'])
-            ->findOrFail($id);
+        $order = Order::with([
+            'customer', 'status', 'data',
+            'shipping', 'fee', 'insurance', 'storage', 'repack',
+            'inspection', 'returnItem', 'misaddressed', 'shipToUS', 'total',
+        ])->findOrFail($id);
 
         // Look up creator email if set
         $creator = null;
@@ -169,11 +172,6 @@ class OrderController extends Controller
             ->orderByDesc('date_added')
             ->get();
         $ordersStatuses = OrderStatus::pluck('orders_status_name', 'orders_status_id');
-
-        // Build order charges from line items (hide $0 lines except subtotal/total)
-        $orderCharges = $order->lineItems->filter(function ($item) {
-            return $item->value != 0 || in_array($item->class, ['ot_subtotal', 'ot_total']);
-        });
 
         $invoiceCustomer = $this->checkForInvoiceCustomer($order->customer);
 
@@ -213,7 +211,6 @@ class OrderController extends Controller
             'currentStatusHistory',
             'statusHistories',
             'ordersStatuses',
-            'orderCharges',
             'invoiceCustomer',
             'xml',
             'mailClass',
