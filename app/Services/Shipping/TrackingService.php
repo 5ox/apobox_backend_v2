@@ -246,77 +246,87 @@ class TrackingService
     }
 
     /**
-     * Track via FedEx SOAP API.
+     * Track via FedEx REST Track API v1.
+     *
+     * Uses OAuth 2.0 client credentials (FEDEX_KEY = API Key, FEDEX_PASSWORD = Secret Key).
+     * Endpoint: POST https://apis.fedex.com/track/v1/trackingnumbers
      */
     protected function trackFedex(string $trackingNumber): array
     {
-        $key = config('shipping.fedex.key');
-        $password = config('shipping.fedex.password');
-        $account = config('shipping.fedex.account');
-        $meter = config('shipping.fedex.meter');
+        $apiKey = config('shipping.fedex.key');
+        $secretKey = config('shipping.fedex.password');
 
-        if (empty($key) || empty($password)) {
+        if (empty($apiKey) || empty($secretKey)) {
             return ['error' => 'FedEx not configured'];
         }
 
         try {
-            $wsdlPath = storage_path('wsdl/TrackService_v19.wsdl');
-            if (!file_exists($wsdlPath)) {
-                // Fall back — no WSDL available
-                return $this->trackFedexRest($trackingNumber);
-            }
+            $token = $this->getFedexToken();
 
-            $client = new \SoapClient($wsdlPath, ['trace' => true]);
-
-            $request = [
-                'WebAuthenticationDetail' => ['UserCredential' => [
-                    'Key' => $key,
-                    'Password' => $password,
-                ]],
-                'ClientDetail' => [
-                    'AccountNumber' => $account,
-                    'MeterNumber' => $meter,
-                ],
-                'Version' => ['ServiceId' => 'trck', 'Major' => '19', 'Intermediate' => '0', 'Minor' => '0'],
-                'SelectionDetails' => [
-                    'PackageIdentifier' => [
-                        'Type' => 'TRACKING_NUMBER_OR_DOORTAG',
-                        'Value' => $trackingNumber,
+            $response = Http::withToken($token)
+                ->timeout(15)
+                ->post('https://apis.fedex.com/track/v1/trackingnumbers', [
+                    'trackingInfo' => [
+                        [
+                            'trackingNumberInfo' => [
+                                'trackingNumber' => $trackingNumber,
+                            ],
+                        ],
                     ],
-                ],
-                'ProcessingOptions' => 'INCLUDE_DETAILED_SCANS',
-            ];
+                    'includeDetailedScans' => true,
+                ]);
 
-            $response = $client->track($request);
-
-            $detail = $response->CompletedTrackDetails->TrackDetails ?? null;
-            if (!$detail) {
-                return ['error' => 'FedEx: no tracking data'];
+            if (!$response->successful()) {
+                Log::channel('shipping')->warning('FedEx tracking failed', [
+                    'tracking' => $trackingNumber,
+                    'status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+                return ['error' => 'FedEx tracking unavailable (HTTP ' . $response->status() . ')'];
             }
 
-            $status = $detail->StatusDetail->Description ?? 'Unknown';
-            $deliveryDate = $detail->EstimatedDeliveryTimestamp ?? null;
+            $data = $response->json();
+            $trackResult = $data['output']['completeTrackResults'][0]['trackResults'][0] ?? null;
 
-            $events = [];
-            $scans = $detail->Events ?? [];
-            if (!is_array($scans)) {
-                $scans = [$scans];
+            if (!$trackResult) {
+                return ['error' => 'FedEx: no tracking data returned'];
             }
 
-            foreach ($scans as $scan) {
-                $addr = $scan->Address ?? null;
-                $location = '';
-                if ($addr) {
-                    $location = implode(', ', array_filter([
-                        $addr->City ?? '',
-                        $addr->StateOrProvinceCode ?? '',
-                        $addr->CountryCode ?? '',
-                    ]));
+            // Check for tracking-level errors
+            if (!empty($trackResult['error'])) {
+                $errMsg = $trackResult['error']['message'] ?? 'Unknown FedEx error';
+                return ['error' => "FedEx: {$errMsg}"];
+            }
+
+            // Current status
+            $latestStatus = $trackResult['latestStatusDetail'] ?? [];
+            $status = $latestStatus['statusByLocale']
+                ?? $latestStatus['description']
+                ?? $latestStatus['derivedCode']
+                ?? 'Unknown';
+
+            // Estimated delivery
+            $estimatedDelivery = null;
+            foreach ($trackResult['dateAndTimes'] ?? [] as $dt) {
+                if (in_array($dt['type'] ?? '', ['ESTIMATED_DELIVERY', 'ACTUAL_DELIVERY'])) {
+                    $estimatedDelivery = $dt['dateTime'] ?? null;
+                    break;
                 }
+            }
+
+            // Scan events
+            $events = [];
+            foreach ($trackResult['scanEvents'] ?? [] as $scan) {
+                $loc = $scan['scanLocation'] ?? [];
+                $location = implode(', ', array_filter([
+                    $loc['city'] ?? '',
+                    $loc['stateOrProvinceCode'] ?? '',
+                    $loc['countryCode'] ?? '',
+                ]));
 
                 $events[] = [
-                    'date' => $this->formatDate($scan->Timestamp ?? ''),
-                    'description' => $scan->EventDescription ?? '',
+                    'date' => $this->formatDate($scan['date'] ?? ''),
+                    'description' => $scan['eventDescription'] ?? $scan['derivedStatus'] ?? '',
                     'location' => $location,
                 ];
             }
@@ -326,7 +336,7 @@ class TrackingService
                 'tracking_number' => $trackingNumber,
                 'status' => $status,
                 'summary' => $status,
-                'estimated_delivery' => $deliveryDate ? $this->formatDate($deliveryDate) : null,
+                'estimated_delivery' => $estimatedDelivery ? $this->formatDate($estimatedDelivery) : null,
                 'events' => $events,
             ];
         } catch (Exception $e) {
@@ -336,21 +346,6 @@ class TrackingService
             ]);
             return ['error' => 'FedEx tracking error: ' . $e->getMessage()];
         }
-    }
-
-    /**
-     * FedEx REST fallback if no SOAP WSDL.
-     */
-    protected function trackFedexRest(string $trackingNumber): array
-    {
-        return [
-            'carrier' => 'FedEx',
-            'tracking_number' => $trackingNumber,
-            'status' => 'Unavailable',
-            'summary' => 'FedEx tracking WSDL not found. Upload TrackService_v19.wsdl to storage/wsdl/.',
-            'estimated_delivery' => null,
-            'events' => [],
-        ];
     }
 
     /**
@@ -403,6 +398,30 @@ class TrackingService
 
             if (!$response->successful() || !$response->json('access_token')) {
                 throw new Exception('UPS OAuth failed');
+            }
+
+            return $response->json('access_token');
+        });
+    }
+
+    /**
+     * Get FedEx OAuth token.
+     *
+     * FedEx REST API uses client_credentials grant.
+     * Token expires after 60 minutes; we cache for 50 minutes.
+     * FEDEX_KEY = API Key (client_id), FEDEX_PASSWORD = Secret Key (client_secret).
+     */
+    protected function getFedexToken(): string
+    {
+        return Cache::remember('fedex_oauth_token', 50 * 60, function () {
+            $response = Http::asForm()->post('https://apis.fedex.com/oauth/token', [
+                'grant_type' => 'client_credentials',
+                'client_id' => config('shipping.fedex.key'),
+                'client_secret' => config('shipping.fedex.password'),
+            ]);
+
+            if (!$response->successful() || !$response->json('access_token')) {
+                throw new Exception('FedEx OAuth failed: ' . ($response->json('errors.0.message') ?? $response->body()));
             }
 
             return $response->json('access_token');
