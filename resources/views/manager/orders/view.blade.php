@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.error) {
                         document.getElementById('trackingErrorMsg').textContent = data.error;
                         document.getElementById('trackingError').style.display = '';
-                        if (window.lucide) lucide.createIcons();
+                        try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                         return;
                     }
 
@@ -556,13 +556,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     document.getElementById('trackingContent').style.display = '';
-                    if (window.lucide) lucide.createIcons();
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 })
                 .catch(function() {
                     document.getElementById('trackingLoading').style.display = 'none';
+                    document.getElementById('trackingContent').style.display = 'none';
                     document.getElementById('trackingErrorMsg').textContent = 'Could not load tracking data.';
                     document.getElementById('trackingError').style.display = '';
-                    if (window.lucide) lucide.createIcons();
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 });
         });
 
@@ -600,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.error) {
                         document.getElementById('zendeskErrorMsg').textContent = data.error;
                         document.getElementById('zendeskError').style.display = '';
-                        if (window.lucide) lucide.createIcons();
+                        try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                         return;
                     }
 
@@ -619,13 +620,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderZendeskComments(data.comments || []);
                     document.getElementById('zendeskContent').style.display = '';
                     zdLoaded = true;
-                    if (window.lucide) lucide.createIcons();
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 })
                 .catch(function() {
                     document.getElementById('zendeskLoading').style.display = 'none';
+                    document.getElementById('zendeskContent').style.display = 'none';
                     document.getElementById('zendeskErrorMsg').textContent = 'Could not load ticket conversation.';
                     document.getElementById('zendeskError').style.display = '';
-                    if (window.lucide) lucide.createIcons();
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 });
         });
 
