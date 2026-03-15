@@ -132,39 +132,158 @@
 <div class="row">
     {{-- Left column --}}
     <div class="col-lg-7">
-        {{-- Tracking --}}
-        <x-detail-card title="Tracking">
-            <x-detail-row label="Inbound">
-                @if($inbound)
-                    <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>
-                    <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold tracking-link"
-                        data-bs-toggle="modal" data-bs-target="#trackingModal"
-                        data-tracking="{{ $inbound }}" data-carrier="{{ $inboundCarrier }}" data-carrier-url="{{ $inboundUrl }}">
-                        {{ $inbound }}
-                    </button>
-                    <a href="{{ $inboundUrl }}" target="_blank" class="ms-1 text-muted" title="Open on {{ $inboundCarrier }}">
-                        <i data-lucide="external-link" class="icon--xs"></i>
-                    </a>
-                @else
-                    <span class="text-muted">None</span>
+        {{-- Tracking (embedded inline) --}}
+        <div class="detail-card mb-4">
+            <div class="detail-card__header">
+                <h5><i data-lucide="package" class="icon--sm me-1"></i> Tracking</h5>
+            </div>
+            <div class="detail-card__body p-0">
+                {{-- Inbound Section --}}
+                <div class="tracking-section" id="trackingInbound">
+                    <div class="tracking-section__header">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="tracking-section__label">Inbound</span>
+                            @if($inbound)
+                                <span class="badge {{ match($inboundCarrier) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FedEx' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $inboundCarrier }}</span>
+                                <code class="tracking-section__number user-select-all">{{ $inbound }}</code>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $inbound }}" title="Copy">
+                                    <i data-lucide="copy" class="icon--xs"></i>
+                                </button>
+                                <a href="{{ $inboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on {{ $inboundCarrier }}">
+                                    <i data-lucide="external-link" class="icon--xs"></i>
+                                </a>
+                            @else
+                                <span class="text-muted small">None</span>
+                            @endif
+                        </div>
+                    </div>
+                    @if($inbound)
+                        <div class="tracking-section__body">
+                            {{-- Loading skeleton --}}
+                            <div class="tracking-skeleton" id="inboundLoading">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="skeleton-pulse" style="width:80px;height:22px;border-radius:4px"></div>
+                                    <div class="skeleton-pulse" style="width:120px;height:22px;border-radius:4px"></div>
+                                </div>
+                                <div class="d-flex gap-3 mb-2">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:70%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:50%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3 mb-2">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:60%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:40%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:55%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:35%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- Error --}}
+                            <div id="inboundError" style="display:none">
+                                <div class="alert alert-warning small mb-0 d-flex align-items-center gap-2">
+                                    <i data-lucide="alert-triangle" class="icon--sm flex-shrink-0"></i>
+                                    <span id="inboundErrorMsg"></span>
+                                </div>
+                            </div>
+                            {{-- Content --}}
+                            <div id="inboundContent" style="display:none">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <span id="inboundStatusBadge" class="badge fs-6"></span>
+                                    <span id="inboundEstDelivery" class="text-muted small" style="display:none">
+                                        <i data-lucide="calendar" class="icon--xs me-1"></i>Est. delivery: <strong id="inboundEstDate"></strong>
+                                    </span>
+                                </div>
+                                <div id="inboundEvents" class="tracking-timeline"></div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Divider --}}
+                @if($inbound && $order->usps_track_num)
+                    <hr class="m-0">
                 @endif
-            </x-detail-row>
-            <x-detail-row label="Outbound">
-                @if($order->usps_track_num)
-                    <span class="badge bg-light text-dark border me-1">USPS</span>
-                    <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold tracking-link"
-                        data-bs-toggle="modal" data-bs-target="#trackingModal"
-                        data-tracking="{{ $order->usps_track_num }}" data-carrier="USPS" data-carrier-url="{{ $outboundUrl }}">
-                        {{ $order->usps_track_num }}
-                    </button>
-                    <a href="{{ $outboundUrl }}" target="_blank" class="ms-1 text-muted" title="Open on USPS">
-                        <i data-lucide="external-link" class="icon--xs"></i>
-                    </a>
-                @else
-                    <span class="text-muted">None</span>
-                @endif
-            </x-detail-row>
-        </x-detail-card>
+
+                {{-- Outbound Section --}}
+                <div class="tracking-section" id="trackingOutbound">
+                    <div class="tracking-section__header">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="tracking-section__label">Outbound</span>
+                            @if($order->usps_track_num)
+                                <span class="badge bg-primary">USPS</span>
+                                <code class="tracking-section__number user-select-all">{{ $order->usps_track_num }}</code>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $order->usps_track_num }}" title="Copy">
+                                    <i data-lucide="copy" class="icon--xs"></i>
+                                </button>
+                                <a href="{{ $outboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on USPS">
+                                    <i data-lucide="external-link" class="icon--xs"></i>
+                                </a>
+                            @else
+                                <span class="text-muted small">None</span>
+                            @endif
+                        </div>
+                    </div>
+                    @if($order->usps_track_num)
+                        <div class="tracking-section__body">
+                            {{-- Loading skeleton --}}
+                            <div class="tracking-skeleton" id="outboundLoading">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="skeleton-pulse" style="width:80px;height:22px;border-radius:4px"></div>
+                                    <div class="skeleton-pulse" style="width:120px;height:22px;border-radius:4px"></div>
+                                </div>
+                                <div class="d-flex gap-3 mb-2">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:70%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:50%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3 mb-2">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:60%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:40%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <div class="skeleton-pulse" style="width:10px;height:10px;border-radius:50%;margin-top:5px"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="skeleton-pulse mb-1" style="width:55%;height:14px;border-radius:3px"></div>
+                                        <div class="skeleton-pulse" style="width:35%;height:12px;border-radius:3px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- Error --}}
+                            <div id="outboundError" style="display:none">
+                                <div class="alert alert-warning small mb-0 d-flex align-items-center gap-2">
+                                    <i data-lucide="alert-triangle" class="icon--sm flex-shrink-0"></i>
+                                    <span id="outboundErrorMsg"></span>
+                                </div>
+                            </div>
+                            {{-- Content --}}
+                            <div id="outboundContent" style="display:none">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <span id="outboundStatusBadge" class="badge fs-6"></span>
+                                    <span id="outboundEstDelivery" class="text-muted small" style="display:none">
+                                        <i data-lucide="calendar" class="icon--xs me-1"></i>Est. delivery: <strong id="outboundEstDate"></strong>
+                                    </span>
+                                </div>
+                                <div id="outboundEvents" class="tracking-timeline"></div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
 
         {{-- Addresses --}}
         <div class="row">
@@ -336,59 +455,6 @@
     </a>
 </div>
 
-{{-- ======== TRACKING MODAL ======== --}}
-<div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title d-flex align-items-center gap-2">
-                    <i data-lucide="package" style="width:18px;height:18px"></i>
-                    <span id="trackingModalCarrier"></span> Tracking
-                </h6>
-                <div class="d-flex align-items-center gap-2 ms-auto me-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingCopyBtn" title="Copy tracking number">
-                        <i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>
-                    </button>
-                    <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary" title="Open on carrier site">
-                        <i data-lucide="external-link" style="width:14px;height:14px;vertical-align:-2px"></i>
-                    </a>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div id="trackingLoading" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="text-muted mt-2 mb-0 small">Fetching tracking info&hellip;</p>
-                </div>
-                <div id="trackingError" class="text-center py-5" style="display:none;">
-                    <i data-lucide="alert-circle" style="width:36px;height:36px" class="text-danger mb-2"></i>
-                    <p id="trackingErrorMsg" class="text-muted mb-0"></p>
-                </div>
-                <div id="trackingContent" style="display:none;">
-                    <div class="px-3 py-3 border-bottom bg-light">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                            <div>
-                                <span id="trackingCarrierBadge" class="badge me-2"></span>
-                                <code id="trackingModalNumber" class="user-select-all small"></code>
-                            </div>
-                            <div>
-                                <span id="trackingStatusBadge" class="badge bg-success fs-6"></span>
-                            </div>
-                        </div>
-                        <div id="trackingEstDelivery" class="text-muted small mt-1" style="display:none;">
-                            <i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px" class="me-1"></i>
-                            Est. delivery: <strong id="trackingEstDate"></strong>
-                        </div>
-                    </div>
-                    <div class="px-3 py-3" style="max-height:400px;overflow-y:auto;">
-                        <div id="trackingEvents"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 {{-- ======== ZENDESK MODAL ======== --}}
 @if($order->zendesk_ticket_id)
 <div class="modal fade" id="zendeskModal" tabindex="-1" aria-hidden="true">
@@ -469,117 +535,114 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
-    // ——— TRACKING MODAL ———
-    var trackModal = document.getElementById('trackingModal');
-    if (trackModal) {
-        var carrierColors = { USPS: 'bg-primary', UPS: 'bg-warning text-dark', FedEx: 'bg-info text-dark', DHL: 'bg-danger' };
-        var currentTrackNum = '';
+    // ——— INLINE TRACKING ———
+    function getStatusColor(status) {
+        var s = (status || '').toLowerCase();
+        if (s.indexOf('delivered') !== -1) return 'bg-success';
+        if (s.indexOf('out for delivery') !== -1) return 'bg-info';
+        if (s.indexOf('transit') !== -1 || s.indexOf('accepted') !== -1) return 'bg-primary';
+        if (s.indexOf('exception') !== -1 || s.indexOf('alert') !== -1) return 'bg-danger';
+        if (s.indexOf('pre-shipment') !== -1 || s.indexOf('pre_shipment') !== -1) return 'bg-warning text-dark';
+        return 'bg-secondary';
+    }
 
-        trackModal.addEventListener('show.bs.modal', function(e) {
-            var btn = e.relatedTarget;
-            if (!btn) return;
-            var trackNum = btn.dataset.tracking;
-            var carrier = btn.dataset.carrier;
-            var carrierUrl = btn.dataset.carrierUrl;
-            currentTrackNum = trackNum;
-
-            document.getElementById('trackingModalCarrier').textContent = carrier;
-            document.getElementById('trackingCarrierLink').href = carrierUrl;
-
-            document.getElementById('trackingLoading').style.display = '';
-            document.getElementById('trackingError').style.display = 'none';
-            document.getElementById('trackingContent').style.display = 'none';
-
-            fetch('/' + prefix + '/tracking/' + encodeURIComponent(carrier) + '/' + encodeURIComponent(trackNum))
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    document.getElementById('trackingLoading').style.display = 'none';
-
-                    if (data.error) {
-                        document.getElementById('trackingErrorMsg').textContent = data.error;
-                        document.getElementById('trackingError').style.display = '';
-                        try { if (window.lucide) lucide.createIcons(); } catch(e) {}
-                        return;
-                    }
-
-                    // Status bar
-                    var badge = document.getElementById('trackingCarrierBadge');
-                    badge.className = 'badge ' + (carrierColors[data.carrier] || 'bg-secondary');
-                    badge.textContent = data.carrier;
-
-                    document.getElementById('trackingModalNumber').textContent = data.tracking_number;
-
-                    var statusBadge = document.getElementById('trackingStatusBadge');
-                    var statusLower = (data.status || '').toLowerCase();
-                    var statusColor = 'bg-secondary';
-                    if (statusLower.indexOf('delivered') !== -1) statusColor = 'bg-success';
-                    else if (statusLower.indexOf('transit') !== -1 || statusLower.indexOf('accepted') !== -1) statusColor = 'bg-primary';
-                    else if (statusLower.indexOf('exception') !== -1 || statusLower.indexOf('alert') !== -1) statusColor = 'bg-danger';
-                    else if (statusLower.indexOf('out for delivery') !== -1) statusColor = 'bg-info';
-                    statusBadge.className = 'badge ' + statusColor + ' fs-6';
-                    statusBadge.textContent = data.status;
-
-                    // Estimated delivery
-                    var estWrap = document.getElementById('trackingEstDelivery');
-                    if (data.estimated_delivery) {
-                        document.getElementById('trackingEstDate').textContent = data.estimated_delivery;
-                        estWrap.style.display = '';
-                    } else {
-                        estWrap.style.display = 'none';
-                    }
-
-                    // Events timeline
-                    var eventsContainer = document.getElementById('trackingEvents');
-                    eventsContainer.innerHTML = '';
-
-                    if (data.events && data.events.length > 0) {
-                        data.events.forEach(function(evt, i) {
-                            var isFirst = i === 0;
-                            var dot = document.createElement('div');
-                            dot.className = 'd-flex gap-3 mb-0';
-                            dot.innerHTML =
-                                '<div class="d-flex flex-column align-items-center" style="min-width:12px">' +
-                                    '<div style="width:10px;height:10px;border-radius:50%;margin-top:5px" class="' + (isFirst ? 'bg-success' : 'bg-secondary opacity-50') + '"></div>' +
-                                    (i < data.events.length - 1 ? '<div style="width:2px;flex:1;min-height:20px" class="bg-secondary opacity-25"></div>' : '') +
-                                '</div>' +
-                                '<div class="pb-3 flex-grow-1">' +
-                                    '<div class="' + (isFirst ? 'fw-semibold' : 'small') + '">' + escapeHtml(evt.description) + '</div>' +
-                                    '<div class="text-muted" style="font-size:0.78rem">' +
-                                        (evt.location ? '<span class="me-2">' + escapeHtml(evt.location) + '</span>' : '') +
-                                        (evt.date ? '<span>' + escapeHtml(evt.date) + '</span>' : '') +
-                                    '</div>' +
-                                '</div>';
-                            eventsContainer.appendChild(dot);
-                        });
-                    } else {
-                        eventsContainer.innerHTML = '<p class="text-muted text-center mb-0">No tracking events available yet.</p>';
-                    }
-
-                    document.getElementById('trackingContent').style.display = '';
-                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
-                })
-                .catch(function() {
-                    document.getElementById('trackingLoading').style.display = 'none';
-                    document.getElementById('trackingContent').style.display = 'none';
-                    document.getElementById('trackingErrorMsg').textContent = 'Could not load tracking data.';
-                    document.getElementById('trackingError').style.display = '';
-                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
-                });
+    function renderTrackingTimeline(eventsContainer, events) {
+        eventsContainer.innerHTML = '';
+        if (!events || events.length === 0) {
+            eventsContainer.innerHTML = '<p class="text-muted small mb-0">No tracking events available yet.</p>';
+            return;
+        }
+        events.forEach(function(evt, i) {
+            var isFirst = i === 0;
+            var isLast = i === events.length - 1;
+            var row = document.createElement('div');
+            row.className = 'tracking-timeline__event';
+            row.innerHTML =
+                '<div class="tracking-timeline__dot-col">' +
+                    '<div class="tracking-timeline__dot ' + (isFirst ? 'tracking-timeline__dot--active' : '') + '"></div>' +
+                    (!isLast ? '<div class="tracking-timeline__line"></div>' : '') +
+                '</div>' +
+                '<div class="tracking-timeline__detail">' +
+                    '<div class="' + (isFirst ? 'fw-semibold' : 'small') + '">' + escapeHtml(evt.description) + '</div>' +
+                    '<div class="text-muted" style="font-size:0.78rem">' +
+                        (evt.location ? '<span class="me-2">' + escapeHtml(evt.location) + '</span>' : '') +
+                        (evt.date ? '<span>' + escapeHtml(evt.date) + '</span>' : '') +
+                    '</div>' +
+                '</div>';
+            eventsContainer.appendChild(row);
         });
+    }
 
-        document.getElementById('trackingCopyBtn').addEventListener('click', function() {
-            if (!currentTrackNum) return;
-            var btn = this;
-            navigator.clipboard.writeText(currentTrackNum).then(function() {
-                btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px"></i>';
-                if (window.lucide) lucide.createIcons();
+    function fetchTracking(idPrefix, carrier, trackNum) {
+        var loading = document.getElementById(idPrefix + 'Loading');
+        var error = document.getElementById(idPrefix + 'Error');
+        var errorMsg = document.getElementById(idPrefix + 'ErrorMsg');
+        var content = document.getElementById(idPrefix + 'Content');
+        if (!loading) return; // section not rendered (no tracking number)
+
+        fetch('/' + prefix + '/tracking/' + encodeURIComponent(carrier) + '/' + encodeURIComponent(trackNum))
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                loading.style.display = 'none';
+
+                if (data.error) {
+                    errorMsg.textContent = data.error;
+                    error.style.display = '';
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+                    return;
+                }
+
+                // Status badge
+                var statusBadge = document.getElementById(idPrefix + 'StatusBadge');
+                statusBadge.className = 'badge ' + getStatusColor(data.status) + ' fs-6';
+                statusBadge.textContent = data.status;
+
+                // Estimated delivery
+                var estWrap = document.getElementById(idPrefix + 'EstDelivery');
+                if (data.estimated_delivery) {
+                    document.getElementById(idPrefix + 'EstDate').textContent = data.estimated_delivery;
+                    estWrap.style.display = '';
+                }
+
+                // Events timeline
+                renderTrackingTimeline(document.getElementById(idPrefix + 'Events'), data.events);
+
+                content.style.display = '';
+                try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+            })
+            .catch(function() {
+                loading.style.display = 'none';
+                content.style.display = 'none';
+                errorMsg.textContent = 'Could not load tracking data. Please try refreshing the page.';
+                error.style.display = '';
+                try { if (window.lucide) lucide.createIcons(); } catch(e) {}
+            });
+    }
+
+    // Auto-fetch tracking on page load
+    @if($inbound)
+        fetchTracking('inbound', '{{ $inboundCarrier }}', '{{ $inbound }}');
+    @endif
+    @if($order->usps_track_num)
+        fetchTracking('outbound', 'USPS', '{{ $order->usps_track_num }}');
+    @endif
+
+    // Copy buttons
+    document.querySelectorAll('.tracking-copy-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var trackNum = this.dataset.tracking;
+            if (!trackNum) return;
+            var el = this;
+            navigator.clipboard.writeText(trackNum).then(function() {
+                el.innerHTML = '<i data-lucide="check" class="icon--xs"></i>';
+                try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 setTimeout(function() {
-                    btn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>';
-                    if (window.lucide) lucide.createIcons();
+                    el.innerHTML = '<i data-lucide="copy" class="icon--xs"></i>';
+                    try { if (window.lucide) lucide.createIcons(); } catch(e) {}
                 }, 2000);
             });
         });
-    }
+    });
 
     // ——— ZENDESK MODAL ———
     var zdModal = document.getElementById('zendeskModal');

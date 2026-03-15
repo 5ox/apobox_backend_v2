@@ -138,6 +138,95 @@
     }
 }
 
+// Inline tracking sections (order view)
+.tracking-section {
+    &__header {
+        padding: 0.75rem 1.25rem;
+        background: var(--apo-surface);
+    }
+
+    &__label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--apo-text-muted);
+    }
+
+    &__number {
+        font-size: 0.8125rem;
+        background: #f1f5f9;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--apo-border-light);
+    }
+
+    &__body {
+        padding: 1rem 1.25rem;
+        background: #fafbfc;
+        border-top: 1px solid var(--apo-border-light);
+    }
+}
+
+// Tracking timeline
+.tracking-timeline {
+    max-height: 320px;
+    overflow-y: auto;
+
+    &__event {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    &__dot-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 14px;
+    }
+
+    &__dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-top: 5px;
+        background: #94a3b8;
+        opacity: 0.5;
+        flex-shrink: 0;
+
+        &--active {
+            background: #16a34a;
+            opacity: 1;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+        }
+    }
+
+    &__line {
+        width: 2px;
+        flex: 1;
+        min-height: 16px;
+        background: #e2e8f0;
+    }
+
+    &__detail {
+        padding-bottom: 0.75rem;
+        flex-grow: 1;
+        min-width: 0;
+    }
+}
+
+// Skeleton pulse block (generic reusable)
+.skeleton-pulse {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 // KPI card hover
 .kpi-card {
     transition: box-shadow var(--apo-transition), transform var(--apo-transition);
