@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureWarehouseIp;
 use App\Http\Middleware\EnsureRole;
@@ -34,6 +35,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Trust Railway's reverse proxy so Laravel detects HTTPS, real IP, etc.
         $middleware->trustProxies(at: '*');
+
+        // Redirect unauthenticated users to the correct login page based on route
+        $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('admin/*', 'sysadmin/*', 'manager/*', 'employee/*')) {
+                return route('admin.login');
+            }
+
+            return route('login');
+        });
 
         $middleware->alias([
             'warehouse.ip' => EnsureWarehouseIp::class,
