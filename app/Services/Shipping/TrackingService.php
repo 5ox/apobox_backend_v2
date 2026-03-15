@@ -16,6 +16,84 @@ use Exception;
 class TrackingService
 {
     /**
+     * Detect carrier from tracking number format.
+     *
+     * Standard formats:
+     *  USPS  — 20-22 digits starting with 9 (e.g. 9400, 9200, 9261)
+     *          30-34 digits starting with 420 (routing barcode)
+     *          13 chars: 2 letters + 9 digits + "US" (international)
+     *  UPS   — Starts with "1Z" + 16 alphanumeric
+     *  FedEx — 12 digits, 15 digits, 20 digits starting with "96", 22 digits starting with "61"
+     *  DHL   — 10 digits, or starts with "JD" + 18 digits, or 5000-5999 range start
+     */
+    public static function detectCarrier(string $trackingNumber): string
+    {
+        $tn = strtoupper(trim($trackingNumber));
+        $len = strlen($tn);
+
+        // UPS: starts with 1Z + 16 alphanumeric = 18 chars total
+        if (str_starts_with($tn, '1Z') && $len === 18) {
+            return 'UPS';
+        }
+
+        // USPS international: 2 letters + 9 digits + "US" = 13 chars
+        if ($len === 13 && preg_match('/^[A-Z]{2}\d{9}US$/', $tn)) {
+            return 'USPS';
+        }
+
+        // DHL: starts with JD + 18 digits
+        if (str_starts_with($tn, 'JD') && $len === 20 && ctype_digit(substr($tn, 2))) {
+            return 'DHL';
+        }
+
+        // Numeric-only formats
+        if (ctype_digit($tn)) {
+            // USPS routing barcode: 30-34 digits starting with 420
+            if ($len >= 30 && $len <= 34 && str_starts_with($tn, '420')) {
+                return 'USPS';
+            }
+
+            // USPS: 20-22 digits starting with 9
+            if (($len >= 20 && $len <= 22) && str_starts_with($tn, '9')) {
+                return 'USPS';
+            }
+
+            // USPS: 26 digits starting with 9 (registered mail / other)
+            if ($len === 26 && str_starts_with($tn, '9')) {
+                return 'USPS';
+            }
+
+            // FedEx Ground / SmartPost: 20 digits starting with 96
+            if ($len === 20 && str_starts_with($tn, '96')) {
+                return 'FEDEX';
+            }
+
+            // FedEx Ground: 22 digits starting with 61
+            if ($len === 22 && str_starts_with($tn, '61')) {
+                return 'FEDEX';
+            }
+
+            // FedEx: 15 digits (Ground/Home Delivery)
+            if ($len === 15) {
+                return 'FEDEX';
+            }
+
+            // FedEx Express: 12 digits
+            if ($len === 12) {
+                return 'FEDEX';
+            }
+
+            // DHL: 10-11 digits
+            if ($len === 10 || $len === 11) {
+                return 'DHL';
+            }
+        }
+
+        // Fallback: unknown
+        return '';
+    }
+
+    /**
      * Track a package by number and carrier.
      *
      * @return array ['status' => '', 'summary' => '', 'estimated_delivery' => '', 'events' => [...]]

@@ -8,24 +8,42 @@
     $dims = collect([$order->length, $order->width, $order->depth])
         ->filter()
         ->map(fn($v) => rtrim(rtrim(number_format((float)$v, 2), '0'), '.'));
+    // Detect carrier by tracking number format (not DB column)
     $inbound = $order->usps_track_num_in ?: $order->ups_track_num ?: $order->fedex_track_num ?: $order->dhl_track_num ?: '';
-    $inboundCarrier = match(true) {
-        !empty($order->usps_track_num_in) => 'USPS',
-        !empty($order->ups_track_num) => 'UPS',
-        !empty($order->fedex_track_num) => 'FedEx',
-        !empty($order->dhl_track_num) => 'DHL',
-        default => '',
-    };
-    $inboundUrl = match($inboundCarrier) {
-        'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $inbound,
-        'UPS' => 'https://www.ups.com/track?tracknum=' . $inbound,
-        'FedEx' => 'https://www.fedex.com/fedextrack/?trknbr=' . $inbound,
-        'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inbound,
-        default => '',
-    };
-    $outboundUrl = $order->usps_track_num
-        ? 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $order->usps_track_num
+    $inboundCarrier = $inbound
+        ? \App\Services\Shipping\TrackingService::detectCarrier($inbound)
         : '';
+    // Fall back to DB column if format detection fails
+    if ($inbound && !$inboundCarrier) {
+        $inboundCarrier = match(true) {
+            !empty($order->usps_track_num_in) => 'USPS',
+            !empty($order->ups_track_num) => 'UPS',
+            !empty($order->fedex_track_num) => 'FedEx',
+            !empty($order->dhl_track_num) => 'DHL',
+            default => '',
+        };
+    }
+    // Normalize carrier display names
+    $inboundCarrierDisplay = match(strtoupper($inboundCarrier)) {
+        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $inboundCarrier,
+    };
+    $carrierUrls = [
+        'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=',
+        'UPS' => 'https://www.ups.com/track?tracknum=',
+        'FEDEX' => 'https://www.fedex.com/fedextrack/?trknbr=',
+        'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+    ];
+    $inboundUrl = $inbound ? ($carrierUrls[strtoupper($inboundCarrier)] ?? '') . $inbound : '';
+
+    // Outbound: detect carrier too (usually USPS but not always)
+    $outbound = $order->usps_track_num ?: '';
+    $outboundCarrier = $outbound
+        ? (\App\Services\Shipping\TrackingService::detectCarrier($outbound) ?: 'USPS')
+        : '';
+    $outboundCarrierDisplay = match(strtoupper($outboundCarrier)) {
+        'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $outboundCarrier,
+    };
+    $outboundUrl = $outbound ? ($carrierUrls[strtoupper($outboundCarrier)] ?? '') . $outbound : '';
 
     // Build clean charge lines from individual relations
     $chargeLines = collect([
@@ -144,12 +162,12 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Inbound</span>
                             @if($inbound)
-                                <span class="badge {{ match($inboundCarrier) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FedEx' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $inboundCarrier }}</span>
+                                <span class="badge {{ match(strtoupper($inboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $inboundCarrierDisplay }}</span>
                                 <code class="tracking-section__number user-select-all">{{ $inbound }}</code>
                                 <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $inbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
                                 </button>
-                                <a href="{{ $inboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on {{ $inboundCarrier }}">
+                                <a href="{{ $inboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on {{ $inboundCarrierDisplay }}">
                                     <i data-lucide="external-link" class="icon--xs"></i>
                                 </a>
                             @else
@@ -209,7 +227,7 @@
                 </div>
 
                 {{-- Divider --}}
-                @if($inbound && $order->usps_track_num)
+                @if($inbound && $outbound)
                     <hr class="m-0">
                 @endif
 
@@ -218,13 +236,13 @@
                     <div class="tracking-section__header">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="tracking-section__label">Outbound</span>
-                            @if($order->usps_track_num)
-                                <span class="badge bg-primary">USPS</span>
-                                <code class="tracking-section__number user-select-all">{{ $order->usps_track_num }}</code>
-                                <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $order->usps_track_num }}" title="Copy">
+                            @if($outbound)
+                                <span class="badge {{ match(strtoupper($outboundCarrier)) { 'USPS' => 'bg-primary', 'UPS' => 'bg-warning text-dark', 'FEDEX' => 'bg-info text-dark', 'DHL' => 'bg-danger', default => 'bg-secondary' } }}">{{ $outboundCarrierDisplay }}</span>
+                                <code class="tracking-section__number user-select-all">{{ $outbound }}</code>
+                                <button type="button" class="btn btn-sm btn-link p-0 text-muted tracking-copy-btn" data-tracking="{{ $outbound }}" title="Copy">
                                     <i data-lucide="copy" class="icon--xs"></i>
                                 </button>
-                                <a href="{{ $outboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on USPS">
+                                <a href="{{ $outboundUrl }}" target="_blank" class="btn btn-sm btn-link p-0 text-muted" title="Open on {{ $outboundCarrierDisplay }}">
                                     <i data-lucide="external-link" class="icon--xs"></i>
                                 </a>
                             @else
@@ -232,7 +250,7 @@
                             @endif
                         </div>
                     </div>
-                    @if($order->usps_track_num)
+                    @if($outbound)
                         <div class="tracking-section__body">
                             {{-- Loading skeleton --}}
                             <div class="tracking-skeleton" id="outboundLoading">
@@ -619,12 +637,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Auto-fetch tracking on page load
-    @if($inbound)
-        fetchTracking('inbound', '{{ $inboundCarrier }}', '{{ $inbound }}');
+    // Auto-fetch tracking on page load (using detected carriers)
+    @if($inbound && $inboundCarrier)
+        fetchTracking('inbound', '{{ strtoupper($inboundCarrier) }}', '{{ $inbound }}');
     @endif
-    @if($order->usps_track_num)
-        fetchTracking('outbound', 'USPS', '{{ $order->usps_track_num }}');
+    @if($outbound && $outboundCarrier)
+        fetchTracking('outbound', '{{ strtoupper($outboundCarrier) }}', '{{ $outbound }}');
     @endif
 
     // Copy buttons

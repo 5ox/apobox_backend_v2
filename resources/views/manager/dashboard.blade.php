@@ -99,27 +99,31 @@
                             ->map(fn($v) => rtrim(rtrim(number_format((float)$v, 2), '0'), '.'));
                         $lbs = intdiv((int)($order->weight_oz ?? 0), 16);
                         $oz = (int)($order->weight_oz ?? 0) % 16;
-                        // Determine inbound tracking number and carrier
-                        $inboundTrack = '';
-                        $inboundCarrier = '';
-                        $inboundUrl = '';
-                        if ($order->usps_track_num_in) {
-                            $inboundTrack = $order->usps_track_num_in;
-                            $inboundCarrier = 'USPS';
-                            $inboundUrl = 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $inboundTrack;
-                        } elseif ($order->ups_track_num) {
-                            $inboundTrack = $order->ups_track_num;
-                            $inboundCarrier = 'UPS';
-                            $inboundUrl = 'https://www.ups.com/track?tracknum=' . $inboundTrack;
-                        } elseif ($order->fedex_track_num) {
-                            $inboundTrack = $order->fedex_track_num;
-                            $inboundCarrier = 'FedEx';
-                            $inboundUrl = 'https://www.fedex.com/fedextrack/?trknbr=' . $inboundTrack;
-                        } elseif ($order->dhl_track_num) {
-                            $inboundTrack = $order->dhl_track_num;
-                            $inboundCarrier = 'DHL';
-                            $inboundUrl = 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inboundTrack;
+                        // Determine inbound tracking number and carrier (format-based detection)
+                        $inboundTrack = $order->usps_track_num_in ?: $order->ups_track_num ?: $order->fedex_track_num ?: $order->dhl_track_num ?: '';
+                        $inboundCarrier = $inboundTrack
+                            ? \App\Services\Shipping\TrackingService::detectCarrier($inboundTrack)
+                            : '';
+                        // Fall back to DB column if format detection fails
+                        if ($inboundTrack && !$inboundCarrier) {
+                            $inboundCarrier = match(true) {
+                                !empty($order->usps_track_num_in) => 'USPS',
+                                !empty($order->ups_track_num) => 'UPS',
+                                !empty($order->fedex_track_num) => 'FedEx',
+                                !empty($order->dhl_track_num) => 'DHL',
+                                default => '',
+                            };
                         }
+                        $inboundCarrier = match(strtoupper($inboundCarrier)) {
+                            'FEDEX' => 'FedEx', 'UPS' => 'UPS', 'USPS' => 'USPS', 'DHL' => 'DHL', default => $inboundCarrier,
+                        };
+                        $carrierUrls = [
+                            'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=',
+                            'UPS' => 'https://www.ups.com/track?tracknum=',
+                            'FedEx' => 'https://www.fedex.com/fedextrack/?trknbr=',
+                            'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=',
+                        ];
+                        $inboundUrl = $inboundTrack ? ($carrierUrls[$inboundCarrier] ?? '') . $inboundTrack : '';
                     @endphp
                     <tr>
                         <td>
