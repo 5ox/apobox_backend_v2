@@ -72,7 +72,12 @@ class CustomerReminders extends Command
 
             try {
                 Mail::to($order->customer->customers_email_address)
-                    ->queue(new AwaitingPaymentAlert($order->customer, $order));
+                    ->queue(new AwaitingPaymentAlert(
+                        $order->customer->full_name,
+                        (string) $order->orders_id,
+                        url('/orders/' . $order->orders_id . '/pay'),
+                        $order->comments
+                    ));
 
                 $reminder->increment('reminder_count');
                 $sent++;
@@ -114,7 +119,10 @@ class CustomerReminders extends Command
 
             try {
                 Mail::to($customer->customers_email_address)
-                    ->queue(new PartialSignupAlert($customer));
+                    ->queue(new PartialSignupAlert(
+                        $customer->full_name,
+                        url('/customers/account-incomplete')
+                    ));
 
                 $reminder->increment('reminder_count');
                 $sent++;
@@ -154,8 +162,8 @@ class CustomerReminders extends Command
             // Determine if card is already expired or expiring soon
             $isExpired = $customer->isCardExpired();
             $mailable = $isExpired
-                ? new CreditCardExpired($customer)
-                : new CreditCardExpiring($customer);
+                ? new CreditCardExpired($customer->full_name, url('/customers/edit/payment_info'))
+                : new CreditCardExpiring($customer->customers_firstname, $customer->customers_lastname);
 
             try {
                 Mail::to($customer->customers_email_address)->queue($mailable);
