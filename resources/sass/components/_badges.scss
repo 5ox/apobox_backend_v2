@@ -96,3 +96,109 @@
         }
     }
 }
+
+// Order header tags — unified height, subtle fills, rounded-square shape
+.order-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    text-decoration: none;
+
+    &--status {
+        &::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+    }
+
+    // Status colors (inherits from status-badge palette)
+    &--warehouse {
+        background: rgba(13, 148, 136, 0.08);
+        color: #0a7a72;
+        border-color: rgba(13, 148, 136, 0.15);
+        &::before { background: #0d9488; }
+    }
+
+    &--awaiting-payment {
+        background: rgba(229, 165, 10, 0.08);
+        color: #7a5008;
+        border-color: rgba(229, 165, 10, 0.15);
+        &::before { background: #e5a50a; }
+    }
+
+    &--shipped {
+        background: rgba(38, 162, 105, 0.08);
+        color: #1a7a4f;
+        border-color: rgba(38, 162, 105, 0.15);
+        &::before { background: #26a269; }
+    }
+
+    &--paid {
+        background: rgba(26, 95, 180, 0.08);
+        color: #15478a;
+        border-color: rgba(26, 95, 180, 0.15);
+        &::before { background: #1a5fb4; }
+    }
+
+    &--returned {
+        background: rgba(192, 28, 40, 0.08);
+        color: #8c1520;
+        border-color: rgba(192, 28, 40, 0.15);
+        &::before { background: #c01c28; }
+    }
+
+    &--problem {
+        background: rgba(230, 97, 0, 0.08);
+        color: #a35500;
+        border-color: rgba(230, 97, 0, 0.15);
+        &::before { background: #e66100; }
+    }
+
+    &--awaiting-package {
+        background: rgba(229, 165, 10, 0.08);
+        color: #7a5008;
+        border-color: rgba(229, 165, 10, 0.15);
+        &::before { background: #e5a50a; }
+    }
+
+    // Danger — problem reason (e.g. "Prohibited Item")
+    &--danger {
+        background: rgba(192, 28, 40, 0.08);
+        color: #8c1520;
+        border-color: rgba(192, 28, 40, 0.15);
+    }
+
+    // Warning — Zendesk ticket
+    &--warning {
+        background: rgba(202, 138, 4, 0.08);
+        color: #854d0e;
+        border-color: rgba(202, 138, 4, 0.15);
+        cursor: pointer;
+
+        &:hover {
+            background: rgba(202, 138, 4, 0.14);
+        }
+    }
+
+    // Primary — customer code
+    &--primary {
+        background: rgba(26, 95, 180, 0.08);
+        color: #15478a;
+        border-color: rgba(26, 95, 180, 0.15);
+
+        &:hover {
+            background: rgba(26, 95, 180, 0.14);
+            color: #15478a;
+        }
+    }
+}

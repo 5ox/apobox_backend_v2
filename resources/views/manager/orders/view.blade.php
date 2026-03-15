@@ -63,19 +63,26 @@
 {{-- Page Header --}}
 <x-page-header title="Order #{{ $order->orders_id }}">
     <x-slot:actions>
+        @php
+            $statusSlug = [
+                'Warehouse' => 'warehouse', 'Awaiting Payment' => 'awaiting-payment',
+                'Shipped' => 'shipped', 'Paid' => 'paid', 'Returned' => 'returned',
+                'Problem' => 'problem', 'Awaiting Package' => 'awaiting-package',
+            ][$order->status?->orders_status_name] ?? \Illuminate\Support\Str::slug($order->status?->orders_status_name ?? 'unknown');
+        @endphp
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <x-status-badge :status="$order->status?->orders_status_name" class="fs-6 px-3 py-2" />
+            <span class="order-tag order-tag--status order-tag--{{ $statusSlug }}">{{ $order->status?->orders_status_name }}</span>
             @if($order->problem_reason)
-                <span class="badge bg-danger fs-6 px-3 py-2">{{ $order->problem_reason }}</span>
+                <span class="order-tag order-tag--danger">{{ $order->problem_reason }}</span>
             @endif
             @if($order->zendesk_ticket_id)
-                <button type="button" class="badge bg-warning text-dark fs-6 px-3 py-2 border-0"
-                    data-bs-toggle="modal" data-bs-target="#zendeskModal" style="cursor:pointer">
-                    <i data-lucide="message-circle" class="icon"></i> #{{ $order->zendesk_ticket_id }}
+                <button type="button" class="order-tag order-tag--warning"
+                    data-bs-toggle="modal" data-bs-target="#zendeskModal">
+                    <i data-lucide="message-circle" class="icon--sm"></i> #{{ $order->zendesk_ticket_id }}
                 </button>
             @endif
             @if($order->customer?->billing_id)
-                <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="badge bg-primary fs-6 px-3 py-2 text-decoration-none">{{ $order->customer->billing_id }}</a>
+                <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="order-tag order-tag--primary">{{ $order->customer->billing_id }}</a>
             @endif
             <span class="text-muted small ms-1">
                 {{ $order->date_purchased?->format('M jS, Y') ?? '' }}
@@ -413,9 +420,6 @@
         {{-- Actions --}}
         <x-detail-card title="Actions">
             <div class="d-grid gap-2">
-                <a href="/{{ $prefix }}/customers/view/{{ $order->customer?->customers_id }}" class="btn btn-sm btn-outline-secondary">
-                    <i data-lucide="user" class="icon--sm me-1"></i>Go to Customer
-                </a>
                 @if($mailClass === 'usps')
                     <a href="/{{ $prefix }}/orders/{{ $order->orders_id }}/print_label" class="btn btn-sm btn-outline-secondary">
                         <i data-lucide="printer" class="icon--sm me-1"></i>Print USPS Postage

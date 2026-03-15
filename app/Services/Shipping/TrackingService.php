@@ -109,19 +109,29 @@ class TrackingService
         $trackingNumber = trim($trackingNumber);
         $carrier = strtoupper($carrier);
 
-        // Cache for 15 minutes to avoid hammering carrier APIs
+        // Cache successful results for 15 minutes; never cache errors
         $cacheKey = "tracking:{$carrier}:{$trackingNumber}";
 
-        return Cache::remember($cacheKey, 900, function () use ($trackingNumber, $carrier) {
-            return match ($carrier) {
-                'USPS' => $this->trackUsps($trackingNumber),
-                'UPS' => $this->trackUps($trackingNumber),
-                'FEDEX' => $this->trackFedex($trackingNumber),
-                'UDS' => $this->trackUds($trackingNumber),
-                'DHL' => $this->trackDhl($trackingNumber),
-                default => ['error' => "Unsupported carrier: {$carrier}"],
-            };
-        });
+        $cached = Cache::get($cacheKey);
+        if ($cached) {
+            return $cached;
+        }
+
+        $result = match ($carrier) {
+            'USPS' => $this->trackUsps($trackingNumber),
+            'UPS' => $this->trackUps($trackingNumber),
+            'FEDEX' => $this->trackFedex($trackingNumber),
+            'UDS' => $this->trackUds($trackingNumber),
+            'DHL' => $this->trackDhl($trackingNumber),
+            default => ['error' => "Unsupported carrier: {$carrier}"],
+        };
+
+        // Only cache successful responses
+        if (empty($result['error'])) {
+            Cache::put($cacheKey, $result, 900);
+        }
+
+        return $result;
     }
 
     /**
@@ -133,7 +143,9 @@ class TrackingService
             $token = $this->getUspsToken();
 
             $response = Http::withToken($token)
-                ->timeout(15)
+                ->connectTimeout(10)
+                ->timeout(30)
+                ->retry(2, 500, throw: false)
                 ->get("https://apis.usps.com/tracking/v3/tracking/{$trackingNumber}", [
                     'expand' => 'DETAIL',
                 ]);
@@ -178,7 +190,10 @@ class TrackingService
                 'tracking' => $trackingNumber,
                 'error' => $e->getMessage(),
             ]);
-            return ['error' => 'USPS tracking error: ' . $e->getMessage()];
+            $msg = str_contains($e->getMessage(), 'timed out')
+                ? 'USPS API timed out — try again shortly'
+                : 'USPS tracking error: ' . $e->getMessage();
+            return ['error' => $msg];
         }
     }
 
@@ -198,7 +213,9 @@ class TrackingService
             $token = $this->getUpsToken();
 
             $response = Http::withToken($token)
-                ->timeout(15)
+                ->connectTimeout(10)
+                ->timeout(30)
+                ->retry(2, 500, throw: false)
                 ->get("https://onlinetools.ups.com/api/track/v1/details/{$trackingNumber}");
 
             if (!$response->successful()) {
@@ -248,7 +265,10 @@ class TrackingService
                 'tracking' => $trackingNumber,
                 'error' => $e->getMessage(),
             ]);
-            return ['error' => 'UPS tracking error: ' . $e->getMessage()];
+            $msg = str_contains($e->getMessage(), 'timed out')
+                ? 'UPS API timed out — try again shortly'
+                : 'UPS tracking error: ' . $e->getMessage();
+            return ['error' => $msg];
         }
     }
 
@@ -271,7 +291,9 @@ class TrackingService
             $token = $this->getFedexToken();
 
             $response = Http::withToken($token)
-                ->timeout(15)
+                ->connectTimeout(10)
+                ->timeout(30)
+                ->retry(2, 500, throw: false)
                 ->post('https://apis.fedex.com/track/v1/trackingnumbers', [
                     'trackingInfo' => [
                         [
@@ -351,7 +373,10 @@ class TrackingService
                 'tracking' => $trackingNumber,
                 'error' => $e->getMessage(),
             ]);
-            return ['error' => 'FedEx tracking error: ' . $e->getMessage()];
+            $msg = str_contains($e->getMessage(), 'timed out')
+                ? 'FedEx API timed out — try again shortly'
+                : 'FedEx tracking error: ' . $e->getMessage();
+            return ['error' => $msg];
         }
     }
 
@@ -401,11 +426,14 @@ class TrackingService
     protected function getUspsToken(): string
     {
         return Cache::remember('usps_oauth_token', 7 * 3600, function () {
-            $response = Http::post('https://apis.usps.com/oauth2/v3/token', [
-                'client_id' => config('shipping.usps.client_id'),
-                'client_secret' => config('shipping.usps.client_secret'),
-                'grant_type' => 'client_credentials',
-            ]);
+            $response = Http::connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 500, throw: false)
+                ->post('https://apis.usps.com/oauth2/v3/token', [
+                    'client_id' => config('shipping.usps.client_id'),
+                    'client_secret' => config('shipping.usps.client_secret'),
+                    'grant_type' => 'client_credentials',
+                ]);
 
             if (!$response->successful() || !$response->json('access_token')) {
                 throw new Exception('USPS OAuth failed: ' . ($response->json('error_description') ?? 'unknown'));
@@ -424,9 +452,13 @@ class TrackingService
             $response = Http::withBasicAuth(
                 config('shipping.ups.client_id'),
                 config('shipping.ups.client_secret')
-            )->asForm()->post('https://onlinetools.ups.com/security/v1/oauth/token', [
-                'grant_type' => 'client_credentials',
-            ]);
+            )->asForm()
+                ->connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 500, throw: false)
+                ->post('https://onlinetools.ups.com/security/v1/oauth/token', [
+                    'grant_type' => 'client_credentials',
+                ]);
 
             if (!$response->successful() || !$response->json('access_token')) {
                 throw new Exception('UPS OAuth failed');
@@ -446,11 +478,15 @@ class TrackingService
     protected function getFedexToken(): string
     {
         return Cache::remember('fedex_oauth_token', 50 * 60, function () {
-            $response = Http::asForm()->post('https://apis.fedex.com/oauth/token', [
-                'grant_type' => 'client_credentials',
-                'client_id' => config('shipping.fedex.key'),
-                'client_secret' => config('shipping.fedex.password'),
-            ]);
+            $response = Http::asForm()
+                ->connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 500, throw: false)
+                ->post('https://apis.fedex.com/oauth/token', [
+                    'grant_type' => 'client_credentials',
+                    'client_id' => config('shipping.fedex.key'),
+                    'client_secret' => config('shipping.fedex.password'),
+                ]);
 
             if (!$response->successful() || !$response->json('access_token')) {
                 throw new Exception('FedEx OAuth failed: ' . ($response->json('errors.0.message') ?? $response->body()));
