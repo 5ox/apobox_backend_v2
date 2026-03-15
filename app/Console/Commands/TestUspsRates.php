@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Shipping\UspsService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 
 class TestUspsRates extends Command
 {
@@ -14,13 +15,15 @@ class TestUspsRates extends Command
         {--length=0 : Length in inches}
         {--width=0 : Width in inches}
         {--height=0 : Height in inches}
-        {--flush-token : Clear cached OAuth token before testing}';
+        {--flush-token : Clear cached OAuth token before testing}
+        {--debug : Show raw API requests and responses}';
 
     protected $description = 'Test USPS Domestic Prices v3 rate lookups';
 
     public function handle(): int
     {
         $usps = app(UspsService::class);
+        $debug = $this->option('debug');
 
         if ($this->option('flush-token')) {
             $usps->flushToken();
@@ -48,74 +51,132 @@ class TestUspsRates extends Command
         $width = (float) $this->option('width');
         $height = (float) $this->option('height');
 
+        $weightLbs = round(($pounds * 16 + $ounces) / 16, 4);
+        if ($weightLbs <= 0) {
+            $weightLbs = 0.0625;
+        }
+
+        $originZip = config('shipping.origin_zip', '46563');
+
         $this->info('');
         $this->info('━━━ Step 2: Rate Lookup ━━━');
-        $this->info("Origin ZIP: " . config('shipping.origin_zip', '46563'));
-        $this->info("Dest ZIP:   {$zip}");
-        $this->info("Weight:     {$pounds} lb {$ounces} oz");
+        $this->info("Origin ZIP:  {$originZip}");
+        $this->info("Dest ZIP:    {$zip}");
+        $this->info("Weight:      {$pounds} lb {$ounces} oz ({$weightLbs} lbs)");
+        $this->info("Account #:   " . (config('shipping.usps.account_number') ? '***' . substr(config('shipping.usps.account_number'), -4) : '(empty)'));
+
         if ($length > 0) {
-            $this->info("Dimensions: {$length}\" × {$width}\" × {$height}\"");
+            $this->info("Dimensions:  {$length}\" × {$width}\" × {$height}\"");
         } else {
-            $this->info("Dimensions: (none)");
+            $this->info("Dimensions:  (none)");
         }
 
-        $params = [
-            'zip' => $zip,
-            'pounds' => $pounds,
-            'ounces' => $ounces,
-            'length' => $length,
-            'width' => $width,
-            'height' => $height,
-        ];
+        // Query each mail class individually with raw output
+        $mailClasses = $usps->getMailClasses();
+        $successCount = 0;
+        $rates = [];
 
-        $rates = $usps->getAllRates($params);
+        foreach ($mailClasses as $mailClass => $config) {
+            $this->info('');
+            $this->info("── {$mailClass} ({$config['label']}) ──");
 
-        if (isset($rates['error'])) {
-            $this->error('✗ Rate lookup failed: ' . $rates['error']);
-            return 1;
-        }
-
-        if (empty($rates)) {
-            $this->warn('No rates returned. Check shipping logs for details.');
-            return 1;
-        }
-
-        $this->info('');
-        $this->info('━━━ Results ━━━');
-
-        $rows = [];
-        foreach ($rates as $rate) {
-            $rows[] = [
-                $rate['service'],
-                $rate['label'],
-                '$' . number_format($rate['rate'], 2),
-                $rate['retail_rate'] ? '$' . number_format($rate['retail_rate'], 2) : '—',
-                $rate['retail_rate'] && $rate['retail_rate'] > $rate['rate']
-                    ? '-$' . number_format($rate['retail_rate'] - $rate['rate'], 2)
-                    : '—',
-                $rate['description'] ?: '—',
+            $payload = [
+                'originZIPCode' => $originZip,
+                'destinationZIPCode' => $zip,
+                'weight' => $weightLbs,
+                'mailClass' => $mailClass,
+                'processingCategory' => $config['processingCategory'],
+                'destinationEntryFacilityType' => 'NONE',
+                'rateIndicator' => $config['rateIndicator'],
+                'mailingDate' => now()->format('Y-m-d'),
+                'priceType' => 'RETAIL',
             ];
+
+            if ($debug) {
+                $this->line('  Request: ' . json_encode($payload, JSON_PRETTY_PRINT));
+            }
+
+            try {
+                $response = Http::withToken($token)
+                    ->connectTimeout(10)
+                    ->timeout(20)
+                    ->post('https://apis.usps.com/prices/v3/base-rates/search', $payload);
+
+                $body = $response->json() ?? [];
+                $status = $response->status();
+
+                if ($debug) {
+                    $this->line("  Status: {$status}");
+                    $this->line('  Response: ' . json_encode($body, JSON_PRETTY_PRINT));
+                }
+
+                if (!$response->successful()) {
+                    $errorMsg = $body['error']['message']
+                        ?? $body['message']
+                        ?? $body['error']
+                        ?? json_encode($body);
+                    $this->error("  ✗ HTTP {$status}: {$errorMsg}");
+                    continue;
+                }
+
+                $price = $body['rates'][0]['price']
+                    ?? $body['totalBasePrice']
+                    ?? null;
+                $description = $body['rates'][0]['description'] ?? '';
+
+                if ($price !== null) {
+                    $this->info("  ✓ \${$price} — {$description}");
+                    $rates[] = [
+                        'service' => $mailClass,
+                        'label' => $config['label'],
+                        'rate' => (float) $price,
+                        'description' => $description,
+                    ];
+                    $successCount++;
+                } else {
+                    $this->warn("  ✗ No price in response");
+                    if (!$debug) {
+                        $this->line('  Response: ' . json_encode($body));
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->error("  ✗ Exception: " . $e->getMessage());
+            }
         }
 
-        $this->table(
-            ['Mail Class', 'Label', 'Our Rate', 'Retail', 'Savings', 'Description'],
-            $rows
-        );
-
+        // Summary
         $this->info('');
-        $this->info('✓ ' . count($rates) . ' rate(s) returned successfully.');
-
-        // Step 3: Test filtered rates (getRate)
-        $this->info('');
-        $this->info('━━━ Step 3: Filtered Rates (configured classes) ━━━');
-        $configuredClasses = config('shipping.usps.rate_classes', []);
-        $this->info('Configured: ' . implode(', ', $configuredClasses));
-
-        $filteredRates = $usps->getRate($params);
-        if (isset($filteredRates['error'])) {
-            $this->error('✗ Filtered lookup failed: ' . $filteredRates['error']);
+        $this->info('━━━ Summary ━━━');
+        if ($successCount > 0) {
+            $this->table(
+                ['Mail Class', 'Label', 'Rate', 'Description'],
+                collect($rates)->map(fn($r) => [
+                    $r['service'],
+                    $r['label'],
+                    '$' . number_format($r['rate'], 2),
+                    $r['description'] ?: '—',
+                ])->all()
+            );
+            $this->info("✓ {$successCount}/" . count($mailClasses) . ' mail classes returned rates.');
         } else {
-            $this->info('✓ ' . count($filteredRates) . ' filtered rate(s) returned.');
+            $this->error('✗ No rates returned from any mail class.');
+            if (!$debug) {
+                $this->warn('Run with --debug to see raw API requests/responses.');
+            }
+        }
+
+        // Step 3: Test via UspsService.getAllRates()
+        $this->info('');
+        $this->info('━━━ Step 3: UspsService->getAllRates() ━━━');
+        $params = compact('zip', 'pounds', 'ounces', 'length', 'width', 'height');
+        $serviceRates = $usps->getAllRates($params);
+
+        if (isset($serviceRates['error'])) {
+            $this->error('✗ Error: ' . $serviceRates['error']);
+        } elseif (empty($serviceRates)) {
+            $this->warn('✗ Empty result — service returned no rates.');
+        } else {
+            $this->info('✓ ' . count($serviceRates) . ' rate(s) via service method.');
         }
 
         // Step 4: Test legacy normalization
@@ -128,6 +189,6 @@ class TestUspsRates extends Command
         }
 
         $this->info('');
-        return 0;
+        return $successCount > 0 ? 0 : 1;
     }
 }
