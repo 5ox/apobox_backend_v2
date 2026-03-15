@@ -35,30 +35,31 @@
                     </div>
                 </div>
 
-                <label class="form-label fw-semibold">Dimensions <span class="fw-normal text-muted">(optional)</span></label>
+                <label class="form-label fw-semibold">Dimensions</label>
                 <div class="row mb-3">
                     <div class="col-4">
                         <div class="input-group input-group-sm">
                             <input type="number" name="length" class="form-control" placeholder="L"
-                                value="{{ request('length') }}" min="0" step="0.1">
+                                value="{{ request('length') }}" min="0" step="0.1" required>
                             <span class="input-group-text">in</span>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="input-group input-group-sm">
                             <input type="number" name="width" class="form-control" placeholder="W"
-                                value="{{ request('width') }}" min="0" step="0.1">
+                                value="{{ request('width') }}" min="0" step="0.1" required>
                             <span class="input-group-text">in</span>
                         </div>
                     </div>
                     <div class="col-4">
                         <div class="input-group input-group-sm">
                             <input type="number" name="height" class="form-control" placeholder="H"
-                                value="{{ request('height') }}" min="0" step="0.1">
+                                value="{{ request('height') }}" min="0" step="0.1" required>
                             <span class="input-group-text">in</span>
                         </div>
                     </div>
                 </div>
+                <div class="form-text mb-3">USPS pricing requires length, width, and height.</div>
 
                 <button type="submit" class="btn btn-primary w-100">
                     <i data-lucide="calculator" class="icon--sm me-1"></i>Calculate Rates

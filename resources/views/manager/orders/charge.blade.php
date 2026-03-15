@@ -38,6 +38,7 @@
     <div class="col-lg-7">
         <form method="POST" action="/{{ $prefix }}/orders/{{ $order->orders_id }}/charge" id="chargeForm">
             @csrf
+            <input type="hidden" name="usps_auto_rate_json" id="uspsAutoRateJson" value="{{ $autoRate ? e(json_encode($autoRate, JSON_UNESCAPED_SLASHES)) : '' }}">
             <x-table-card title="Charge Summary">
                 <table class="table table-modern table-sm mb-0">
                     <thead>
@@ -72,6 +73,7 @@
                                             <span class="input-group-text">$</span>
                                             <input type="number" step="0.01" min="0" name="{{ $item['name'] }}[value]"
                                                 value="{{ number_format($lineItem->value, 2, '.', '') }}"
+                                                @if($item['name'] === 'OrderShipping') id="orderShippingValue" @endif
                                                 class="form-control form-control-sm text-end line-item-input"
                                                 @if(!$allowCharge['allow']) disabled @endif>
                                         </div>
@@ -123,7 +125,7 @@
         @if(!empty($uspsRates))
             <x-detail-card title="Get Postage Rates">
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>Service</th><th class="text-end">Our Rate</th><th class="text-end">Retail</th><th class="text-end">Savings</th></tr></thead>
+                    <thead><tr><th>Service</th><th class="text-end">Our Rate</th><th class="text-end">Retail</th><th class="text-end">Savings</th><th class="text-end">Use</th></tr></thead>
                     <tbody>
                         @foreach($uspsRates as $rate)
                             @php
@@ -155,6 +157,15 @@
                                         —
                                     @endif
                                 </td>
+                                <td class="text-end">
+                                    @if($allowCharge['allow'])
+                                        <button type="button"
+                                            class="btn btn-outline-primary btn-sm select-usps-rate-btn"
+                                            data-rate="{{ e(json_encode($rate, JSON_UNESCAPED_SLASHES)) }}">
+                                            Use
+                                        </button>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -179,6 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const inputs = form.querySelectorAll('.line-item-input');
     const totalEl = document.getElementById('totalDisplay');
+    const shippingInput = document.getElementById('orderShippingValue');
+    const uspsAutoRateInput = document.getElementById('uspsAutoRateJson');
 
     function recalculate() {
         let sum = 0;
@@ -204,6 +217,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.dispatchEvent(new Event('input'));
                 this.remove();
             }
+        });
+    });
+
+    document.querySelectorAll('.select-usps-rate-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!shippingInput || !uspsAutoRateInput) return;
+
+            const rate = JSON.parse(this.dataset.rate || '{}');
+            const retail = parseFloat(rate.retail_rate ?? rate.rate ?? 0);
+            if (!retail) return;
+
+            shippingInput.value = retail.toFixed(2);
+            uspsAutoRateInput.value = JSON.stringify(rate);
+            shippingInput.dispatchEvent(new Event('input'));
+
+            document.querySelectorAll('.select-usps-rate-btn').forEach(function(otherBtn) {
+                otherBtn.closest('tr')?.classList.remove('table-success');
+            });
+            this.closest('tr')?.classList.add('table-success');
         });
     });
 });

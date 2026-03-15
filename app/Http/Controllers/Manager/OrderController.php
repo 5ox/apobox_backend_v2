@@ -586,16 +586,20 @@ class OrderController extends Controller
                     'zip'    => $order->delivery_postcode,
                 ];
 
-                $uspsRates = $usps->getRate($rateParams);
+                if (!$usps->hasCompleteDimensions($rateParams)) {
+                    $rateError = 'Order is missing package dimensions — enter length, width, and depth before looking up USPS postage.';
+                } else {
+                    $uspsRates = $usps->getRate($rateParams);
 
-                if (isset($uspsRates['error'])) {
-                    $rateError = $uspsRates['error'];
-                    $uspsRates = [];
-                }
+                    if (isset($uspsRates['error'])) {
+                        $rateError = $uspsRates['error'];
+                        $uspsRates = [];
+                    }
 
-                // Select the best rate: prefers DR indicator, skips flat rate packaging
-                if (!empty($uspsRates)) {
-                    $autoRate = $usps->selectAutoRate($uspsRates, $order->mail_class ?? '');
+                    // Select the best rate: prefers DR indicator, skips flat rate packaging
+                    if (!empty($uspsRates)) {
+                        $autoRate = $usps->selectAutoRate($uspsRates, $order->mail_class ?? '');
+                    }
                 }
             } catch (\Exception $e) {
                 $rateError = $e->getMessage();
@@ -624,6 +628,7 @@ class OrderController extends Controller
                     'value' => $shippingRate,
                     'text'  => '$' . number_format($shippingRate, 2),
                 ]);
+                $this->syncUspsQuoteMetadata($order, $autoRate, (float) $shippingRate);
             }
             if ($autoFee > 0 && $order->fee) {
                 $order->fee->update([
@@ -1177,6 +1182,10 @@ class OrderController extends Controller
             ]);
         }
 
+        $shippingValue = (float) $request->input('OrderShipping.value', 0);
+        $selectedUspsQuote = $this->extractUspsQuoteFromRequest($request) ?? $this->getPersistedUspsQuote($order);
+        $this->syncUspsQuoteMetadata($order, $selectedUspsQuote, $shippingValue);
+
         // Update order status if it was in warehouse
         if ($order->orders_status == 1) {
             $order->update([
@@ -1184,6 +1193,92 @@ class OrderController extends Controller
                 'last_modified' => now(),
             ]);
         }
+    }
+
+    /**
+     * Parse the selected USPS quote snapshot from the charge form.
+     */
+    protected function extractUspsQuoteFromRequest(Request $request): ?array
+    {
+        $rawQuote = $request->input('usps_auto_rate_json');
+        if (!is_string($rawQuote) || trim($rawQuote) === '') {
+            return null;
+        }
+
+        $quote = json_decode($rawQuote, true);
+
+        return is_array($quote) ? $quote : null;
+    }
+
+    /**
+     * Load the persisted USPS quote snapshot for an order.
+     */
+    protected function getPersistedUspsQuote(Order $order): ?array
+    {
+        $rawQuote = OrderData::getValue($order->orders_id, 'usps-rate-quote');
+        if (!is_string($rawQuote) || trim($rawQuote) === '') {
+            return null;
+        }
+
+        $quote = json_decode($rawQuote, true);
+
+        return is_array($quote) ? $quote : null;
+    }
+
+    /**
+     * Keep the order's USPS quote metadata in sync with the selected shipping amount.
+     */
+    protected function syncUspsQuoteMetadata(Order $order, ?array $quote, float $shippingValue): void
+    {
+        $quotedRetail = (float) ($quote['retail_rate'] ?? $quote['rate'] ?? 0);
+
+        if (!$quote || $quotedRetail <= 0 || abs($shippingValue - $quotedRetail) > 0.009) {
+            $this->clearUspsQuoteMetadata($order);
+            return;
+        }
+
+        $postageId = trim((string) ($quote['postage_id'] ?? $quote['retail_postage_id'] ?? ''));
+        $snapshot = [
+            'postage_id' => $postageId !== '' ? $postageId : null,
+            'retail_postage_id' => $quote['retail_postage_id'] ?? null,
+            'commercial_postage_id' => $quote['commercial_postage_id'] ?? null,
+            'service' => $quote['service'] ?? null,
+            'label' => $quote['label'] ?? null,
+            'rate_indicator' => $quote['rateIndicator'] ?? null,
+            'selected_rate' => isset($quote['rate']) ? (float) $quote['rate'] : null,
+            'retail_rate' => isset($quote['retail_rate']) ? (float) $quote['retail_rate'] : null,
+            'fees' => array_values($quote['fees'] ?? []),
+            'description' => $quote['description'] ?? null,
+            'quoted_at' => now()->toIso8601String(),
+        ];
+
+        $order->update([
+            'postage_id' => substr($postageId, 0, 25),
+            'last_modified' => now(),
+        ]);
+
+        OrderData::setValue(
+            $order->orders_id,
+            'usps-rate-quote',
+            json_encode($snapshot, JSON_UNESCAPED_SLASHES)
+        );
+    }
+
+    /**
+     * Remove stale USPS quote metadata when shipping is entered manually.
+     */
+    protected function clearUspsQuoteMetadata(Order $order): void
+    {
+        if ($order->postage_id !== '') {
+            $order->update([
+                'postage_id' => '',
+                'last_modified' => now(),
+            ]);
+        }
+
+        OrderData::where('orders_id', $order->orders_id)
+            ->where('data_type', 'usps-rate-quote')
+            ->delete();
     }
 
     /**

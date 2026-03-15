@@ -13,9 +13,9 @@ class TestUspsRates extends Command
         {--zip=10001 : Destination ZIP code}
         {--pounds=1 : Weight in pounds}
         {--ounces=0 : Weight in ounces}
-        {--length=0 : Length in inches}
-        {--width=0 : Width in inches}
-        {--height=0 : Height in inches}
+        {--length=0 : Length in inches (required)}
+        {--width=0 : Width in inches (required)}
+        {--height=0 : Height in inches (required)}
         {--flush-token : Clear cached OAuth token before testing}
         {--debug : Show raw API requests and responses}';
 
@@ -57,10 +57,10 @@ class TestUspsRates extends Command
             $weightLbs = 0.0625;
         }
 
-        // Dimensions are required by USPS API — default to 1" cube
-        $length = max($length, 1);
-        $width = max($width, 1);
-        $height = max($height, 1);
+        if (!$usps->hasCompleteDimensions(compact('length', 'width', 'height'))) {
+            $this->error('Dimensions are required. Pass --length, --width, and --height with values greater than 0.');
+            return 1;
+        }
 
         $originZip = config('shipping.origin_zip', '46563');
 

@@ -20,6 +20,8 @@ return [
             'PRIORITY_MAIL',
             'PRIORITY_MAIL_EXPRESS',
             'USPS_GROUND_ADVANTAGE',
+            'MEDIA_MAIL',
+            'LIBRARY_MAIL',
         ],
         'tracking_url' => 'https://tools.usps.com/go/TrackConfirmAction_input?qtc_tLabels1=',
     ],

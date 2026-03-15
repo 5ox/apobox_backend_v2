@@ -178,10 +178,7 @@ class UspsService
             $weightLbs = 0.0625;
         }
 
-        // Dimensions — required by USPS API, default to 1" cube when not provided
-        $length = max((float) ($params['length'] ?? 0), 1);
-        $width = max((float) ($params['width'] ?? 0), 1);
-        $height = max((float) ($params['height'] ?? 0), 1);
+        ['length' => $length, 'width' => $width, 'height' => $height] = $this->extractDimensions($params);
 
         $rates = [];
 
@@ -203,7 +200,9 @@ class UspsService
 
                 try {
                     $commercialRate = null;
+                    $commercialBody = [];
                     $retailRate = null;
+                    $retailBody = [];
                     $description = '';
                     $fees = [];
 
@@ -267,12 +266,18 @@ class UspsService
                         continue;
                     }
 
+                    $retailPostageId = $this->extractPostageId($retailBody);
+                    $commercialPostageId = $this->extractPostageId($commercialBody);
+
                     $rates[] = [
                         'service' => $mailClass,
                         'label' => $config['label'],
                         'rateIndicator' => $rateIndicator,
                         'rate' => $commercialRate ?? $retailRate,
                         'retail_rate' => $retailRate,
+                        'postage_id' => $retailPostageId ?: $commercialPostageId,
+                        'retail_postage_id' => $retailPostageId,
+                        'commercial_postage_id' => $commercialPostageId,
                         'fees' => $fees,
                         'description' => $description,
                     ];
@@ -361,10 +366,7 @@ class UspsService
         });
 
         if ($matching->isEmpty()) {
-            // Fallback: use first non-flat-rate from any class
-            return collect($rates)->filter(function ($rate) {
-                return !in_array($rate['rateIndicator'] ?? '', $this->flatRateIndicators);
-            })->first();
+            return null;
         }
 
         // Prefer DR (Dimensional Rectangular) over other indicators
@@ -395,6 +397,16 @@ class UspsService
             return $matches[1];
         }
         return $zip;
+    }
+
+    /**
+     * USPS pricing requires all three dimensions.
+     */
+    public function hasCompleteDimensions(array $params): bool
+    {
+        return (float) ($params['length'] ?? 0) > 0
+            && (float) ($params['width'] ?? 0) > 0
+            && (float) ($params['height'] ?? 0) > 0;
     }
 
     /**
@@ -437,5 +449,52 @@ class UspsService
     public function getMailClasses(): array
     {
         return $this->mailClasses;
+    }
+
+    /**
+     * Normalize and validate dimensions for USPS rate lookups.
+     */
+    protected function extractDimensions(array $params): array
+    {
+        $dimensions = [
+            'length' => (float) ($params['length'] ?? 0),
+            'width' => (float) ($params['width'] ?? 0),
+            'height' => (float) ($params['height'] ?? 0),
+        ];
+
+        if (!$this->hasCompleteDimensions($dimensions)) {
+            throw new \RuntimeException('Package dimensions are required for USPS rate lookups.');
+        }
+
+        return $dimensions;
+    }
+
+    /**
+     * USPS may return a product/quote identifier such as SKU.
+     */
+    protected function extractPostageId(array $body): string
+    {
+        $rate = $body['rates'][0] ?? [];
+        $candidates = [
+            $body['SKU'] ?? null,
+            $body['sku'] ?? null,
+            $body['productId'] ?? null,
+            $body['productID'] ?? null,
+            $rate['SKU'] ?? null,
+            $rate['sku'] ?? null,
+            $rate['productId'] ?? null,
+            $rate['productID'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_scalar($candidate)) {
+                $value = trim((string) $candidate);
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return '';
     }
 }

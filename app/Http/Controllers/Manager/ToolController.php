@@ -65,12 +65,12 @@ class ToolController extends Controller
                 'zip' => ['required', 'regex:/^\d{5}$/'],
                 'pounds' => ['nullable', 'integer', 'min:0'],
                 'ounces' => ['nullable', 'integer', 'min:0', 'max:15'],
-                'length' => ['nullable', 'numeric', 'min:0'],
-                'width' => ['nullable', 'numeric', 'min:0'],
-                'height' => ['nullable', 'numeric', 'min:0'],
+                'length' => ['required', 'numeric', 'gt:0'],
+                'width' => ['required', 'numeric', 'gt:0'],
+                'height' => ['required', 'numeric', 'gt:0'],
             ]);
 
-            $usps = new UspsService();
+            $usps = app(UspsService::class);
             $result = $usps->getAllRates([
                 'zip' => $request->input('zip'),
                 'pounds' => (int) $request->input('pounds', 0),
