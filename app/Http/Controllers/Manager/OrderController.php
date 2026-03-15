@@ -1245,6 +1245,8 @@ class OrderController extends Controller
             'service' => $quote['service'] ?? null,
             'label' => $quote['label'] ?? null,
             'rate_indicator' => $quote['rateIndicator'] ?? null,
+            'processing_category' => $quote['processingCategory'] ?? null,
+            'destination_entry_facility_type' => $quote['destinationEntryFacilityType'] ?? null,
             'selected_rate' => isset($quote['rate']) ? (float) $quote['rate'] : null,
             'retail_rate' => isset($quote['retail_rate']) ? (float) $quote['retail_rate'] : null,
             'fees' => array_values($quote['fees'] ?? []),

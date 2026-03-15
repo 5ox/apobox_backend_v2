@@ -7,9 +7,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * USPS Domestic Prices v3 REST API (OAuth 2.0)
+ * USPS Domestic Prices + Shipping Options REST APIs (OAuth 2.0)
+ *
+ * Standard machinable parcels use Domestic Prices v3 base-rates. USPS
+ * Shipping Options v3 is used for non-machinable and oversized parcels so the
+ * calculator can return valid Ground Advantage and other supported USPS rates
+ * instead of rejecting them up front.
  *
  * @see https://developers.usps.com/domesticpricesv3
+ * @see https://developers.usps.com/shippingoptionsv3
  * @see https://github.com/USPS/api-examples
  */
 class UspsService
@@ -174,9 +180,23 @@ class UspsService
     }
 
     /**
-     * Query Domestic Prices v3 for each mail class × rate indicator.
+     * Route the package to the USPS endpoint that supports its characteristics.
      */
     protected function fetchRates(string $token, array $params): array
+    {
+        $analysis = $this->analyzePackage($params);
+
+        if ($analysis['is_machinable']) {
+            return $this->fetchBaseRates($token, $params);
+        }
+
+        return $this->fetchShippingOptionsRates($token, $params);
+    }
+
+    /**
+     * Query Domestic Prices v3 for machinable mail class × rate indicator combinations.
+     */
+    protected function fetchBaseRates(string $token, array $params): array
     {
         $url = $this->baseUrl . '/prices/v3/base-rates/search';
         $originZip = $this->prepareZip(config('shipping.origin_zip', '46563'));
@@ -187,7 +207,6 @@ class UspsService
         }
 
         $weightLbs = $this->toDecimalPounds($params);
-
         ['length' => $length, 'width' => $width, 'height' => $height] = $this->extractDimensions($params);
 
         $rates = [];
@@ -217,7 +236,6 @@ class UspsService
                     $description = '';
                     $fees = [];
 
-                    // --- Retail rate (always try — no account needed) ---
                     $retailPayload = $payload + ['priceType' => 'RETAIL'];
 
                     $retailResponse = Http::withToken($token)
@@ -233,16 +251,12 @@ class UspsService
                         $description = $this->extractDescription($retailBody);
                         $fees = $this->extractFees($retailBody);
                     } else {
-                        // Not all rateIndicator × mailClass combos are valid — info-level only
-                        $apiError = $retailBody['error']['message']
-                            ?? $retailBody['message']
-                            ?? $retailBody['error']
-                            ?? 'HTTP ' . $retailResponse->status();
-                        Log::channel('shipping')->info("USPS rate N/A for {$mailClass}/{$rateIndicator}: {$apiError}");
-                        continue; // this indicator doesn't apply to this class
+                        Log::channel('shipping')->info(
+                            "USPS rate N/A for {$mailClass}/{$rateIndicator}: " . $this->formatApiError($retailBody, $retailResponse->status())
+                        );
+                        continue;
                     }
 
-                    // --- Commercial (our discounted) rate — only if account is configured ---
                     if (!empty($this->accountNumber)) {
                         try {
                             $commercialPayload = $payload + [
@@ -265,10 +279,7 @@ class UspsService
                                     $fees = $this->extractFees($commercialBody);
                                 }
                             } else {
-                                $commercialError = $commercialBody['error']['message']
-                                    ?? $commercialBody['message']
-                                    ?? $commercialBody['error']
-                                    ?? 'HTTP ' . $commercialResponse->status();
+                                $commercialError = $this->formatApiError($commercialBody, $commercialResponse->status());
                                 Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}/{$rateIndicator}: {$commercialError}");
                             }
                         } catch (\Exception $e) {
@@ -277,7 +288,6 @@ class UspsService
                         }
                     }
 
-                    // Use commercial rate if available, otherwise retail
                     $rate = $commercialRate ?? $retailRate;
 
                     if ($rate === null) {
@@ -291,7 +301,8 @@ class UspsService
                         'service' => $mailClass,
                         'label' => $config['label'],
                         'rateIndicator' => $rateIndicator,
-                        'rate' => $commercialRate ?? $retailRate,
+                        'processingCategory' => $config['processingCategory'],
+                        'rate' => $rate,
                         'rate_source' => $commercialRate !== null ? 'COMMERCIAL' : 'RETAIL',
                         'commercial_rate' => $commercialRate,
                         'retail_rate' => $retailRate,
@@ -301,6 +312,7 @@ class UspsService
                         'commercial_error' => $commercialError,
                         'fees' => $fees,
                         'description' => $description,
+                        'lookup_path' => 'BASE_RATES',
                     ];
                 } catch (\Exception $e) {
                     Log::channel('shipping')->warning("USPS rate query failed for {$mailClass}/{$rateIndicator}: " . $e->getMessage());
@@ -309,6 +321,274 @@ class UspsService
         }
 
         return $rates;
+    }
+
+    /**
+     * Query Shipping Options v3 for non-machinable and oversized parcels.
+     */
+    protected function fetchShippingOptionsRates(string $token, array $params): array
+    {
+        $url = $this->baseUrl . '/shipments/v3/options/search';
+        $originZip = $this->prepareZip(config('shipping.origin_zip', '46563'));
+        $destZip = $this->prepareZip($params['zip'] ?? '');
+
+        if (empty($destZip)) {
+            throw new \RuntimeException('Destination ZIP code is required');
+        }
+
+        $weightLbs = $this->toDecimalPounds($params);
+        ['length' => $length, 'width' => $width, 'height' => $height] = $this->extractDimensions($params);
+
+        $rates = [];
+
+        foreach ($this->mailClasses as $mailClass => $config) {
+            $retailRates = [];
+            $commercialRates = [];
+            $commercialError = null;
+
+            try {
+                $retailPayload = $this->buildShippingOptionsPayload(
+                    $originZip,
+                    $destZip,
+                    $weightLbs,
+                    $length,
+                    $width,
+                    $height,
+                    $mailClass,
+                    'RETAIL'
+                );
+
+                $retailResponse = Http::withToken($token)
+                    ->connectTimeout(10)
+                    ->timeout(20)
+                    ->retry(2, 500, throw: false)
+                    ->post($url, $retailPayload);
+
+                $retailBody = $retailResponse->json() ?? [];
+
+                if (!$retailResponse->successful()) {
+                    Log::channel('shipping')->info(
+                        "USPS shipping option N/A for {$mailClass}/RETAIL: " . $this->formatApiError($retailBody, $retailResponse->status())
+                    );
+                    continue;
+                }
+
+                $retailRates = $this->extractShippingOptionsRateRows($retailBody, $mailClass);
+            } catch (\Exception $e) {
+                Log::channel('shipping')->warning("USPS shipping option query failed for {$mailClass}/RETAIL: " . $e->getMessage());
+                continue;
+            }
+
+            if (!empty($this->accountNumber)) {
+                try {
+                    $commercialPayload = $this->buildShippingOptionsPayload(
+                        $originZip,
+                        $destZip,
+                        $weightLbs,
+                        $length,
+                        $width,
+                        $height,
+                        $mailClass,
+                        'COMMERCIAL'
+                    );
+
+                    $commercialResponse = Http::withToken($token)
+                        ->connectTimeout(10)
+                        ->timeout(20)
+                        ->retry(2, 500, throw: false)
+                        ->post($url, $commercialPayload);
+
+                    $commercialBody = $commercialResponse->json() ?? [];
+
+                    if ($commercialResponse->successful()) {
+                        $commercialRates = $this->extractShippingOptionsRateRows($commercialBody, $mailClass);
+                    } else {
+                        $commercialError = $this->formatApiError($commercialBody, $commercialResponse->status());
+                        Log::channel('shipping')->info("USPS commercial shipping option unavailable for {$mailClass}: {$commercialError}");
+                    }
+                } catch (\Exception $e) {
+                    $commercialError = $e->getMessage();
+                    Log::channel('shipping')->info("USPS commercial shipping option unavailable for {$mailClass}: {$commercialError}");
+                }
+            }
+
+            $rates = array_merge(
+                $rates,
+                $this->mergeShippingOptionRates($retailRates, $commercialRates, $commercialError)
+            );
+        }
+
+        return $rates;
+    }
+
+    protected function buildShippingOptionsPayload(
+        string $originZip,
+        string $destZip,
+        float $weightLbs,
+        float $length,
+        float $width,
+        float $height,
+        string $mailClass,
+        string $priceType
+    ): array {
+        $pricingOption = ['priceType' => $priceType];
+
+        if ($priceType === 'COMMERCIAL' && $this->accountNumber !== '') {
+            $pricingOption['paymentAccount'] = [
+                'accountType' => 'EPS',
+                'accountNumber' => $this->accountNumber,
+            ];
+        }
+
+        return [
+            'originZIPCode' => $originZip,
+            'destinationZIPCode' => $destZip,
+            'destinationEntryFacilityType' => 'NONE',
+            'packageDescription' => [
+                'weight' => $weightLbs,
+                'length' => $length,
+                'width' => $width,
+                'height' => $height,
+                'mailClass' => $mailClass,
+                'mailingDate' => now()->format('Y-m-d'),
+            ],
+            'pricingOptions' => [$pricingOption],
+        ];
+    }
+
+    /**
+     * Flatten Shipping Options responses into the shared rate row shape.
+     */
+    protected function extractShippingOptionsRateRows(array $body, string $requestedMailClass): array
+    {
+        $rows = [];
+
+        foreach ($body['pricingOptions'] ?? [] as $pricingOption) {
+            foreach ($pricingOption['shippingOptions'] ?? [] as $shippingOption) {
+                $service = $this->normalizeMailClass($shippingOption['mailClass'] ?? $requestedMailClass);
+                $label = $this->getServiceLabel($service, $requestedMailClass);
+
+                foreach ($shippingOption['rateOptions'] ?? [] as $rateOption) {
+                    $rateEntries = $rateOption['rates'] ?? [];
+                    $useOptionTotal = count($rateEntries) === 1 && isset($rateOption['totalBasePrice']);
+
+                    foreach ($rateEntries as $rateEntry) {
+                        $priceBody = ['rates' => [$rateEntry]];
+                        if ($useOptionTotal) {
+                            $priceBody['totalBasePrice'] = $rateOption['totalBasePrice'];
+                        }
+
+                        $rows[] = [
+                            'service' => $service,
+                            'label' => $label,
+                            'rateIndicator' => $rateEntry['rateIndicator'] ?? '',
+                            'processingCategory' => $rateEntry['processingCategory'] ?? null,
+                            'destinationEntryFacilityType' => $rateEntry['destinationEntryFacilityType'] ?? null,
+                            'rate' => $this->extractPrice($priceBody),
+                            'postage_id' => $this->extractPostageId($priceBody),
+                            'fees' => $this->extractFees($priceBody),
+                            'description' => $this->extractDescription($priceBody),
+                            'lookup_path' => 'SHIPPING_OPTIONS',
+                        ];
+                    }
+                }
+            }
+        }
+
+        return array_values(array_filter($rows, function ($row) {
+            return $row['rate'] !== null;
+        }));
+    }
+
+    /**
+     * Merge separate retail and commercial Shipping Options responses into the
+     * calculator's standard retail/commercial comparison shape.
+     */
+    protected function mergeShippingOptionRates(
+        array $retailRates,
+        array $commercialRates,
+        ?string $commercialError
+    ): array {
+        $retailByKey = [];
+        foreach ($retailRates as $rate) {
+            $retailByKey[$this->buildShippingOptionRateKey($rate)] = $rate;
+        }
+
+        $commercialByKey = [];
+        foreach ($commercialRates as $rate) {
+            $commercialByKey[$this->buildShippingOptionRateKey($rate)] = $rate;
+        }
+
+        $merged = [];
+        $keys = array_values(array_unique(array_merge(array_keys($retailByKey), array_keys($commercialByKey))));
+
+        foreach ($keys as $key) {
+            $retail = $retailByKey[$key] ?? null;
+            $commercial = $commercialByKey[$key] ?? null;
+            $base = $commercial ?? $retail;
+
+            if ($base === null) {
+                continue;
+            }
+
+            $retailPostageId = $retail['postage_id'] ?? '';
+            $commercialPostageId = $commercial['postage_id'] ?? '';
+
+            $merged[] = [
+                'service' => $base['service'],
+                'label' => $base['label'],
+                'rateIndicator' => $base['rateIndicator'],
+                'processingCategory' => $commercial['processingCategory'] ?? $retail['processingCategory'] ?? null,
+                'destinationEntryFacilityType' => $commercial['destinationEntryFacilityType'] ?? $retail['destinationEntryFacilityType'] ?? null,
+                'rate' => $commercial['rate'] ?? $retail['rate'],
+                'rate_source' => $commercial !== null ? 'COMMERCIAL' : 'RETAIL',
+                'commercial_rate' => $commercial['rate'] ?? null,
+                'retail_rate' => $retail['rate'] ?? null,
+                'postage_id' => $retailPostageId !== '' ? $retailPostageId : $commercialPostageId,
+                'retail_postage_id' => $retailPostageId,
+                'commercial_postage_id' => $commercialPostageId,
+                'commercial_error' => $commercial === null ? $commercialError : null,
+                'fees' => !empty($commercial['fees']) ? $commercial['fees'] : ($retail['fees'] ?? []),
+                'description' => $commercial['description'] ?? $retail['description'] ?? '',
+                'lookup_path' => 'SHIPPING_OPTIONS',
+            ];
+        }
+
+        return $merged;
+    }
+
+    protected function buildShippingOptionRateKey(array $rate): string
+    {
+        return implode('|', [
+            $rate['service'] ?? '',
+            $rate['processingCategory'] ?? '',
+            $rate['rateIndicator'] ?? '',
+            $rate['destinationEntryFacilityType'] ?? '',
+            $rate['description'] ?? '',
+        ]);
+    }
+
+    protected function formatApiError(array $body, int $status): string
+    {
+        return $body['error']['message']
+            ?? $body['message']
+            ?? $body['error']
+            ?? 'HTTP ' . $status;
+    }
+
+    protected function getServiceLabel(string $mailClass, ?string $fallbackMailClass = null): string
+    {
+        $normalizedMailClass = $this->normalizeMailClass($mailClass);
+        if (isset($this->mailClasses[$normalizedMailClass]['label'])) {
+            return $this->mailClasses[$normalizedMailClass]['label'];
+        }
+
+        $fallbackMailClass = $fallbackMailClass !== null ? $this->normalizeMailClass($fallbackMailClass) : null;
+        if ($fallbackMailClass !== null && isset($this->mailClasses[$fallbackMailClass]['label'])) {
+            return $this->mailClasses[$fallbackMailClass]['label'];
+        }
+
+        return ucwords(strtolower(str_replace('_', ' ', $normalizedMailClass)));
     }
 
     /**
@@ -431,7 +711,8 @@ class UspsService
     }
 
     /**
-     * Current lookup path only supports machinable USPS parcel pricing.
+     * Hard-limit validation before calling USPS. Non-machinable and oversized
+     * parcels are routed through Shipping Options instead of being rejected.
      */
     public function validateRateLookupRequest(array $params): ?string
     {
@@ -445,25 +726,17 @@ class UspsService
             );
         }
 
-        if ($analysis['is_machinable']) {
-            return null;
-        }
+        return null;
+    }
 
-        if ($analysis['is_oversized']) {
-            return sprintf(
-                'Package is oversized at %.1f" length + girth. Priority Mail, Priority Mail Express, Media Mail, and Library Mail are unavailable at this size. USPS Ground Advantage oversized pricing requires a separate lookup path; this calculator currently supports machinable USPS parcels only.',
-                $analysis['length_plus_girth']
-            );
-        }
+    /**
+     * USPS Shipping Options is required whenever the package is valid but not machinable.
+     */
+    public function usesShippingOptionsLookup(array $params): bool
+    {
+        $analysis = $this->analyzePackage($params);
 
-        return sprintf(
-            'Package is non-machinable for the current USPS lookup path (%.2f lb, %.1f" x %.1f" x %.1f) because %s. This calculator currently supports machinable USPS parcels only; Ground Advantage nonstandard pricing requires a separate lookup path.',
-            $analysis['weight_lbs'],
-            $analysis['longest_side'],
-            $analysis['middle_side'],
-            $analysis['shortest_side'],
-            $analysis['non_machinable_reason_text']
-        );
+        return !$analysis['exceeds_usps_limits'] && !$analysis['is_machinable'];
     }
 
     /**

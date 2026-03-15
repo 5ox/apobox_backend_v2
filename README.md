@@ -268,23 +268,25 @@ The USPS Web Tools API (`secure.shippingapis.com/ShippingAPI.dll`, RateV4) was *
 4. Add to `.env`:
 
 ```env
-USPS_CLIENT_ID=your_client_id
-USPS_CLIENT_SECRET=your_client_secret
+USPS_API_CUSTOMER_KEY=your_client_id
+USPS_API_CUSTOMER_SECRET=your_client_secret
 USPS_ACCOUNT_NUMBER=your_eps_account_number
 ```
 
 ### How It Works
 
 - OAuth tokens are cached for 7 hours (tokens valid for 8h) via Laravel Cache
-- Each configured rate class is queried individually against the v3 endpoint
+- Machinable parcels use `apis.usps.com/prices/v3/base-rates/search`
+- Non-machinable and oversized parcels use `apis.usps.com/shipments/v3/options/search`
+- Each configured rate class is queried individually so the app can compare retail vs commercial for the same USPS product
 - Results are returned in the same `['class_id', 'service', 'rate']` format used throughout the app
 - Failed token requests throw `RuntimeException`; failed rate queries log warnings and continue
 
 ### Current Lookup Boundaries
 
-- The built-in USPS calculator and order charge auto-rating path currently support only the standard machinable parcel lookup flow.
-- Oversized and non-machinable parcels are rejected up front with a descriptive message instead of sending doomed requests that USPS will reject as `Package size exceeds...`.
-- USPS Ground Advantage oversized / nonstandard pricing is not yet implemented as a separate lookup path, so those parcels still require manual handling.
+- The built-in USPS calculator and order charge auto-rating path support both machinable parcels and non-machinable / oversized parcels that are still within USPS hard parcel limits.
+- Machinable parcels stay on the Domestic Prices base-rates endpoint; non-machinable and oversized parcels switch to Shipping Options so USPS can return `NONSTANDARD` products and fees.
+- Requests are only rejected up front when they exceed USPS hard parcel limits (`70 lb` or `130"` length + girth) or when dimensions are missing.
 
 ### Files
 
@@ -292,7 +294,7 @@ USPS_ACCOUNT_NUMBER=your_eps_account_number
 |------|---------|
 | `app/Services/Shipping/UspsService.php` | Service class (OAuth + rate queries) |
 | `config/shipping.php` | USPS credentials and rate class config |
-| `.env` / `.env.example` | `USPS_CLIENT_ID`, `USPS_CLIENT_SECRET`, `USPS_ACCOUNT_NUMBER` |
+| `.env` / `.env.example` | `USPS_API_CUSTOMER_KEY`, `USPS_API_CUSTOMER_SECRET`, `USPS_ACCOUNT_NUMBER` |
 
 ---
 
