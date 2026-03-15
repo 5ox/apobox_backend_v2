@@ -567,6 +567,7 @@ class OrderController extends Controller
         // -----------------------------------------------------------------
         $uspsRates = [];
         $autoRate = null;
+        $rateError = null;
 
         $weightOz = (int) ($order->weight_oz ?? 0);
 
@@ -586,8 +587,13 @@ class OrderController extends Controller
 
                 $uspsRates = $usps->getRate($rateParams);
 
+                if (isset($uspsRates['error'])) {
+                    $rateError = $uspsRates['error'];
+                    $uspsRates = [];
+                }
+
                 // Find the rate matching this order's mail class
-                if (!empty($uspsRates) && !isset($uspsRates['error'])) {
+                if (!empty($uspsRates)) {
                     $orderMailClass = strtoupper(trim($order->mail_class ?? ''));
                     foreach ($uspsRates as $rate) {
                         $service = strtoupper($rate['service'] ?? '');
@@ -602,8 +608,13 @@ class OrderController extends Controller
                     }
                 }
             } catch (\Exception $e) {
+                $rateError = $e->getMessage();
                 Log::channel('shipping')->warning('Auto-rate lookup failed for order #' . $id . ': ' . $e->getMessage());
             }
+        } elseif ($weightOz <= 0) {
+            $rateError = 'Order has no weight — cannot look up rates.';
+        } elseif (empty($order->delivery_postcode)) {
+            $rateError = 'Order has no delivery ZIP code — cannot look up rates.';
         }
 
         // Auto-calculate fee and insurance
@@ -671,7 +682,8 @@ class OrderController extends Controller
             'uspsRates',
             'autoRate',
             'autoFee',
-            'autoInsurance'
+            'autoInsurance',
+            'rateError'
         ));
     }
 
