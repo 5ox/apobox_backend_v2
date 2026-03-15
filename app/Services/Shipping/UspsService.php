@@ -22,36 +22,49 @@ class UspsService
     /**
      * Supported mail classes with their v3 API parameters.
      *
-     * rateIndicator: SP = Single Piece (standard weight-based pricing)
+     * Each class lists the rateIndicators to query. The API is called once per
+     * mailClass × rateIndicator combination, so we only list indicators that
+     * are meaningful for parcel shipping (not flat-rate packaging).
+     *
+     * Key rateIndicator codes:
+     *   SP = Single Piece (standard weight-based pricing)
+     *   DR = Dimensional Rectangular (dimension-based pricing)
+     *
      * processingCategory: MACHINABLE for standard parcels
      */
     protected array $mailClasses = [
         'PRIORITY_MAIL' => [
             'label' => 'Priority Mail',
-            'rateIndicator' => 'SP',
+            'rateIndicators' => ['DR', 'SP'],
             'processingCategory' => 'MACHINABLE',
         ],
         'PRIORITY_MAIL_EXPRESS' => [
             'label' => 'Priority Mail Express',
-            'rateIndicator' => 'SP',
+            'rateIndicators' => ['DR', 'SP'],
             'processingCategory' => 'MACHINABLE',
         ],
         'USPS_GROUND_ADVANTAGE' => [
             'label' => 'USPS Ground Advantage',
-            'rateIndicator' => 'SP',
+            'rateIndicators' => ['DR', 'SP'],
             'processingCategory' => 'MACHINABLE',
         ],
         'MEDIA_MAIL' => [
             'label' => 'Media Mail',
-            'rateIndicator' => 'SP',
+            'rateIndicators' => ['SP'],
             'processingCategory' => 'MACHINABLE',
         ],
         'LIBRARY_MAIL' => [
             'label' => 'Library Mail',
-            'rateIndicator' => 'SP',
+            'rateIndicators' => ['SP'],
             'processingCategory' => 'MACHINABLE',
         ],
     ];
+
+    /**
+     * Flat-rate packaging indicators — skip when auto-selecting postage.
+     * These are for specific USPS packaging, not customer parcels.
+     */
+    protected array $flatRateIndicators = ['FB', 'FE', 'FP', 'PL', 'PM', 'PS'];
 
     /**
      * Normalize legacy mail_class values from old orders to v3 API names.
@@ -143,7 +156,7 @@ class UspsService
     }
 
     /**
-     * Query Domestic Prices v3 for each mail class.
+     * Query Domestic Prices v3 for each mail class × rate indicator.
      */
     protected function fetchRates(string $token, array $params): array
     {
@@ -173,97 +186,99 @@ class UspsService
         $rates = [];
 
         foreach ($this->mailClasses as $mailClass => $config) {
-            $payload = [
-                'originZIPCode' => $originZip,
-                'destinationZIPCode' => $destZip,
-                'weight' => $weightLbs,
-                'length' => $length,
-                'width' => $width,
-                'height' => $height,
-                'mailClass' => $mailClass,
-                'processingCategory' => $config['processingCategory'],
-                'destinationEntryFacilityType' => 'NONE',
-                'rateIndicator' => $config['rateIndicator'],
-                'mailingDate' => now()->format('Y-m-d'),
-            ];
-
-            try {
-                $commercialRate = null;
-                $retailRate = null;
-                $description = '';
-
-                // --- Retail rate (always try — no account needed) ---
-                $retailPayload = $payload + [
-                    'priceType' => 'RETAIL',
+            foreach ($config['rateIndicators'] as $rateIndicator) {
+                $payload = [
+                    'originZIPCode' => $originZip,
+                    'destinationZIPCode' => $destZip,
+                    'weight' => $weightLbs,
+                    'length' => $length,
+                    'width' => $width,
+                    'height' => $height,
+                    'mailClass' => $mailClass,
+                    'processingCategory' => $config['processingCategory'],
+                    'destinationEntryFacilityType' => 'NONE',
+                    'rateIndicator' => $rateIndicator,
+                    'mailingDate' => now()->format('Y-m-d'),
                 ];
 
-                $retailResponse = Http::withToken($token)
-                    ->connectTimeout(10)
-                    ->timeout(20)
-                    ->retry(2, 500, throw: false)
-                    ->post($url, $retailPayload);
+                try {
+                    $commercialRate = null;
+                    $retailRate = null;
+                    $description = '';
+                    $fees = [];
 
-                $retailBody = $retailResponse->json() ?? [];
+                    // --- Retail rate (always try — no account needed) ---
+                    $retailPayload = $payload + ['priceType' => 'RETAIL'];
 
-                if ($retailResponse->successful()) {
-                    $retailRate = $this->extractPrice($retailBody);
-                    $description = $this->extractDescription($retailBody);
-                } else {
-                    $apiError = $retailBody['error']['message']
-                        ?? $retailBody['message']
-                        ?? $retailBody['error']
-                        ?? 'HTTP ' . $retailResponse->status();
-                    Log::channel('shipping')->warning("USPS retail rate error for {$mailClass}: {$apiError}", [
-                        'status' => $retailResponse->status(),
-                        'response' => $retailBody,
-                    ]);
-                }
+                    $retailResponse = Http::withToken($token)
+                        ->connectTimeout(10)
+                        ->timeout(20)
+                        ->retry(2, 500, throw: false)
+                        ->post($url, $retailPayload);
 
-                // --- Commercial (our discounted) rate — only if account is configured ---
-                if (!empty($this->accountNumber)) {
-                    try {
-                        $commercialPayload = $payload + [
-                            'priceType' => 'COMMERCIAL',
-                            'accountType' => 'EPS',
-                            'accountNumber' => $this->accountNumber,
-                        ];
+                    $retailBody = $retailResponse->json() ?? [];
 
-                        $commercialResponse = Http::withToken($token)
-                            ->connectTimeout(10)
-                            ->timeout(20)
-                            ->retry(2, 500, throw: false)
-                            ->post($url, $commercialPayload);
-
-                        $commercialBody = $commercialResponse->json() ?? [];
-
-                        if ($commercialResponse->successful()) {
-                            $commercialRate = $this->extractPrice($commercialBody);
-                            if (empty($description)) {
-                                $description = $this->extractDescription($commercialBody);
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}: " . $e->getMessage());
+                    if ($retailResponse->successful()) {
+                        $retailRate = $this->extractPrice($retailBody);
+                        $description = $this->extractDescription($retailBody);
+                        $fees = $this->extractFees($retailBody);
+                    } else {
+                        // Not all rateIndicator × mailClass combos are valid — info-level only
+                        $apiError = $retailBody['error']['message']
+                            ?? $retailBody['message']
+                            ?? $retailBody['error']
+                            ?? 'HTTP ' . $retailResponse->status();
+                        Log::channel('shipping')->info("USPS rate N/A for {$mailClass}/{$rateIndicator}: {$apiError}");
+                        continue; // this indicator doesn't apply to this class
                     }
+
+                    // --- Commercial (our discounted) rate — only if account is configured ---
+                    if (!empty($this->accountNumber)) {
+                        try {
+                            $commercialPayload = $payload + [
+                                'priceType' => 'COMMERCIAL',
+                                'accountType' => 'EPS',
+                                'accountNumber' => $this->accountNumber,
+                            ];
+
+                            $commercialResponse = Http::withToken($token)
+                                ->connectTimeout(10)
+                                ->timeout(20)
+                                ->retry(2, 500, throw: false)
+                                ->post($url, $commercialPayload);
+
+                            $commercialBody = $commercialResponse->json() ?? [];
+
+                            if ($commercialResponse->successful()) {
+                                $commercialRate = $this->extractPrice($commercialBody);
+                                if (empty($fees)) {
+                                    $fees = $this->extractFees($commercialBody);
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}/{$rateIndicator}: " . $e->getMessage());
+                        }
+                    }
+
+                    // Use commercial rate if available, otherwise retail
+                    $rate = $commercialRate ?? $retailRate;
+
+                    if ($rate === null) {
+                        continue;
+                    }
+
+                    $rates[] = [
+                        'service' => $mailClass,
+                        'label' => $config['label'],
+                        'rateIndicator' => $rateIndicator,
+                        'rate' => $commercialRate ?? $retailRate,
+                        'retail_rate' => $retailRate,
+                        'fees' => $fees,
+                        'description' => $description,
+                    ];
+                } catch (\Exception $e) {
+                    Log::channel('shipping')->warning("USPS rate query failed for {$mailClass}/{$rateIndicator}: " . $e->getMessage());
                 }
-
-                // Use commercial rate if available, otherwise retail
-                $rate = $commercialRate ?? $retailRate;
-
-                if ($rate === null) {
-                    Log::channel('shipping')->info("USPS no rate for {$mailClass}");
-                    continue;
-                }
-
-                $rates[] = [
-                    'service' => $mailClass,
-                    'label' => $config['label'],
-                    'rate' => $commercialRate ?? $retailRate,
-                    'retail_rate' => $retailRate,
-                    'description' => $description,
-                ];
-            } catch (\Exception $e) {
-                Log::channel('shipping')->warning("USPS rate query failed for {$mailClass}: " . $e->getMessage());
             }
         }
 
@@ -271,20 +286,28 @@ class UspsService
     }
 
     /**
-     * Extract the price from a USPS v3 rate response.
+     * Extract the total price from a USPS v3 rate response.
      *
-     * Response structure: { "totalBasePrice": 8.02, "rates": [{ "price": 8.02, ... }] }
+     * Uses totalBasePrice (includes base rate + surcharges/fees) as the
+     * primary source. Falls back to rates[0].price + fees if needed.
+     *
+     * Response structure:
+     *   { "totalBasePrice": 12.50, "rates": [{ "price": 8.50, "fees": [{ "name": "...", "price": 4.00 }] }] }
      */
     protected function extractPrice(array $body): ?float
     {
-        // Primary: use price from rates array
-        if (!empty($body['rates'][0]['price'])) {
-            return (float) $body['rates'][0]['price'];
-        }
-
-        // Fallback: totalBasePrice at root level
+        // Primary: totalBasePrice includes base rate + all applicable fees/surcharges
         if (!empty($body['totalBasePrice'])) {
             return (float) $body['totalBasePrice'];
+        }
+
+        // Fallback: sum rates[0].price + rates[0].fees[].price
+        if (!empty($body['rates'][0]['price'])) {
+            $price = (float) $body['rates'][0]['price'];
+            foreach ($body['rates'][0]['fees'] ?? [] as $fee) {
+                $price += (float) ($fee['price'] ?? 0);
+            }
+            return $price;
         }
 
         return null;
@@ -296,6 +319,61 @@ class UspsService
     protected function extractDescription(array $body): string
     {
         return $body['rates'][0]['description'] ?? $body['description'] ?? '';
+    }
+
+    /**
+     * Extract additional fees/surcharges from a USPS v3 rate response.
+     *
+     * Returns: [['name' => 'Nonstandard Fee', 'price' => 4.00], ...]
+     */
+    protected function extractFees(array $body): array
+    {
+        $fees = [];
+        foreach ($body['rates'][0]['fees'] ?? [] as $fee) {
+            if (!empty($fee['name']) && ($fee['price'] ?? 0) > 0) {
+                $fees[] = [
+                    'name' => $fee['name'],
+                    'price' => (float) $fee['price'],
+                ];
+            }
+        }
+        return $fees;
+    }
+
+    /**
+     * Select the best rate for automatic postage calculation.
+     *
+     * Priority: match order's mail class → prefer DR indicator → skip flat rate indicators.
+     * Returns null if no suitable rate found.
+     */
+    public function selectAutoRate(array $rates, string $orderMailClass): ?array
+    {
+        $orderMailClass = $this->normalizeMailClass($orderMailClass);
+
+        // Filter to rates matching the order's mail class
+        $matching = collect($rates)->filter(function ($rate) use ($orderMailClass) {
+            return $rate['service'] === $orderMailClass;
+        });
+
+        // Exclude flat rate packaging indicators
+        $matching = $matching->filter(function ($rate) {
+            return !in_array($rate['rateIndicator'] ?? '', $this->flatRateIndicators);
+        });
+
+        if ($matching->isEmpty()) {
+            // Fallback: use first non-flat-rate from any class
+            return collect($rates)->filter(function ($rate) {
+                return !in_array($rate['rateIndicator'] ?? '', $this->flatRateIndicators);
+            })->first();
+        }
+
+        // Prefer DR (Dimensional Rectangular) over other indicators
+        $dr = $matching->firstWhere('rateIndicator', 'DR');
+        if ($dr) {
+            return $dr;
+        }
+
+        return $matching->first();
     }
 
     /**

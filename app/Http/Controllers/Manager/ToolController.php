@@ -83,9 +83,8 @@ class ToolController extends Controller
             if (isset($result['error'])) {
                 $error = $result['error'];
             } else {
-                // Deduplicate by service name, keep first (lowest class_id)
+                // Show all rates (multiple indicators per class), sorted by retail price desc
                 $rates = collect($result)
-                    ->unique('service')
                     ->sortByDesc('retail_rate')
                     ->values()
                     ->all();

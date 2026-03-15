@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\Shipping\UspsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class TestUspsRates extends Command
 {
@@ -43,7 +44,7 @@ class TestUspsRates extends Command
             return 1;
         }
 
-        // Step 2: Test rate lookups
+        // Step 2: Direct API test — each mail class × rate indicator
         $zip = $this->option('zip');
         $pounds = (int) $this->option('pounds');
         $ounces = (int) $this->option('ounces');
@@ -71,96 +72,117 @@ class TestUspsRates extends Command
         $this->info("Account #:   " . (config('shipping.usps.account_number') ? '***' . substr(config('shipping.usps.account_number'), -4) : '(empty)'));
         $this->info("Dimensions:  {$length}\" × {$width}\" × {$height}\"");
 
-        // Query each mail class individually with raw output
+        // Query each mail class × rate indicator individually
         $mailClasses = $usps->getMailClasses();
         $successCount = 0;
         $rates = [];
 
         foreach ($mailClasses as $mailClass => $config) {
-            $this->info('');
-            $this->info("── {$mailClass} ({$config['label']}) ──");
+            $rateIndicators = $config['rateIndicators'] ?? ['SP'];
 
-            $payload = [
-                'originZIPCode' => $originZip,
-                'destinationZIPCode' => $zip,
-                'weight' => $weightLbs,
-                'length' => $length,
-                'width' => $width,
-                'height' => $height,
-                'mailClass' => $mailClass,
-                'processingCategory' => $config['processingCategory'],
-                'destinationEntryFacilityType' => 'NONE',
-                'rateIndicator' => $config['rateIndicator'],
-                'mailingDate' => now()->format('Y-m-d'),
-                'priceType' => 'RETAIL',
-            ];
+            foreach ($rateIndicators as $rateIndicator) {
+                $this->info('');
+                $this->info("── {$mailClass} / {$rateIndicator} ({$config['label']}) ──");
 
-            if ($debug) {
-                $this->line('  Request: ' . json_encode($payload, JSON_PRETTY_PRINT));
-            }
-
-            try {
-                $response = Http::withToken($token)
-                    ->connectTimeout(10)
-                    ->timeout(20)
-                    ->post('https://apis.usps.com/prices/v3/base-rates/search', $payload);
-
-                $body = $response->json() ?? [];
-                $status = $response->status();
+                $payload = [
+                    'originZIPCode' => $originZip,
+                    'destinationZIPCode' => $zip,
+                    'weight' => $weightLbs,
+                    'length' => $length,
+                    'width' => $width,
+                    'height' => $height,
+                    'mailClass' => $mailClass,
+                    'processingCategory' => $config['processingCategory'],
+                    'destinationEntryFacilityType' => 'NONE',
+                    'rateIndicator' => $rateIndicator,
+                    'mailingDate' => now()->format('Y-m-d'),
+                    'priceType' => 'RETAIL',
+                ];
 
                 if ($debug) {
-                    $this->line("  Status: {$status}");
-                    $this->line('  Response: ' . json_encode($body, JSON_PRETTY_PRINT));
+                    $this->line('  Request: ' . json_encode($payload, JSON_PRETTY_PRINT));
                 }
 
-                if (!$response->successful()) {
-                    $errorMsg = $body['error']['message']
-                        ?? $body['message']
-                        ?? $body['error']
-                        ?? json_encode($body);
-                    $this->error("  ✗ HTTP {$status}: {$errorMsg}");
-                    continue;
-                }
+                try {
+                    $response = Http::withToken($token)
+                        ->connectTimeout(10)
+                        ->timeout(20)
+                        ->post('https://apis.usps.com/prices/v3/base-rates/search', $payload);
 
-                $price = $body['rates'][0]['price']
-                    ?? $body['totalBasePrice']
-                    ?? null;
-                $description = $body['rates'][0]['description'] ?? '';
+                    $body = $response->json() ?? [];
+                    $status = $response->status();
 
-                if ($price !== null) {
-                    $this->info("  ✓ \${$price} — {$description}");
-                    $rates[] = [
-                        'service' => $mailClass,
-                        'label' => $config['label'],
-                        'rate' => (float) $price,
-                        'description' => $description,
-                    ];
-                    $successCount++;
-                } else {
-                    $this->warn("  ✗ No price in response");
-                    if (!$debug) {
-                        $this->line('  Response: ' . json_encode($body));
+                    if ($debug) {
+                        $this->line("  Status: {$status}");
+                        $this->line('  Response: ' . json_encode($body, JSON_PRETTY_PRINT));
                     }
+
+                    if (!$response->successful()) {
+                        $errorMsg = $body['error']['message']
+                            ?? $body['message']
+                            ?? $body['error']
+                            ?? json_encode($body);
+                        $this->warn("  ✗ HTTP {$status}: {$errorMsg}");
+                        continue;
+                    }
+
+                    // Use totalBasePrice (includes surcharges/fees)
+                    $totalPrice = $body['totalBasePrice'] ?? null;
+                    $basePrice = $body['rates'][0]['price'] ?? null;
+                    $description = $body['rates'][0]['description'] ?? '';
+
+                    // Extract fees
+                    $fees = [];
+                    foreach ($body['rates'][0]['fees'] ?? [] as $fee) {
+                        if (!empty($fee['name']) && ($fee['price'] ?? 0) > 0) {
+                            $fees[] = $fee['name'] . ': $' . number_format($fee['price'], 2);
+                        }
+                    }
+
+                    $price = $totalPrice ?? $basePrice;
+
+                    if ($price !== null) {
+                        $feeStr = !empty($fees) ? ' [' . implode(', ', $fees) . ']' : '';
+                        $this->info("  ✓ \${$price}{$feeStr} — {$description}");
+                        if ($totalPrice && $basePrice && $totalPrice != $basePrice) {
+                            $this->info("    Base: \${$basePrice} + fees = \${$totalPrice}");
+                        }
+                        $rates[] = [
+                            'service' => $mailClass,
+                            'label' => $config['label'],
+                            'indicator' => $rateIndicator,
+                            'rate' => (float) $price,
+                            'fees' => implode(', ', $fees) ?: '—',
+                            'description' => $description,
+                        ];
+                        $successCount++;
+                    } else {
+                        $this->warn("  ✗ No price in response");
+                        if (!$debug) {
+                            $this->line('  Response: ' . json_encode($body));
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $this->error("  ✗ Exception: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                $this->error("  ✗ Exception: " . $e->getMessage());
             }
         }
 
-        // Summary
+        // Summary table
         $this->info('');
         $this->info('━━━ Summary ━━━');
         if ($successCount > 0) {
             $this->table(
-                ['Mail Class', 'Label', 'Rate', 'Description'],
+                ['Mail Class', 'Ind.', 'Rate', 'Fees', 'Description'],
                 collect($rates)->map(fn($r) => [
                     $r['service'],
-                    $r['label'],
+                    $r['indicator'],
                     '$' . number_format($r['rate'], 2),
-                    $r['description'] ?: '—',
+                    $r['fees'],
+                    Str::limit($r['description'],50),
                 ])->all()
             );
-            $this->info("✓ {$successCount}/" . count($mailClasses) . ' mail classes returned rates.');
+            $this->info("✓ {$successCount} rate(s) returned.");
         } else {
             $this->error('✗ No rates returned from any mail class.');
             if (!$debug) {
@@ -179,12 +201,33 @@ class TestUspsRates extends Command
         } elseif (empty($serviceRates)) {
             $this->warn('✗ Empty result — service returned no rates.');
         } else {
+            $this->table(
+                ['Service', 'Ind.', 'Our Rate', 'Retail', 'Fees', 'Description'],
+                collect($serviceRates)->map(fn($r) => [
+                    $r['service'],
+                    $r['rateIndicator'] ?? '?',
+                    '$' . number_format($r['rate'], 2),
+                    isset($r['retail_rate']) ? '$' . number_format($r['retail_rate'], 2) : '—',
+                    !empty($r['fees']) ? collect($r['fees'])->map(fn($f) => $f['name'] . ': $' . number_format($f['price'], 2))->implode(', ') : '—',
+                    Str::limit($r['description'],40),
+                ])->all()
+            );
             $this->info('✓ ' . count($serviceRates) . ' rate(s) via service method.');
+
+            // Step 4: Test auto-rate selection
+            $this->info('');
+            $this->info('━━━ Step 4: Auto-Rate Selection ━━━');
+            $autoRate = $usps->selectAutoRate($serviceRates, 'PRIORITY_MAIL');
+            if ($autoRate) {
+                $this->info("  For PRIORITY_MAIL → {$autoRate['service']} ({$autoRate['rateIndicator']}) \${$autoRate['retail_rate']}");
+            } else {
+                $this->warn('  No auto-rate found for PRIORITY_MAIL');
+            }
         }
 
-        // Step 4: Test legacy normalization
+        // Step 5: Test legacy normalization
         $this->info('');
-        $this->info('━━━ Step 4: Legacy Mail Class Normalization ━━━');
+        $this->info('━━━ Step 5: Legacy Mail Class Normalization ━━━');
         foreach (['PRIORITY_MAIL', 'PARCEL_POST', 'PARCEL_SELECT', 'STANDARD_POST', 'priority_mail'] as $legacy) {
             $normalized = $usps->normalizeMailClass($legacy);
             $changed = $legacy !== $normalized ? " → {$normalized}" : '';

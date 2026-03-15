@@ -46,7 +46,7 @@
                     <tbody>
                         @php
                             $lineItems = [
-                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate ? ($autoRate['retail_rate'] ?? $autoRate['rate']) : null, 'hint' => $autoRate ? ($autoRate['label'] ?? $autoRate['description'] ?: $autoRate['service']) . ' (retail)' : null],
+                                ['name' => 'OrderShipping', 'label' => 'Shipping', 'relation' => 'shipping', 'auto' => $autoRate ? ($autoRate['retail_rate'] ?? $autoRate['rate']) : null, 'hint' => $autoRate ? ($autoRate['label'] ?? $autoRate['service']) . ' (' . ($autoRate['rateIndicator'] ?? 'SP') . ') retail' : null],
                                 ['name' => 'OrderFee', 'label' => 'Handling Fee', 'relation' => 'fee', 'auto' => $autoFee ?? null, 'hint' => null],
                                 ['name' => 'OrderInsurance', 'label' => 'Insurance', 'relation' => 'insurance', 'auto' => $autoInsurance ?? null, 'hint' => null],
                                 ['name' => 'OrderStorage', 'label' => 'Storage', 'relation' => 'storage', 'auto' => null, 'hint' => null],
@@ -121,7 +121,7 @@
     {{-- Right column: USPS Rate Lookup --}}
     <div class="col-lg-5">
         @if(!empty($uspsRates))
-            <x-detail-card title="USPS Rate Lookup">
+            <x-detail-card title="Get Postage Rates">
                 <table class="table table-sm mb-0">
                     <thead><tr><th>Service</th><th class="text-end">Our Rate</th><th class="text-end">Retail</th><th class="text-end">Savings</th></tr></thead>
                     <tbody>
@@ -130,9 +130,22 @@
                                 $ourRate = $rate['rate'];
                                 $retailRate = $rate['retail_rate'] ?? null;
                                 $savings = ($retailRate && $retailRate > $ourRate) ? $retailRate - $ourRate : null;
+                                $isSelected = $autoRate
+                                    && $rate['service'] === $autoRate['service']
+                                    && ($rate['rateIndicator'] ?? '') === ($autoRate['rateIndicator'] ?? '');
                             @endphp
-                            <tr @if($autoRate && $rate['service'] === $autoRate['service']) class="table-success" @endif>
-                                <td>{{ $rate['label'] ?? ($rate['description'] ?: $rate['service']) }}</td>
+                            <tr @if($isSelected) class="table-success" @endif>
+                                <td>
+                                    {{ $rate['label'] ?? $rate['service'] }}
+                                    <span class="text-muted small">({{ $rate['rateIndicator'] ?? '?' }})</span>
+                                    @if(!empty($rate['fees']))
+                                        <br>
+                                        @foreach($rate['fees'] as $fee)
+                                            <small class="text-warning">+ {{ $fee['name'] }}: ${{ number_format($fee['price'], 2) }}</small>
+                                            @if(!$loop->last) <br> @endif
+                                        @endforeach
+                                    @endif
+                                </td>
                                 <td class="text-end">${{ number_format($ourRate, 2) }}</td>
                                 <td class="text-end text-muted">{{ $retailRate ? '$' . number_format($retailRate, 2) : '—' }}</td>
                                 <td class="text-end">

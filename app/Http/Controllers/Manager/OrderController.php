@@ -593,19 +593,9 @@ class OrderController extends Controller
                     $uspsRates = [];
                 }
 
-                // Find the rate matching this order's mail class
+                // Select the best rate: prefers DR indicator, skips flat rate packaging
                 if (!empty($uspsRates)) {
-                    $orderMailClass = $usps->normalizeMailClass($order->mail_class ?? '');
-                    foreach ($uspsRates as $rate) {
-                        if ($rate['service'] === $orderMailClass) {
-                            $autoRate = $rate;
-                            break;
-                        }
-                    }
-                    // Fallback: use the first rate if no exact match
-                    if (!$autoRate) {
-                        $autoRate = $uspsRates[0] ?? null;
-                    }
+                    $autoRate = $usps->selectAutoRate($uspsRates, $order->mail_class ?? '');
                 }
             } catch (\Exception $e) {
                 $rateError = $e->getMessage();

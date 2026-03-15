@@ -99,7 +99,15 @@
                             @endphp
                             <tr>
                                 <td>
-                                    <span class="fw-semibold">{{ $rate['label'] ?? ($rate['description'] ?: $rate['service']) }}</span>
+                                    <span class="fw-semibold">{{ $rate['label'] ?? $rate['service'] }}</span>
+                                    <span class="text-muted small">({{ $rate['rateIndicator'] ?? '?' }})</span>
+                                    @if(!empty($rate['fees']))
+                                        <br>
+                                        @foreach($rate['fees'] as $fee)
+                                            <small class="text-warning">+ {{ $fee['name'] }}: ${{ number_format($fee['price'], 2) }}</small>
+                                            @if(!$loop->last) <br> @endif
+                                        @endforeach
+                                    @endif
                                 </td>
                                 <td class="text-end text-muted">
                                     {{ $retailRate ? '$' . number_format($retailRate, 2) : '—' }}
