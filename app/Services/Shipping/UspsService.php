@@ -201,6 +201,7 @@ class UspsService
                 try {
                     $commercialRate = null;
                     $commercialBody = [];
+                    $commercialError = null;
                     $retailRate = null;
                     $retailBody = [];
                     $description = '';
@@ -253,9 +254,16 @@ class UspsService
                                 if (empty($fees)) {
                                     $fees = $this->extractFees($commercialBody);
                                 }
+                            } else {
+                                $commercialError = $commercialBody['error']['message']
+                                    ?? $commercialBody['message']
+                                    ?? $commercialBody['error']
+                                    ?? 'HTTP ' . $commercialResponse->status();
+                                Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}/{$rateIndicator}: {$commercialError}");
                             }
                         } catch (\Exception $e) {
                             Log::channel('shipping')->info("USPS commercial rate unavailable for {$mailClass}/{$rateIndicator}: " . $e->getMessage());
+                            $commercialError = $e->getMessage();
                         }
                     }
 
@@ -274,10 +282,13 @@ class UspsService
                         'label' => $config['label'],
                         'rateIndicator' => $rateIndicator,
                         'rate' => $commercialRate ?? $retailRate,
+                        'rate_source' => $commercialRate !== null ? 'COMMERCIAL' : 'RETAIL',
+                        'commercial_rate' => $commercialRate,
                         'retail_rate' => $retailRate,
                         'postage_id' => $retailPostageId ?: $commercialPostageId,
                         'retail_postage_id' => $retailPostageId,
                         'commercial_postage_id' => $commercialPostageId,
+                        'commercial_error' => $commercialError,
                         'fees' => $fees,
                         'description' => $description,
                     ];

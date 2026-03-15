@@ -95,6 +95,7 @@
                             @php
                                 $ourRate = $rate['rate'];
                                 $retailRate = $rate['retail_rate'] ?? null;
+                                $rateSource = $rate['rate_source'] ?? 'RETAIL';
                                 $savings = ($retailRate && $retailRate > $ourRate) ? $retailRate - $ourRate : null;
                                 $pct = ($savings && $retailRate > 0) ? round(($savings / $retailRate) * 100) : null;
                             @endphp
@@ -102,6 +103,10 @@
                                 <td>
                                     <span class="fw-semibold">{{ $rate['label'] ?? $rate['service'] }}</span>
                                     <span class="text-muted small">({{ $rate['rateIndicator'] ?? '?' }})</span>
+                                    <br>
+                                    <small class="{{ $rateSource === 'COMMERCIAL' ? 'text-success' : 'text-warning' }}">
+                                        {{ $rateSource === 'COMMERCIAL' ? 'Commercial rate loaded' : 'Retail fallback' }}
+                                    </small>
                                     @if(!empty($rate['fees']))
                                         <br>
                                         @foreach($rate['fees'] as $fee)
@@ -115,6 +120,9 @@
                                 </td>
                                 <td class="text-end fw-semibold">
                                     ${{ number_format($ourRate, 2) }}
+                                    @if($rateSource !== 'COMMERCIAL' && !empty($rate['commercial_error']))
+                                        <br><small class="text-muted">{{ $rate['commercial_error'] }}</small>
+                                    @endif
                                 </td>
                                 <td class="text-end">
                                     @if($savings)
