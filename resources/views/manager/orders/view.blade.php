@@ -23,8 +23,11 @@
         'DHL' => 'https://www.dhl.com/us-en/home/tracking/tracking-express.html?submit=1&tracking-id=' . $inbound,
         default => '',
     };
+    $outboundUrl = $order->usps_track_num
+        ? 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' . $order->usps_track_num
+        : '';
 
-    // Build clean charge lines from individual relations (avoids legacy duplicate rows)
+    // Build clean charge lines from individual relations
     $chargeLines = collect([
         ['label' => 'Shipping', 'value' => $order->shipping?->value],
         ['label' => 'Handling Fee', 'value' => $order->fee?->value],
@@ -47,9 +50,10 @@
                 <span class="badge bg-danger fs-6 px-3 py-2">{{ $order->problem_reason }}</span>
             @endif
             @if($order->zendesk_ticket_id)
-                <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="badge bg-warning text-dark fs-6 px-3 py-2 text-decoration-none">
+                <button type="button" class="badge bg-warning text-dark fs-6 px-3 py-2 border-0"
+                    data-bs-toggle="modal" data-bs-target="#zendeskModal" style="cursor:pointer">
                     <i data-lucide="message-circle" class="icon"></i> #{{ $order->zendesk_ticket_id }}
-                </a>
+                </button>
             @endif
             @if($order->customer?->billing_id)
                 <a href="/{{ $prefix }}/customers/view/{{ $order->customer->customers_id }}" class="badge bg-primary fs-6 px-3 py-2 text-decoration-none">{{ $order->customer->billing_id }}</a>
@@ -133,14 +137,29 @@
             <x-detail-row label="Inbound">
                 @if($inbound)
                     <span class="badge bg-light text-dark border me-1">{{ $inboundCarrier }}</span>
-                    <a href="{{ $inboundUrl }}" target="_blank" class="text-decoration-none">{{ $inbound }}</a>
+                    <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold tracking-link"
+                        data-bs-toggle="modal" data-bs-target="#trackingModal"
+                        data-tracking="{{ $inbound }}" data-carrier="{{ $inboundCarrier }}" data-carrier-url="{{ $inboundUrl }}">
+                        {{ $inbound }}
+                    </button>
+                    <a href="{{ $inboundUrl }}" target="_blank" class="ms-1 text-muted" title="Open on {{ $inboundCarrier }}">
+                        <i data-lucide="external-link" class="icon--xs"></i>
+                    </a>
                 @else
                     <span class="text-muted">None</span>
                 @endif
             </x-detail-row>
             <x-detail-row label="Outbound">
                 @if($order->usps_track_num)
-                    <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels={{ $order->usps_track_num }}" target="_blank" class="text-decoration-none">{{ $order->usps_track_num }}</a>
+                    <span class="badge bg-light text-dark border me-1">USPS</span>
+                    <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold tracking-link"
+                        data-bs-toggle="modal" data-bs-target="#trackingModal"
+                        data-tracking="{{ $order->usps_track_num }}" data-carrier="USPS" data-carrier-url="{{ $outboundUrl }}">
+                        {{ $order->usps_track_num }}
+                    </button>
+                    <a href="{{ $outboundUrl }}" target="_blank" class="ms-1 text-muted" title="Open on USPS">
+                        <i data-lucide="external-link" class="icon--xs"></i>
+                    </a>
                 @else
                     <span class="text-muted">None</span>
                 @endif
@@ -227,11 +246,18 @@
         {{-- Support Ticket --}}
         <x-detail-card title="Support Ticket">
             @if($order->zendesk_ticket_id)
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="fw-semibold">Ticket #{{ $order->zendesk_ticket_id }}</span>
-                    <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i data-lucide="external-link" class="icon--sm me-1"></i>Open in Zendesk
-                    </a>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <span class="fw-semibold">Ticket #{{ $order->zendesk_ticket_id }}</span>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#zendeskModal">
+                            <i data-lucide="messages-square" class="icon--sm me-1"></i>View
+                        </button>
+                        <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Open in Zendesk">
+                            <i data-lucide="external-link" class="icon--sm"></i>
+                        </a>
+                    </div>
                 </div>
             @elseif($order->orders_status == 6)
                 <p class="text-muted small mb-2">No ticket linked to this order.</p>
@@ -309,24 +335,382 @@
         <i data-lucide="trash-2" class="icon--sm me-1"></i>Delete Order
     </a>
 </div>
+
+{{-- ======== TRACKING MODAL ======== --}}
+<div class="modal fade" id="trackingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title d-flex align-items-center gap-2">
+                    <i data-lucide="package" style="width:18px;height:18px"></i>
+                    <span id="trackingModalCarrier"></span> Tracking
+                </h6>
+                <div class="d-flex align-items-center gap-2 ms-auto me-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="trackingCopyBtn" title="Copy tracking number">
+                        <i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>
+                    </button>
+                    <a id="trackingCarrierLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary" title="Open on carrier site">
+                        <i data-lucide="external-link" style="width:14px;height:14px;vertical-align:-2px"></i>
+                    </a>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="trackingLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2 mb-0 small">Fetching tracking info&hellip;</p>
+                </div>
+                <div id="trackingError" class="text-center py-5" style="display:none;">
+                    <i data-lucide="alert-circle" style="width:36px;height:36px" class="text-danger mb-2"></i>
+                    <p id="trackingErrorMsg" class="text-muted mb-0"></p>
+                </div>
+                <div id="trackingContent" style="display:none;">
+                    <div class="px-3 py-3 border-bottom bg-light">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <span id="trackingCarrierBadge" class="badge me-2"></span>
+                                <code id="trackingModalNumber" class="user-select-all small"></code>
+                            </div>
+                            <div>
+                                <span id="trackingStatusBadge" class="badge bg-success fs-6"></span>
+                            </div>
+                        </div>
+                        <div id="trackingEstDelivery" class="text-muted small mt-1" style="display:none;">
+                            <i data-lucide="calendar" style="width:13px;height:13px;vertical-align:-2px" class="me-1"></i>
+                            Est. delivery: <strong id="trackingEstDate"></strong>
+                        </div>
+                    </div>
+                    <div class="px-3 py-3" style="max-height:400px;overflow-y:auto;">
+                        <div id="trackingEvents"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ======== ZENDESK MODAL ======== --}}
+@if($order->zendesk_ticket_id)
+<div class="modal fade" id="zendeskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title d-flex align-items-center gap-2">
+                    <i data-lucide="message-circle" style="width:18px;height:18px"></i>
+                    <span>Ticket #{{ $order->zendesk_ticket_id }}</span>
+                    <span id="zendeskStatusBadge" class="badge bg-secondary ms-1" style="display:none;"></span>
+                </h6>
+                <div class="d-flex align-items-center gap-2 ms-auto me-2">
+                    <a href="https://apobox.zendesk.com/agent/tickets/{{ $order->zendesk_ticket_id }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Open in Zendesk">
+                        <i data-lucide="external-link" style="width:14px;height:14px;vertical-align:-2px"></i>
+                    </a>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="zendeskLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2 mb-0 small">Loading conversation&hellip;</p>
+                </div>
+                <div id="zendeskError" class="text-center py-5" style="display:none;">
+                    <i data-lucide="alert-circle" style="width:36px;height:36px" class="text-danger mb-2"></i>
+                    <p id="zendeskErrorMsg" class="text-muted mb-0"></p>
+                </div>
+                <div id="zendeskContent" style="display:none;">
+                    <div id="zendeskSubject" class="px-3 py-2 border-bottom bg-light fw-semibold small"></div>
+                    <div id="zendeskComments" class="px-3 py-3" style="max-height:400px;overflow-y:auto;"></div>
+                    <div class="border-top px-3 py-3">
+                        <form id="zendeskReplyForm">
+                            <div class="mb-2">
+                                <textarea id="zendeskReplyBody" class="form-control form-control-sm" rows="3" placeholder="Type a reply..." required></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Sends as a public reply on Zendesk</small>
+                                <button type="submit" class="btn btn-sm btn-primary" id="zendeskReplyBtn">
+                                    <i data-lucide="send" class="icon--sm me-1"></i>Send Reply
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const statusSelect = document.getElementById('ordersStatus');
-        const reasonWrap = document.getElementById('problemReasonWrap');
-        const reasonSelect = document.getElementById('problemReason');
+document.addEventListener('DOMContentLoaded', function() {
+    var prefix = '{{ $prefix }}';
+    var orderId = '{{ $order->orders_id }}';
 
-        function toggleProblemReason() {
-            const isProblem = statusSelect.value === '6';
-            reasonWrap.style.display = isProblem ? '' : 'none';
-            reasonSelect.required = isProblem;
-            if (!isProblem) reasonSelect.value = '';
+    // ——— Problem reason toggle ———
+    var statusSelect = document.getElementById('ordersStatus');
+    var reasonWrap = document.getElementById('problemReasonWrap');
+    var reasonSelect = document.getElementById('problemReason');
+
+    function toggleProblemReason() {
+        var isProblem = statusSelect.value === '6';
+        reasonWrap.style.display = isProblem ? '' : 'none';
+        reasonSelect.required = isProblem;
+        if (!isProblem) reasonSelect.value = '';
+    }
+
+    statusSelect.addEventListener('change', toggleProblemReason);
+    toggleProblemReason();
+
+    // ——— HTML escaping helper ———
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
+
+    // ——— TRACKING MODAL ———
+    var trackModal = document.getElementById('trackingModal');
+    if (trackModal) {
+        var carrierColors = { USPS: 'bg-primary', UPS: 'bg-warning text-dark', FedEx: 'bg-info text-dark', DHL: 'bg-danger' };
+        var currentTrackNum = '';
+
+        trackModal.addEventListener('show.bs.modal', function(e) {
+            var btn = e.relatedTarget;
+            if (!btn) return;
+            var trackNum = btn.dataset.tracking;
+            var carrier = btn.dataset.carrier;
+            var carrierUrl = btn.dataset.carrierUrl;
+            currentTrackNum = trackNum;
+
+            document.getElementById('trackingModalCarrier').textContent = carrier;
+            document.getElementById('trackingCarrierLink').href = carrierUrl;
+
+            document.getElementById('trackingLoading').style.display = '';
+            document.getElementById('trackingError').style.display = 'none';
+            document.getElementById('trackingContent').style.display = 'none';
+
+            fetch('/' + prefix + '/tracking/' + encodeURIComponent(carrier) + '/' + encodeURIComponent(trackNum))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    document.getElementById('trackingLoading').style.display = 'none';
+
+                    if (data.error) {
+                        document.getElementById('trackingErrorMsg').textContent = data.error;
+                        document.getElementById('trackingError').style.display = '';
+                        if (window.lucide) lucide.createIcons();
+                        return;
+                    }
+
+                    // Status bar
+                    var badge = document.getElementById('trackingCarrierBadge');
+                    badge.className = 'badge ' + (carrierColors[data.carrier] || 'bg-secondary');
+                    badge.textContent = data.carrier;
+
+                    document.getElementById('trackingModalNumber').textContent = data.tracking_number;
+
+                    var statusBadge = document.getElementById('trackingStatusBadge');
+                    var statusLower = (data.status || '').toLowerCase();
+                    var statusColor = 'bg-secondary';
+                    if (statusLower.indexOf('delivered') !== -1) statusColor = 'bg-success';
+                    else if (statusLower.indexOf('transit') !== -1 || statusLower.indexOf('accepted') !== -1) statusColor = 'bg-primary';
+                    else if (statusLower.indexOf('exception') !== -1 || statusLower.indexOf('alert') !== -1) statusColor = 'bg-danger';
+                    else if (statusLower.indexOf('out for delivery') !== -1) statusColor = 'bg-info';
+                    statusBadge.className = 'badge ' + statusColor + ' fs-6';
+                    statusBadge.textContent = data.status;
+
+                    // Estimated delivery
+                    var estWrap = document.getElementById('trackingEstDelivery');
+                    if (data.estimated_delivery) {
+                        document.getElementById('trackingEstDate').textContent = data.estimated_delivery;
+                        estWrap.style.display = '';
+                    } else {
+                        estWrap.style.display = 'none';
+                    }
+
+                    // Events timeline
+                    var eventsContainer = document.getElementById('trackingEvents');
+                    eventsContainer.innerHTML = '';
+
+                    if (data.events && data.events.length > 0) {
+                        data.events.forEach(function(evt, i) {
+                            var isFirst = i === 0;
+                            var dot = document.createElement('div');
+                            dot.className = 'd-flex gap-3 mb-0';
+                            dot.innerHTML =
+                                '<div class="d-flex flex-column align-items-center" style="min-width:12px">' +
+                                    '<div style="width:10px;height:10px;border-radius:50%;margin-top:5px" class="' + (isFirst ? 'bg-success' : 'bg-secondary opacity-50') + '"></div>' +
+                                    (i < data.events.length - 1 ? '<div style="width:2px;flex:1;min-height:20px" class="bg-secondary opacity-25"></div>' : '') +
+                                '</div>' +
+                                '<div class="pb-3 flex-grow-1">' +
+                                    '<div class="' + (isFirst ? 'fw-semibold' : 'small') + '">' + escapeHtml(evt.description) + '</div>' +
+                                    '<div class="text-muted" style="font-size:0.78rem">' +
+                                        (evt.location ? '<span class="me-2">' + escapeHtml(evt.location) + '</span>' : '') +
+                                        (evt.date ? '<span>' + escapeHtml(evt.date) + '</span>' : '') +
+                                    '</div>' +
+                                '</div>';
+                            eventsContainer.appendChild(dot);
+                        });
+                    } else {
+                        eventsContainer.innerHTML = '<p class="text-muted text-center mb-0">No tracking events available yet.</p>';
+                    }
+
+                    document.getElementById('trackingContent').style.display = '';
+                    if (window.lucide) lucide.createIcons();
+                })
+                .catch(function() {
+                    document.getElementById('trackingLoading').style.display = 'none';
+                    document.getElementById('trackingErrorMsg').textContent = 'Could not load tracking data.';
+                    document.getElementById('trackingError').style.display = '';
+                    if (window.lucide) lucide.createIcons();
+                });
+        });
+
+        document.getElementById('trackingCopyBtn').addEventListener('click', function() {
+            if (!currentTrackNum) return;
+            var btn = this;
+            navigator.clipboard.writeText(currentTrackNum).then(function() {
+                btn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px"></i>';
+                if (window.lucide) lucide.createIcons();
+                setTimeout(function() {
+                    btn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;vertical-align:-2px"></i>';
+                    if (window.lucide) lucide.createIcons();
+                }, 2000);
+            });
+        });
+    }
+
+    // ——— ZENDESK MODAL ———
+    var zdModal = document.getElementById('zendeskModal');
+    if (zdModal) {
+        var zdLoaded = false;
+
+        zdModal.addEventListener('show.bs.modal', function() {
+            if (zdLoaded) return; // only fetch once per page load
+
+            document.getElementById('zendeskLoading').style.display = '';
+            document.getElementById('zendeskError').style.display = 'none';
+            document.getElementById('zendeskContent').style.display = 'none';
+
+            fetch('/' + prefix + '/orders/' + orderId + '/zendesk-comments')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    document.getElementById('zendeskLoading').style.display = 'none';
+
+                    if (data.error) {
+                        document.getElementById('zendeskErrorMsg').textContent = data.error;
+                        document.getElementById('zendeskError').style.display = '';
+                        if (window.lucide) lucide.createIcons();
+                        return;
+                    }
+
+                    // Ticket subject + status
+                    if (data.ticket) {
+                        document.getElementById('zendeskSubject').textContent = data.ticket.subject || '';
+                        var sBadge = document.getElementById('zendeskStatusBadge');
+                        var st = (data.ticket.status || '').toLowerCase();
+                        var sColor = { new: 'bg-info', open: 'bg-warning text-dark', pending: 'bg-primary', solved: 'bg-success', closed: 'bg-secondary' };
+                        sBadge.className = 'badge ms-1 ' + (sColor[st] || 'bg-secondary');
+                        sBadge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+                        sBadge.style.display = '';
+                    }
+
+                    // Render comments
+                    renderZendeskComments(data.comments || []);
+                    document.getElementById('zendeskContent').style.display = '';
+                    zdLoaded = true;
+                    if (window.lucide) lucide.createIcons();
+                })
+                .catch(function() {
+                    document.getElementById('zendeskLoading').style.display = 'none';
+                    document.getElementById('zendeskErrorMsg').textContent = 'Could not load ticket conversation.';
+                    document.getElementById('zendeskError').style.display = '';
+                    if (window.lucide) lucide.createIcons();
+                });
+        });
+
+        function renderZendeskComments(comments) {
+            var container = document.getElementById('zendeskComments');
+            container.innerHTML = '';
+
+            if (comments.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center mb-0">No comments yet.</p>';
+                return;
+            }
+
+            comments.forEach(function(c, i) {
+                var isFirst = i === 0;
+                var date = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+                var el = document.createElement('div');
+                el.className = 'mb-3 p-3 rounded-3 ' + (isFirst ? 'bg-light border' : 'bg-white border');
+                el.innerHTML =
+                    '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                        '<span class="fw-semibold small">' + (isFirst ? 'Initial Message' : 'Reply') + '</span>' +
+                        '<span class="text-muted" style="font-size:0.75rem">' + escapeHtml(date) + '</span>' +
+                    '</div>' +
+                    '<div class="small" style="white-space:pre-wrap;">' + escapeHtml(c.body) + '</div>';
+                container.appendChild(el);
+            });
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
         }
 
-        statusSelect.addEventListener('change', toggleProblemReason);
-        toggleProblemReason();
-    });
+        // Reply form
+        var replyForm = document.getElementById('zendeskReplyForm');
+        if (replyForm) {
+            replyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var body = document.getElementById('zendeskReplyBody').value.trim();
+                if (!body) return;
+
+                var btn = document.getElementById('zendeskReplyBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+
+                fetch('/' + prefix + '/orders/' + orderId + '/zendesk-reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ body: body }),
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="send" class="icon--sm me-1"></i>Send Reply';
+                    if (window.lucide) lucide.createIcons();
+
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+
+                    // Append the reply to the thread
+                    var container = document.getElementById('zendeskComments');
+                    var el = document.createElement('div');
+                    el.className = 'mb-3 p-3 rounded-3 bg-white border';
+                    el.innerHTML =
+                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                            '<span class="fw-semibold small">Reply</span>' +
+                            '<span class="text-muted" style="font-size:0.75rem">' + new Date().toLocaleString() + '</span>' +
+                        '</div>' +
+                        '<div class="small" style="white-space:pre-wrap;">' + escapeHtml(body) + '</div>';
+                    container.appendChild(el);
+                    container.scrollTop = container.scrollHeight;
+
+                    document.getElementById('zendeskReplyBody').value = '';
+                })
+                .catch(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="send" class="icon--sm me-1"></i>Send Reply';
+                    if (window.lucide) lucide.createIcons();
+                    alert('Failed to send reply. Please try again.');
+                });
+            });
+        }
+    }
+});
 </script>
 @endpush

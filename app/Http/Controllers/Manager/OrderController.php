@@ -25,6 +25,7 @@ use App\Services\Shipping\TrackingService;
 use App\Services\Shipping\ZebraLabelService;
 use App\Mail\OrderStatusUpdate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1297,5 +1298,58 @@ class OrderController extends Controller
         }
 
         return redirect()->route($role . '.orders.view', ['id' => $id]);
+    }
+
+    /**
+     * Fetch Zendesk ticket details and comments for an order (JSON).
+     */
+    public function zendeskComments(int $id): JsonResponse
+    {
+        $order = Order::with('customer')->findOrFail($id);
+
+        if (!$order->zendesk_ticket_id) {
+            return response()->json(['error' => 'No Zendesk ticket linked to this order.'], 404);
+        }
+
+        $zendesk = app(ZendeskService::class);
+        if (!$zendesk->isConfigured()) {
+            return response()->json(['error' => 'Zendesk is not configured.'], 500);
+        }
+
+        $ticket = $zendesk->getTicket($order->zendesk_ticket_id);
+        $comments = $zendesk->getTicketComments($order->zendesk_ticket_id);
+
+        return response()->json([
+            'ticket' => $ticket,
+            'comments' => $comments,
+        ]);
+    }
+
+    /**
+     * Add a reply to the Zendesk ticket linked to an order (JSON).
+     */
+    public function zendeskReply(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['body' => 'required|string|max:5000']);
+
+        $order = Order::with('customer')->findOrFail($id);
+
+        if (!$order->zendesk_ticket_id) {
+            return response()->json(['error' => 'No Zendesk ticket linked to this order.'], 404);
+        }
+
+        $zendesk = app(ZendeskService::class);
+        if (!$zendesk->isConfigured()) {
+            return response()->json(['error' => 'Zendesk is not configured.'], 500);
+        }
+
+        $customerEmail = $order->customer?->customers_email_address ?? '';
+        $result = $zendesk->addCommentToTicket($order->zendesk_ticket_id, $request->input('body'), $customerEmail);
+
+        if ($result && isset($result['success'])) {
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['error' => $result['error'] ?? 'Failed to send reply.'], 500);
     }
 }
